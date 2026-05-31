@@ -78,9 +78,12 @@ export default function Dashboard() {
               <span>{role === 'creator' ? '🎨 Создатель' : '📢 Рекламодатель'}</span>
               <span className="text-white/40">↔</span>
             </button>
-            <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white text-sm font-medium">
-              {user.email?.[0].toUpperCase()}
-            </div>
+            <button
+  onClick={() => router.push('/dashboard/profile')}
+  className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white text-sm font-medium hover:bg-purple-500 transition"
+>
+  {user.email?.[0].toUpperCase()}
+</button>
           </div>
         </header>
 
