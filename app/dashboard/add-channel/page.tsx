@@ -62,16 +62,11 @@ export default function AddChannelPage() {
   }
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#1a1560] to-[#24243e] flex items-center justify-center">
-        <div className="text-white/50">Загрузка...</div>
-      </div>
-    )
+    return <div className="text-white/50">Загрузка...</div>
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#1a1560] to-[#24243e] p-8">
-      <div className="max-w-xl mx-auto">
+    <div className="max-w-xl mx-auto">
         <Link
           href="/dashboard"
           className="text-white/50 hover:text-white transition text-sm mb-8 inline-flex items-center gap-2"
@@ -171,7 +166,6 @@ export default function AddChannelPage() {
             {submitting ? 'Сохранение...' : 'Добавить канал'}
           </button>
         </form>
-      </div>
     </div>
   )
 }
