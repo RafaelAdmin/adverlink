@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from '../layout'
 
@@ -34,6 +35,7 @@ function AdRequestCard({ request }: { request: any }) {
 
 export default function DashboardMarketplacePage() {
   const { role } = useDashboard()
+  const router = useRouter()
   const [channels, setChannels] = useState<any[]>([])
   const [myAdRequests, setMyAdRequests] = useState<any[]>([])
   const [allAdRequests, setAllAdRequests] = useState<any[]>([])
@@ -147,7 +149,11 @@ export default function DashboardMarketplacePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((channel) => (
-              <div key={channel.id} className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-purple-500/50 transition">
+              <Link
+                key={channel.id}
+                href={`/dashboard/channel/${channel.id}`}
+                className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-purple-500/50 transition cursor-pointer block"
+              >
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                     {channel.name[0]}
@@ -196,12 +202,13 @@ export default function DashboardMarketplacePage() {
                   </div>
                   <Link
                     href={`/dashboard/add-channel/request-ad?channelId=${channel.id}`}
+                    onClick={(e) => e.stopPropagation()}
                     className="bg-purple-600 hover:bg-purple-500 transition text-white px-4 py-1.5 rounded-full text-sm"
                   >
                     Запросить рекламу
                   </Link>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
