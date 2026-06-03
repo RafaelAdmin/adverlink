@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { advertiserThemes, getTheme } from '@/lib/theme'
 
 type Role = 'creator' | 'advertiser'
 
@@ -58,6 +59,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
+  const [theme, setTheme] = useState(advertiserThemes[0])
+
+  useEffect(() => {
+    const currentTheme = getTheme(role)
+    setTheme(currentTheme)
+    document.documentElement.style.setProperty('--accent', currentTheme.accent)
+  }, [role])
+
+  useEffect(() => {
+    const onThemeChange = () => {
+      const currentTheme = getTheme(role)
+      setTheme(currentTheme)
+      document.documentElement.style.setProperty('--accent', currentTheme.accent)
+    }
+    window.addEventListener('adverlink-theme-change', onThemeChange)
+    return () => window.removeEventListener('adverlink-theme-change', onThemeChange)
+  }, [role])
 
   useEffect(() => {
     const getUser = async () => {
@@ -79,7 +97,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#1a1560] to-[#24243e] flex items-center justify-center">
+      <div className={`min-h-screen bg-gradient-to-br ${theme.gradient} flex items-center justify-center`}>
         <div className="text-white/50">Загрузка...</div>
       </div>
     )
@@ -98,7 +116,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <DashboardContext.Provider value={{ role, toggleRole, user }}>
-      <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#1a1560] to-[#24243e] flex">
+      <div className={`min-h-screen bg-gradient-to-br ${theme.gradient} flex`}>
         <aside className="w-64 border-r border-white/10 p-6 flex flex-col gap-2">
           <Link href="/dashboard" className="text-white text-xl font-bold mb-8 block">
             Adver<span className="text-purple-400">Link</span>
