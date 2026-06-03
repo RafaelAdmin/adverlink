@@ -87,10 +87,22 @@ function CreatorDashboard() {
       ) : (
         <div className="flex flex-col gap-4">
           {channels.map((channel) => (
-            <div key={channel.id} className="bg-white/5 border border-white/10 rounded-2xl p-6 flex items-center gap-6 hover:border-purple-500/50 transition">
-              <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                {channel.name[0]}
-              </div>
+            <Link
+              key={channel.id}
+              href={`/dashboard/edit-channel/${channel.id}`}
+              className="bg-white/5 border border-white/10 rounded-2xl p-6 flex items-center gap-6 hover:border-purple-500/50 transition cursor-pointer"
+            >
+              {channel.avatar_url ? (
+                <img
+                  src={channel.avatar_url}
+                  alt={channel.name}
+                  className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                  {channel.name[0]}
+                </div>
+              )}
               <div className="flex-1">
                 <div className="text-white font-semibold">{channel.name}</div>
                 <div className="text-white/40 text-sm">@{channel.telegram_username}</div>
@@ -109,14 +121,17 @@ function CreatorDashboard() {
                   <div className="text-white/40 text-xs">цена</div>
                 </div>
               </div>
-              <div className={`px-3 py-1 rounded-full text-xs ${
-                channel.verification_status === 'verified'
-                  ? 'bg-green-500/20 text-green-400'
-                  : 'bg-yellow-500/20 text-yellow-400'
-              }`}>
-                {channel.verification_status === 'verified' ? '✓ Верифицирован' : '⏳ На проверке'}
+              <div className="flex items-center gap-3">
+                <div className={`px-3 py-1 rounded-full text-xs ${
+                  channel.verification_status === 'verified'
+                    ? 'bg-green-500/20 text-green-400'
+                    : 'bg-yellow-500/20 text-yellow-400'
+                }`}>
+                  {channel.verification_status === 'verified' ? '✓ Верифицирован' : '⏳ На проверке'}
+                </div>
+                <span className="text-white/30 text-sm">→</span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
