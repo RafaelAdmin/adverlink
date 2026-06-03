@@ -2,11 +2,27 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from '../layout'
 
 const categories = ['Все', 'Новости', 'Технологии', 'Бизнес', 'Спорт', 'Lifestyle', 'Юмор']
+
+function ChannelAvatar({ channel }: { channel: any }) {
+  if (channel.avatar_url) {
+    return (
+      <img
+        src={channel.avatar_url}
+        alt={channel.name}
+        className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+      />
+    )
+  }
+  return (
+    <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+      {channel.name[0]}
+    </div>
+  )
+}
 
 function AdRequestCard({ request }: { request: any }) {
   return (
@@ -35,7 +51,6 @@ function AdRequestCard({ request }: { request: any }) {
 
 export default function DashboardMarketplacePage() {
   const { role } = useDashboard()
-  const router = useRouter()
   const [channels, setChannels] = useState<any[]>([])
   const [myAdRequests, setMyAdRequests] = useState<any[]>([])
   const [allAdRequests, setAllAdRequests] = useState<any[]>([])
@@ -155,9 +170,7 @@ export default function DashboardMarketplacePage() {
                 className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-purple-500/50 transition cursor-pointer block"
               >
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                    {channel.name[0]}
-                  </div>
+                  <ChannelAvatar channel={channel} />
                   <div className="flex-1 min-w-0">
                     <div className="text-white font-semibold truncate">{channel.name}</div>
                     <div className="text-white/40 text-sm">@{channel.telegram_username}</div>
