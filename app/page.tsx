@@ -11,6 +11,9 @@ export default function Home() {
           <Link href="/marketplace" className="text-white/70 hover:text-white transition px-4 py-2 text-sm">
             Каталог каналов
           </Link>
+          <Link href="/pricing" className="text-white/70 hover:text-white transition px-4 py-2 text-sm">
+            Цены
+          </Link>
           <Link href="/auth/login" className="bg-purple-600 hover:bg-purple-500 transition text-white px-5 py-2 rounded-full text-sm font-medium">
             Добавить канал
           </Link>

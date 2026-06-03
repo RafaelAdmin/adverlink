@@ -50,6 +50,7 @@ function SidebarItem({
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [role, setRole] = useState<Role>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem('adverlink_role') as Role) || 'advertiser'
@@ -85,6 +86,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return
       }
       setUser(user)
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.is_admin) setIsAdmin(true)
     }
     getUser()
   }, [])
@@ -154,6 +163,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <span>{role === 'creator' ? '🎨 Создатель' : '📢 Рекламодатель'}</span>
                 <span className="text-white/40">↔</span>
               </button>
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-1 bg-white/5 border border-white/10 hover:border-purple-500 text-white/70 hover:text-white rounded-full px-3 py-2 text-sm transition"
+                >
+                  🛡️ Админ
+                </Link>
+              )}
               <Link
                 href="/dashboard/profile"
                 className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white text-sm font-medium hover:bg-purple-500 transition"
