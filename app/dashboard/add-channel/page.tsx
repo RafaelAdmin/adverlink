@@ -1,12 +1,20 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
-export default function Dashboard() {
+export default function AddChannelPage() {
   const [user, setUser] = useState<any>(null)
-  const [role, setRole] = useState<'creator' | 'advertiser'>('advertiser')
+  const [name, setName] = useState('')
+  const [telegramUsername, setTelegramUsername] = useState('')
+  const [description, setDescription] = useState('')
+  const [subscriberCount, setSubscriberCount] = useState('')
+  const [avgViews, setAvgViews] = useState('')
+  const [adPrice, setAdPrice] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -22,208 +30,147 @@ export default function Dashboard() {
     getUser()
   }, [])
 
-  const toggleRole = () => {
-    setRole(role === 'creator' ? 'advertiser' : 'creator')
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) return
+
+    setSubmitting(true)
+    setError(null)
+
+    const username = telegramUsername.replace(/^@/, '').trim()
+
+    const { error: insertError } = await supabase.from('channels').insert({
+      owner_id: user.id,
+      name: name.trim(),
+      telegram_username: username,
+      description: description.trim() || null,
+      subscriber_count: subscriberCount ? Number(subscriberCount) : 0,
+      avg_views: avgViews ? Number(avgViews) : 0,
+      ad_price: adPrice ? Number(adPrice) : null,
+      verification_status: 'pending',
+      is_active: false,
+    })
+
+    setSubmitting(false)
+
+    if (insertError) {
+      setError(insertError.message)
+      return
+    }
+
+    router.push('/dashboard')
   }
 
-  if (!user) return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#1a1560] to-[#24243e] flex items-center justify-center">
-      <div className="text-white/50">Загрузка...</div>
-    </div>
-  )
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#1a1560] to-[#24243e] flex">
-      <aside className="w-64 border-r border-white/10 p-6 flex flex-col gap-2">
-        <div className="text-white text-xl font-bold mb-8">
-          Adver<span className="text-purple-400">Link</span>
-        </div>
-        {role === 'creator' ? (
-          <>
-            <SidebarItem icon="📺" label="Мои каналы" active />
-            <SidebarItem icon="🛒" label="Маркетплейс" />
-            <SidebarItem icon="📊" label="Статистика" />
-            <SidebarItem icon="⭐" label="Отзывы" />
-            <SidebarItem icon="⚙️" label="Настройки" />
-          </>
-        ) : (
-          <>
-            <SidebarItem icon="📋" label="Мои кампании" active />
-            <SidebarItem icon="🛒" label="Маркетплейс" />
-            <SidebarItem icon="📊" label="Статистика" />
-            <SidebarItem icon="⭐" label="Отзывы" />
-            <SidebarItem icon="⚙️" label="Настройки" />
-          </>
-        )}
-      </aside>
-
-      <div className="flex-1 flex flex-col">
-        <header className="border-b border-white/10 px-8 py-4 flex items-center justify-between">
-          <input
-            placeholder="Поиск..."
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/30 outline-none focus:border-purple-500 transition w-64 text-sm"
-          />
-          <div className="flex items-center gap-4">
-            <button
-              onClick={toggleRole}
-              className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm text-white hover:border-purple-500 transition"
-            >
-              <span>{role === 'creator' ? '🎨 Создатель' : '📢 Рекламодатель'}</span>
-              <span className="text-white/40">↔</span>
-            </button>
-            <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white text-sm font-medium">
-              {user.email?.[0].toUpperCase()}
-            </div>
-          </div>
-        </header>
-
-        <main className="flex-1 p-8">
-          {role === 'creator' ? <CreatorDashboard /> : <AdvertiserDashboard />}
-        </main>
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#1a1560] to-[#24243e] flex items-center justify-center">
+        <div className="text-white/50">Загрузка...</div>
       </div>
-    </div>
-  )
-}
-
-function SidebarItem({ icon, label, active }: { icon: string; label: string; active?: boolean }) {
-  return (
-    <button className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition w-full text-left ${
-      active ? 'bg-purple-600 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
-    }`}>
-      <span>{icon}</span>
-      <span>{label}</span>
-    </button>
-  )
-}
-
-function CreatorDashboard() {
-  const [channels, setChannels] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const supabase = createClient()
-  const router = useRouter()
-
-  useEffect(() => {
-    const loadChannels = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const { data } = await supabase
-        .from('channels')
-        .select('*')
-        .eq('owner_id', user.id)
-      setChannels(data || [])
-      setLoading(false)
-    }
-    loadChannels()
-  }, [])
+    )
+  }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <h1 className="text-2xl font-bold text-white">Мои каналы</h1>
-        <button
-          onClick={() => router.push('/dashboard/add-channel')}
-          className="bg-purple-600 hover:bg-purple-500 transition text-white px-5 py-2 rounded-full text-sm font-medium"
+    <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#1a1560] to-[#24243e] p-8">
+      <div className="max-w-xl mx-auto">
+        <Link
+          href="/dashboard"
+          className="text-white/50 hover:text-white transition text-sm mb-8 inline-flex items-center gap-2"
         >
-          + Добавить канал
-        </button>
-      </div>
-      <p className="text-white/50 mb-8">Управляй своими Telegram каналами</p>
+          ← Назад к дашборду
+        </Link>
 
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        {[
-          { label: 'Постов в этом месяце', value: '0' },
-          { label: 'Рост подписчиков', value: '0' },
-          { label: 'Рекламных постов', value: '0' },
-        ].map((item) => (
-          <div key={item.label} className="bg-white/5 border border-white/10 rounded-2xl p-6">
-            <div className="text-3xl font-bold text-white mb-1">{item.value}</div>
-            <div className="text-white/50 text-sm">{item.label}</div>
+        <h1 className="text-2xl font-bold text-white mb-2">Добавить канал</h1>
+        <p className="text-white/50 mb-8 text-sm">
+          Заполни данные о своём Telegram-канале. После проверки он появится в маркетплейсе.
+        </p>
+
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white/5 border border-white/10 rounded-2xl p-8 flex flex-col gap-5"
+        >
+          <label className="flex flex-col gap-2">
+            <span className="text-white/70 text-sm">Название канала</span>
+            <input
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Например: Tech Armenia"
+              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm"
+            />
+          </label>
+
+          <label className="flex flex-col gap-2">
+            <span className="text-white/70 text-sm">Telegram username</span>
+            <input
+              required
+              value={telegramUsername}
+              onChange={(e) => setTelegramUsername(e.target.value)}
+              placeholder="channelname (без @)"
+              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm"
+            />
+          </label>
+
+          <label className="flex flex-col gap-2">
+            <span className="text-white/70 text-sm">Описание</span>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Кратко о тематике канала"
+              rows={3}
+              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm resize-none"
+            />
+          </label>
+
+          <div className="grid grid-cols-2 gap-4">
+            <label className="flex flex-col gap-2">
+              <span className="text-white/70 text-sm">Подписчиков</span>
+              <input
+                type="number"
+                min={0}
+                value={subscriberCount}
+                onChange={(e) => setSubscriberCount(e.target.value)}
+                placeholder="0"
+                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm"
+              />
+            </label>
+            <label className="flex flex-col gap-2">
+              <span className="text-white/70 text-sm">Средние охваты</span>
+              <input
+                type="number"
+                min={0}
+                value={avgViews}
+                onChange={(e) => setAvgViews(e.target.value)}
+                placeholder="0"
+                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm"
+              />
+            </label>
           </div>
-        ))}
-      </div>
 
-      {loading ? (
-        <div className="text-white/50 text-center py-12">Загрузка...</div>
-      ) : channels.length === 0 ? (
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
-          <div className="text-4xl mb-4">📺</div>
-          <div className="text-white font-medium mb-2">У тебя пока нет каналов</div>
-          <div className="text-white/40 text-sm mb-6">Добавь свой первый Telegram канал</div>
+          <label className="flex flex-col gap-2">
+            <span className="text-white/70 text-sm">Цена рекламы (USD)</span>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={adPrice}
+              onChange={(e) => setAdPrice(e.target.value)}
+              placeholder="50"
+              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm"
+            />
+          </label>
+
+          {error && (
+            <p className="text-red-400 text-sm">{error}</p>
+          )}
+
           <button
-            onClick={() => router.push('/dashboard/add-channel')}
-            className="bg-purple-600 hover:bg-purple-500 transition text-white px-6 py-2.5 rounded-full text-sm font-medium"
+            type="submit"
+            disabled={submitting}
+            className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 transition text-white px-6 py-2.5 rounded-full text-sm font-medium mt-2"
           >
-            Добавить канал
+            {submitting ? 'Сохранение...' : 'Добавить канал'}
           </button>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {channels.map((channel) => (
-            <div key={channel.id} className="bg-white/5 border border-white/10 rounded-2xl p-6 flex items-center gap-6 hover:border-purple-500/50 transition">
-              <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                {channel.name[0]}
-              </div>
-              <div className="flex-1">
-                <div className="text-white font-semibold">{channel.name}</div>
-                <div className="text-white/40 text-sm">@{channel.telegram_username}</div>
-              </div>
-              <div className="flex gap-6 text-center">
-                <div>
-                  <div className="text-white font-semibold">{channel.subscriber_count?.toLocaleString()}</div>
-                  <div className="text-white/40 text-xs">подписчиков</div>
-                </div>
-                <div>
-                  <div className="text-white font-semibold">{channel.avg_views?.toLocaleString()}</div>
-                  <div className="text-white/40 text-xs">охваты</div>
-                </div>
-                <div>
-                  <div className="text-purple-400 font-semibold">${channel.ad_price}</div>
-                  <div className="text-white/40 text-xs">цена</div>
-                </div>
-              </div>
-              <div className={`px-3 py-1 rounded-full text-xs ${
-                channel.verification_status === 'verified'
-                  ? 'bg-green-500/20 text-green-400'
-                  : 'bg-yellow-500/20 text-yellow-400'
-              }`}>
-                {channel.verification_status === 'verified' ? '✓ Верифицирован' : '⏳ На проверке'}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function AdvertiserDashboard() {
-  const router = useRouter()
-  return (
-    <div>
-      <h1 className="text-2xl font-bold text-white mb-2">Мои кампании</h1>
-      <p className="text-white/50 mb-8">Управляй рекламными кампаниями</p>
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        {[
-          { label: 'Активных кампаний', value: '0' },
-          { label: 'Завершённых сделок', value: '0' },
-          { label: 'Потрачено', value: '$0' },
-        ].map((item) => (
-          <div key={item.label} className="bg-white/5 border border-white/10 rounded-2xl p-6">
-            <div className="text-3xl font-bold text-white mb-1">{item.value}</div>
-            <div className="text-white/50 text-sm">{item.label}</div>
-          </div>
-        ))}
-      </div>
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
-        <div className="text-4xl mb-4">📢</div>
-        <div className="text-white font-medium mb-2">У тебя пока нет кампаний</div>
-        <div className="text-white/40 text-sm mb-6">Найди каналы в маркетплейсе и запусти первую рекламу</div>
-        <button
-          onClick={() => router.push('/marketplace')}
-          className="bg-purple-600 hover:bg-purple-500 transition text-white px-6 py-2.5 rounded-full text-sm font-medium"
-        >
-          Перейти в маркетплейс
-        </button>
+        </form>
       </div>
     </div>
   )
