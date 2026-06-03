@@ -48,6 +48,30 @@ function SidebarItem({
   )
 }
 
+function RoleToggle({ role, onToggle }: { role: Role; onToggle: () => void }) {
+  const isCreator = role === 'creator'
+  return (
+    <div className="flex items-center gap-3">
+      <span className={`text-xs font-medium transition ${!isCreator ? 'text-white' : 'text-white/40'}`}>
+        Рекламодатель
+      </span>
+      <button
+        onClick={onToggle}
+        className="relative w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none"
+        style={{ background: isCreator ? '#9333ea' : 'rgba(255,255,255,0.15)' }}
+      >
+        <span
+          className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-300"
+          style={{ transform: isCreator ? 'translateX(24px)' : 'translateX(0)' }}
+        />
+      </button>
+      <span className={`text-xs font-medium transition ${isCreator ? 'text-white' : 'text-white/40'}`}>
+        Создатель
+      </span>
+    </div>
+  )
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -155,14 +179,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               placeholder="Поиск..."
               className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-white/30 outline-none focus:border-purple-500 transition w-64 text-sm"
             />
-            <div className="flex items-center gap-4">
-              <button
-                onClick={toggleRole}
-                className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm text-white hover:border-purple-500 transition"
-              >
-                <span>{role === 'creator' ? '🎨 Создатель' : '📢 Рекламодатель'}</span>
-                <span className="text-white/40">↔</span>
-              </button>
+            <div className="flex items-center gap-6">
+              <RoleToggle role={role} onToggle={toggleRole} />
               {isAdmin && (
                 <Link
                   href="/admin"
