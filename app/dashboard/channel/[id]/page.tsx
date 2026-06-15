@@ -11,6 +11,7 @@ export default function ChannelProfilePage() {
   const [channel, setChannel] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isMyChannel, setIsMyChannel] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -32,6 +33,7 @@ export default function ChannelProfilePage() {
         setError('Канал не найден')
       } else {
         setChannel(data)
+        setIsMyChannel(data.owner_id === user.id)
       }
       setLoading(false)
     }
@@ -99,8 +101,35 @@ export default function ChannelProfilePage() {
         {/* Header */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-8 mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-            <div className="w-24 h-24 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-4xl flex-shrink-0">
-              {channel.name[0]}
+            {channel.avatar_url ? (
+              <img
+                src={channel.avatar_url}
+                alt={channel.name}
+                className="rounded-full object-cover"
+                style={{
+                  width: '80px',
+                  height: '80px',
+                  border: '3px solid rgba(255,255,255,0.15)',
+                  flexShrink: 0,
+                }}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                  e.currentTarget.nextElementSibling?.removeAttribute('style')
+                }}
+              />
+            ) : null}
+
+            <div
+              className="rounded-full flex items-center justify-center text-white font-bold text-3xl flex-shrink-0"
+              style={{
+                width: '80px',
+                height: '80px',
+                backgroundColor: 'var(--accent-primary, #9333ea)',
+                border: '3px solid rgba(255,255,255,0.15)',
+                display: channel.avatar_url ? 'none' : 'flex',
+              }}
+            >
+              {channel.name?.[0]}
             </div>
             <div className="flex-1">
               <h1 className="text-3xl font-bold text-white mb-2">{channel.name}</h1>
@@ -162,12 +191,44 @@ export default function ChannelProfilePage() {
 
         {/* CTA */}
         <div className="text-center">
-          <Link
-            href={`/dashboard/add-channel/request-ad?channelId=${channel.id}`}
-            className="bg-purple-600 hover:bg-purple-500 transition text-white px-10 py-3.5 rounded-full text-base font-medium inline-block"
-          >
-            Запросить рекламу
-          </Link>
+          {isMyChannel ? (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '16px',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '16px',
+                color: 'rgba(255,255,255,0.3)',
+                fontSize: '13px',
+              }}
+            >
+              <i
+                className="ti ti-user"
+                style={{ fontSize: '20px', display: 'block', marginBottom: '6px' }}
+              />
+              Это ваш канал
+            </div>
+          ) : (
+            <Link
+              href={`/dashboard/add-channel/request-ad?channelId=${channel.id}`}
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '14px',
+                backgroundColor: 'var(--accent-primary, #9333ea)',
+                color: 'white',
+                borderRadius: '14px',
+                textAlign: 'center',
+                fontWeight: '500',
+                fontSize: '15px',
+                textDecoration: 'none',
+              }}
+            >
+              <i className="ti ti-speakerphone" style={{ marginRight: '8px' }} />
+              Запросить рекламу
+            </Link>
+          )}
         </div>
       </div>
     </div>

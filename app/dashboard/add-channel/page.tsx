@@ -130,13 +130,13 @@ export default function AddChannelPage() {
                 setFetchSuccess(false)
               }}
               placeholder="@channelname"
-              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm"
+              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus-accent transition text-sm"
             />
             <button
               type="button"
               onClick={fetchFromTelegram}
               disabled={fetching || !telegramUsername}
-              className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 transition text-white px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap"
+              className="btn-accent disabled:opacity-50 transition text-white px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap"
             >
               {fetching ? 'Загрузка...' : '🔍 Найти'}
             </button>
@@ -172,7 +172,7 @@ export default function AddChannelPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Заполнится автоматически"
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm"
+            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus-accent transition text-sm"
           />
         </label>
 
@@ -184,7 +184,7 @@ export default function AddChannelPage() {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Заполнится автоматически"
             rows={3}
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm resize-none"
+            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus-accent transition text-sm resize-none"
           />
         </label>
 
@@ -198,7 +198,7 @@ export default function AddChannelPage() {
               value={subscriberCount}
               onChange={(e) => setSubscriberCount(e.target.value)}
               placeholder="Подтянется автоматически"
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm"
+              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus-accent transition text-sm"
             />
           </label>
           <label className="flex flex-col gap-2">
@@ -209,7 +209,7 @@ export default function AddChannelPage() {
               value={avgViews}
               onChange={(e) => setAvgViews(e.target.value)}
               placeholder="Введи вручную"
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm"
+              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus-accent transition text-sm"
             />
           </label>
         </div>
@@ -224,7 +224,7 @@ export default function AddChannelPage() {
             value={adPrice}
             onChange={(e) => setAdPrice(e.target.value)}
             placeholder="50"
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm"
+            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus-accent transition text-sm"
           />
         </label>
 
@@ -242,7 +242,7 @@ export default function AddChannelPage() {
         <button
           type="submit"
           disabled={submitting || !name || !telegramUsername}
-          className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 transition text-white px-6 py-2.5 rounded-full text-sm font-medium mt-2"
+          className="btn-accent disabled:opacity-50 transition text-white px-6 py-2.5 rounded-full text-sm font-medium mt-2"
         >
           {submitting ? 'Сохранение...' : 'Добавить канал'}
         </button>
