@@ -1,40 +1,118 @@
 # AdverLink
 
-Маркетплейс рекламы в Telegram-каналах для создателей контента и рекламодателей.
+Маркетплейс Telegram-рекламы для армянского рынка.
+Соединяет владельцев каналов с рекламодателями.
 
-## Стек
+## Tech Stack
 
-- Next.js 16 (App Router)
-- React 19
-- Supabase (auth, database, storage)
-- Tailwind CSS 4
+- Next.js 15 (App Router)
+- TypeScript
+- Tailwind CSS
+- Supabase (Auth, Database, Storage)
+- Vercel (Deployment)
 
-## Запуск
+## Quick Start
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/RafaelAdmin/adverlink.git
+cd adverlink
+```
+
+### 2. Install dependencies
 
 ```bash
 npm install
-cp .env.example .env.local   # заполните Supabase URL и anon key
+```
+
+### 3. Set up environment variables
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in your Supabase URL, anon key, and Telegram bot token.
+
+### 4. Set up the database
+
+Go to your Supabase project → SQL Editor  
+Run the contents of: `supabase/schema.sql`
+
+### 5. Set up storage
+
+In Supabase dashboard → Storage  
+Create a bucket named `avatars` and set it as Public  
+Then run the storage policy SQL from the bottom of `schema.sql`
+
+### 6. Make yourself admin
+
+In Supabase SQL Editor:
+
+```sql
+update profiles set is_admin = true
+where id = (select id from auth.users where email = 'your@email.com');
+```
+
+### 7. Run the development server
+
+```bash
 npm run dev
 ```
 
-Откройте [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000)
 
-## Переменные окружения
+## Environment Variables
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `TELEGRAM_BOT_TOKEN` — для API подтягивания данных канала
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+```
 
-## Основные маршруты
+## Features
 
-| Путь | Описание |
-|------|----------|
-| `/` | Лендинг |
-| `/dashboard` | Личный кабинет |
-| `/dashboard/marketplace` | Маркетплейс |
-| `/about` | О платформе |
-| `/faq` | FAQ |
+- Two-sided marketplace (Creators & Advertisers)
+- Telegram channel catalog with real stats
+- Ad request system
+- Campaign creation and management
+- Deal tracking (new → replied → completed)
+- Reviews and ratings
+- Friends system
+- Public creator profiles (`/u/username`)
+- Admin panel with full moderation
+- Color theme customization per role
+- Glassmorphism UI design
 
-## Supabase
+## Project Structure
 
-Схема БД настраивается в Supabase SQL Editor. SQL-подсказки для отдельных фич могут встречаться в комментариях исходников; актуальное состояние — в вашем проекте Supabase.
+```
+app/
+├── (public pages)
+│   ├── page.tsx          - Landing page
+│   ├── pricing/          - Subscription plans
+│   └── u/[username]/     - Public user profiles
+├── auth/
+│   └── login/            - Authentication
+├── dashboard/            - Main app (protected)
+│   ├── layout.tsx        - Sidebar + topbar
+│   ├── page.tsx          - Dashboard home
+│   ├── marketplace/      - Channel catalog
+│   ├── statistics/       - Analytics
+│   ├── reviews/          - Reviews
+│   ├── friends/          - Friends system
+│   ├── subscriptions/    - Plans & billing
+│   ├── settings/         - User settings
+│   ├── profile/          - Edit profile
+│   ├── channel/[id]/     - Channel detail
+│   ├── edit-channel/[id]/- Edit channel
+│   └── add-channel/      - Add new channel
+├── admin/                - Admin panel (protected)
+└── api/
+    └── telegram/         - Telegram Bot API proxy
+
+supabase/
+└── schema.sql            - Complete database schema
+
+middleware.ts             - Route protection
+```
