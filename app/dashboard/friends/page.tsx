@@ -51,6 +51,7 @@ using (auth.uid() = blocker_id);
 */
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import UserProfileCard from '../components/UserProfileCard'
@@ -384,6 +385,17 @@ export default function FriendsPage() {
           <div className="text-white font-semibold">{displayName(profile)}</div>
           {profile.username && (
             <div className="text-white/40 text-sm">@{profile.username}</div>
+          )}
+          {profile.username && (
+            <Link
+              href={`/u/${profile.username}`}
+              target="_blank"
+              onClick={(e) => e.stopPropagation()}
+              style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}
+            >
+              <i className="ti ti-external-link" style={{ fontSize: '11px' }} />
+              /u/{profile.username}
+            </Link>
           )}
           {profile.description && (
             <div

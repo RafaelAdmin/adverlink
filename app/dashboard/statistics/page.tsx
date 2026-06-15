@@ -3,10 +3,34 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from '../layout'
+import { formatAmdWithUsd } from '@/lib/currency'
 
 function safeNum(n: unknown, fallback = 0): number {
   const v = Number(n)
   return Number.isFinite(v) ? v : fallback
+}
+
+function buildMonthlyChart(items: { created_at: string; [key: string]: unknown }[], valueKey: string) {
+  const result: { month: string; value: number }[] = []
+  const monthNames = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек']
+
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date()
+    d.setMonth(d.getMonth() - i)
+    const month = d.getMonth()
+    const year = d.getFullYear()
+
+    const value = items
+      .filter((item) => {
+        const itemDate = new Date(item.created_at)
+        return itemDate.getMonth() === month && itemDate.getFullYear() === year
+      })
+      .reduce((sum, item) => sum + (Number(item[valueKey]) || 0), 0)
+
+    result.push({ month: monthNames[month], value })
+  }
+
+  return result
 }
 
 function SubMetric({ label, value, className = 'text-white' }: { label: string; value: string | number; className?: string }) {
@@ -165,148 +189,121 @@ function SvgLineChart({
   )
 }
 
-function buildLast6Months(): { month: string; year: number; monthIndex: number; value: number }[] {
-  const last6Months: { month: string; year: number; monthIndex: number; value: number }[] = []
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date()
-    d.setMonth(d.getMonth() - i)
-    last6Months.push({
-      month: d.toLocaleString('ru-RU', { month: 'short' }),
-      year: d.getFullYear(),
-      monthIndex: d.getMonth(),
-      value: 0,
-    })
-  }
-  return last6Months
-}
-
 function dealStatusDot(status: string) {
   if (status === 'completed') return 'bg-blue-400'
   if (status === 'replied') return 'bg-green-400'
   return 'bg-orange-400'
 }
 
-type CreatorData = {
+type CreatorStats = {
   totalRevenue: number
   monthRevenue: number
+  completedDeals: number
+  inProgressDeals: number
+  allDeals: number
+  totalSubs: number
+  totalViews: number
+  channelsCount: number
   avgRating: number
-  totalSubscribers: number
-  totalAvgViews: number
-  userChannels: any[]
-  completedDeals: any[]
-  inProgressDeals: any[]
-  allDeals: any[]
-  reviews: { rating: number }[]
-  monthlyRevenue: { month: string; value: number }[]
+  reviewsCount: number
+  chartData: { month: string; value: number }[]
   recentDeals: any[]
 }
 
-type AdvertiserData = {
+type AdvertiserStats = {
   totalSpent: number
   monthSpent: number
-  avgRating: number
-  totalReviews: number
-  mostPopularCategory: string
+  activeCampaigns: number
+  completedCampaigns: number
+  allCampaigns: number
+  topCategory: string
   topCreator: string
-  activeCampaigns: any[]
-  completedCampaigns: any[]
-  allCampaigns: any[]
-  monthlyReach: { month: string; value: number }[]
+  avgRating: number
+  reviewsCount: number
+  chartData: { month: string; value: number }[]
+  activeCampaignsList: any[]
 }
 
 export default function StatisticsPage() {
   const { role } = useDashboard()
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
-  const [creatorData, setCreatorData] = useState<CreatorData | null>(null)
-  const [advertiserData, setAdvertiserData] = useState<AdvertiserData | null>(null)
+  const [creatorStats, setCreatorStats] = useState<CreatorStats | null>(null)
+  const [advertiserStats, setAdvertiserStats] = useState<AdvertiserStats | null>(null)
 
   useEffect(() => {
-    const load = async () => {
+    const loadStatistics = async () => {
       setLoading(true)
+
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setLoading(false)
+        return
+      }
+
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-          setLoading(false)
-          return
-        }
-
-        const firstDayOfMonth = new Date()
-        firstDayOfMonth.setDate(1)
-        firstDayOfMonth.setHours(0, 0, 0, 0)
-
         if (role === 'creator') {
-          const { data: userChannels } = await supabase
+          const { data: myChannels } = await supabase
             .from('channels')
             .select('id, name, subscriber_count, avg_views')
             .eq('owner_id', user.id)
 
-          const channels = userChannels || []
-          const channelIds = channels.map((c) => c.id)
+          const channelIds = (myChannels || []).map((c) => c.id)
 
-          let allDeals: any[] = []
-          let completedDeals: any[] = []
-          let inProgressDeals: any[] = []
-          let monthDeals: any[] = []
+          const firstDayOfMonth = new Date()
+          firstDayOfMonth.setDate(1)
+          firstDayOfMonth.setHours(0, 0, 0, 0)
 
-          if (channelIds.length > 0) {
-            const [allRes, completedRes, inProgressRes, monthRes] = await Promise.all([
-              supabase.from('ad_requests').select('*').in('channel_id', channelIds),
-              supabase.from('ad_requests').select('*').in('channel_id', channelIds).eq('status', 'completed'),
-              supabase.from('ad_requests').select('*').in('channel_id', channelIds).eq('status', 'replied'),
-              supabase
-                .from('ad_requests')
-                .select('*')
-                .in('channel_id', channelIds)
-                .eq('status', 'completed')
-                .gte('created_at', firstDayOfMonth.toISOString()),
+          const [allReqRes, completedReqRes, repliedReqRes, monthReqRes, reviewsRes] =
+            await Promise.all([
+              channelIds.length > 0
+                ? supabase.from('ad_requests').select('id, budget, created_at, status, advertiser_name').in('channel_id', channelIds)
+                : Promise.resolve({ data: [] as any[] }),
+              channelIds.length > 0
+                ? supabase.from('ad_requests').select('id, budget, created_at').in('channel_id', channelIds).eq('status', 'completed')
+                : Promise.resolve({ data: [] as any[] }),
+              channelIds.length > 0
+                ? supabase.from('ad_requests').select('id').in('channel_id', channelIds).eq('status', 'replied')
+                : Promise.resolve({ data: [] as any[] }),
+              channelIds.length > 0
+                ? supabase.from('ad_requests').select('id, budget').in('channel_id', channelIds).eq('status', 'completed').gte('created_at', firstDayOfMonth.toISOString())
+                : Promise.resolve({ data: [] as any[] }),
+              supabase.from('reviews').select('rating').eq('reviewee_id', user.id),
             ])
-            allDeals = allRes.data || []
-            completedDeals = completedRes.data || []
-            inProgressDeals = inProgressRes.data || []
-            monthDeals = monthRes.data || []
-          }
 
-          const { data: reviews } = await supabase
-            .from('reviews')
-            .select('rating')
-            .eq('reviewee_id', user.id)
+          const allDealsRaw = allReqRes.data || []
+          const allDealsNonCancelled = allDealsRaw.filter((d) => d.status !== 'cancelled')
+          const completedDeals = completedReqRes.data || []
+          const repliedDeals = repliedReqRes.data || []
+          const monthDeals = monthReqRes.data || []
+          const reviews = reviewsRes.data || []
 
-          const reviewList = reviews || []
-          const totalRevenue = completedDeals.reduce((s, d) => s + safeNum(d.budget), 0)
-          const monthRevenue = monthDeals.reduce((s, d) => s + safeNum(d.budget), 0)
-          const avgRating = reviewList.length
-            ? reviewList.reduce((s, r) => s + safeNum(r.rating), 0) / reviewList.length
+          const totalRevenue = completedDeals.reduce((s, d) => s + (Number(d.budget) || 0), 0)
+          const monthRevenue = monthDeals.reduce((s, d) => s + (Number(d.budget) || 0), 0)
+          const avgRating = reviews.length > 0
+            ? reviews.reduce((s, r) => s + safeNum(r.rating), 0) / reviews.length
             : 0
-          const totalSubscribers = channels.reduce((s, c) => s + safeNum(c.subscriber_count), 0)
-          const totalAvgViews = channels.reduce((s, c) => s + safeNum(c.avg_views), 0)
+          const totalSubs = (myChannels || []).reduce((s, c) => s + (c.subscriber_count || 0), 0)
+          const totalViews = (myChannels || []).reduce((s, c) => s + (c.avg_views || 0), 0)
 
-          const last6Months = buildLast6Months()
-          completedDeals.forEach((deal) => {
-            const dealDate = new Date(deal.created_at)
-            const found = last6Months.find(
-              (m) => m.monthIndex === dealDate.getMonth() && m.year === dealDate.getFullYear(),
-            )
-            if (found) found.value += safeNum(deal.budget)
-          })
-          const monthlyRevenue = last6Months.map((m) => ({ month: m.month, value: m.value }))
+          const chartData = buildMonthlyChart(completedDeals, 'budget')
 
-          const recentDeals = [...allDeals]
+          const recentDeals = [...allDealsNonCancelled]
             .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
             .slice(0, 5)
 
-          setCreatorData({
+          setCreatorStats({
             totalRevenue,
             monthRevenue,
+            completedDeals: completedDeals.length,
+            inProgressDeals: repliedDeals.length,
+            allDeals: allDealsNonCancelled.length,
+            totalSubs,
+            totalViews,
+            channelsCount: (myChannels || []).length,
             avgRating,
-            totalSubscribers,
-            totalAvgViews,
-            userChannels: channels,
-            completedDeals,
-            inProgressDeals,
-            allDeals,
-            reviews: reviewList,
-            monthlyRevenue,
+            reviewsCount: reviews.length,
+            chartData,
             recentDeals,
           })
         } else {
@@ -314,91 +311,96 @@ export default function StatisticsPage() {
           firstDayOfMonth.setDate(1)
           firstDayOfMonth.setHours(0, 0, 0, 0)
 
-          const [campaignsRes, completedRequestsRes, monthCompletedRequestsRes, reviewsRes] = await Promise.all([
-            supabase.from('campaigns').select('*').eq('advertiser_id', user.id),
-            supabase
-              .from('ad_requests')
-              .select('budget, created_at, channel_id, status')
-              .eq('advertiser_id', user.id)
-              .eq('status', 'completed'),
-            supabase
-              .from('ad_requests')
-              .select('budget')
-              .eq('advertiser_id', user.id)
-              .eq('status', 'completed')
-              .gte('created_at', firstDayOfMonth.toISOString()),
+          const [campaignsRes, completedReqRes, monthReqRes, reviewsRes] = await Promise.all([
+            supabase.from('campaigns').select('id, name, status, category, budget, created_at').eq('advertiser_id', user.id),
+            supabase.from('ad_requests').select('id, budget, created_at, channel_id').eq('advertiser_id', user.id).eq('status', 'completed'),
+            supabase.from('ad_requests').select('id, budget').eq('advertiser_id', user.id).eq('status', 'completed').gte('created_at', firstDayOfMonth.toISOString()),
             supabase.from('reviews').select('rating').eq('reviewee_id', user.id),
           ])
 
-          const allCampaigns = campaignsRes.data || []
-          const completedRequests = completedRequestsRes.data || []
-          const reviewsAbout = reviewsRes.data || []
+          const campaigns = campaignsRes.data || []
+          const completedRequests = completedReqRes.data || []
+          const monthRequests = monthReqRes.data || []
+          const reviews = reviewsRes.data || []
 
-          const totalSpent = completedRequests.reduce((s, r) => s + safeNum(r.budget), 0)
-          const monthSpent = (monthCompletedRequestsRes.data || []).reduce((s, r) => s + safeNum(r.budget), 0)
-          const activeCampaigns = allCampaigns.filter((c) => c.status === 'active')
-          const completedCampaigns = allCampaigns.filter((c) => c.status === 'completed')
-          const avgRating = reviewsAbout.length
-            ? reviewsAbout.reduce((s, r) => s + safeNum(r.rating), 0) / reviewsAbout.length
+          const totalSpent = completedRequests.reduce((s, r) => s + (Number(r.budget) || 0), 0)
+          const monthSpent = monthRequests.reduce((s, r) => s + (Number(r.budget) || 0), 0)
+
+          const activeCampaigns = campaigns.filter((c) => c.status === 'active').length
+          const completedCampaigns = campaigns.filter((c) => c.status === 'completed').length
+
+          const avgRating = reviews.length > 0
+            ? reviews.reduce((s, r) => s + safeNum(r.rating), 0) / reviews.length
             : 0
 
-          const categoryCount: Record<string, number> = {}
-          allCampaigns.forEach((c) => {
-            const cat = c.category || 'Другое'
-            categoryCount[cat] = (categoryCount[cat] || 0) + 1
+          const categoryCounts: Record<string, number> = {}
+          campaigns.forEach((c) => {
+            if (c.category) categoryCounts[c.category] = (categoryCounts[c.category] || 0) + 1
           })
-          const mostPopularCategory =
-            Object.keys(categoryCount).length === 0
-              ? '—'
-              : Object.entries(categoryCount).sort((a, b) => b[1] - a[1])[0][0]
+          const topCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '—'
 
           const channelIds = [...new Set(completedRequests.map((r) => r.channel_id).filter(Boolean))]
+          let channelViews: Record<string, number> = {}
           let topCreator = '—'
-          const channelViews: Record<string, number> = {}
+
           if (channelIds.length > 0) {
-            const { data: chData } = await supabase.from('channels').select('id, name, avg_views').in('id', channelIds)
-            ;(chData || []).forEach((c) => {
-              channelViews[c.id] = safeNum(c.avg_views)
+            const { data: channelsData } = await supabase
+              .from('channels')
+              .select('id, avg_views, owner_id')
+              .in('id', channelIds)
+
+            ;(channelsData || []).forEach((c) => {
+              channelViews[c.id] = c.avg_views || 0
             })
-            const nameCount: Record<string, number> = {}
+
+            const channelCounts: Record<string, number> = {}
             completedRequests.forEach((r) => {
-              const ch = (chData || []).find((c) => c.id === r.channel_id)
-              const name = ch?.name || '—'
-              nameCount[name] = (nameCount[name] || 0) + 1
+              if (r.channel_id) channelCounts[r.channel_id] = (channelCounts[r.channel_id] || 0) + 1
             })
-            const sorted = Object.entries(nameCount).sort((a, b) => b[1] - a[1])
-            if (sorted.length > 0) topCreator = sorted[0][0]
+            const topChannelId = Object.entries(channelCounts).sort((a, b) => b[1] - a[1])[0]?.[0]
+
+            if (topChannelId) {
+              const ownerId = (channelsData || []).find((c) => c.id === topChannelId)?.owner_id
+              if (ownerId) {
+                const { data: ownerProfile } = await supabase
+                  .from('profiles')
+                  .select('full_name, username')
+                  .eq('id', ownerId)
+                  .single()
+                topCreator = ownerProfile?.full_name || ownerProfile?.username || '—'
+              }
+            }
           }
 
-          const last6Months = buildLast6Months()
-          completedRequests.forEach((req) => {
-            const dealDate = new Date(req.created_at)
-            const found = last6Months.find(
-              (m) => m.monthIndex === dealDate.getMonth() && m.year === dealDate.getFullYear(),
-            )
-            if (found) found.value += channelViews[req.channel_id] || 0
-          })
-          const monthlyReach = last6Months.map((m) => ({ month: m.month, value: m.value }))
+          const reachData = completedRequests.map((r) => ({
+            ...r,
+            reach: channelViews[r.channel_id] || 0,
+          }))
 
-          setAdvertiserData({
+          const chartData = buildMonthlyChart(reachData, 'reach')
+
+          setAdvertiserStats({
             totalSpent,
             monthSpent,
-            avgRating,
-            totalReviews: reviewsAbout.length,
-            mostPopularCategory,
-            topCreator: topCreator.length > 15 ? `${topCreator.slice(0, 15)}…` : topCreator,
             activeCampaigns,
             completedCampaigns,
-            allCampaigns,
-            monthlyReach,
+            allCampaigns: campaigns.length,
+            topCategory,
+            topCreator: topCreator.length > 15 ? `${topCreator.slice(0, 15)}…` : topCreator,
+            avgRating,
+            reviewsCount: reviews.length,
+            chartData,
+            activeCampaignsList: campaigns.filter((c) => c.status === 'active'),
           })
         }
       } catch {
         // keep null data, show empty state
       }
+
       setLoading(false)
     }
-    load()
+
+    loadStatistics()
   }, [role])
 
   if (loading) {
@@ -411,8 +413,8 @@ export default function StatisticsPage() {
     )
   }
 
-  if (role === 'creator' && creatorData) {
-    const d = creatorData
+  if (role === 'creator' && creatorStats) {
+    const d = creatorStats
     return (
       <div>
         <h1 className="text-2xl font-bold text-white mb-2">Статистика</h1>
@@ -420,35 +422,35 @@ export default function StatisticsPage() {
 
         <div className="grid grid-cols-2 gap-4 mb-8">
           <BigMetricCard title="Доход" iconClass="ti-currency-dollar" borderClass="border-green-500/30">
-            <SubMetric label="За месяц" value={`$${d.monthRevenue.toFixed(0)}`} className="text-green-400" />
-            <SubMetric label="За всё время" value={`$${d.totalRevenue.toFixed(0)}`} className="text-green-400" />
+            <SubMetric label="За месяц" value={`${d.monthRevenue.toLocaleString()} AMD`} className="text-green-400" />
+            <SubMetric label="За всё время" value={`${d.totalRevenue.toLocaleString()} AMD`} className="text-green-400" />
           </BigMetricCard>
 
           <BigMetricCard title="Сделки" iconClass="ti-handshake" cols={3}>
-            <SubMetric label="Завершённые" value={d.completedDeals.length} className="text-green-400" />
-            <SubMetric label="В процессе" value={d.inProgressDeals.length} className="text-yellow-400" />
-            <SubMetric label="Все" value={d.allDeals.length} />
+            <SubMetric label="Завершённые" value={d.completedDeals} className="text-green-400" />
+            <SubMetric label="В процессе" value={d.inProgressDeals} className="text-yellow-400" />
+            <SubMetric label="Все" value={d.allDeals} />
           </BigMetricCard>
 
           <BigMetricCard title="Каналы" iconClass="ti-brand-telegram" cols={3}>
-            <SubMetric label="Подписчиков" value={d.totalSubscribers.toLocaleString()} />
-            <SubMetric label="Просмотров" value={`${d.totalAvgViews.toLocaleString()}/пост`} />
-            <SubMetric label="Каналов" value={d.userChannels.length} />
+            <SubMetric label="Подписчиков" value={d.totalSubs.toLocaleString()} />
+            <SubMetric label="Просмотров" value={`${d.totalViews.toLocaleString()}/пост`} />
+            <SubMetric label="Каналов" value={d.channelsCount} />
           </BigMetricCard>
 
           <BigMetricCard title="Репутация" iconClass="ti-star">
             <SubMetric label="Рейтинг" value={`${d.avgRating.toFixed(1)} ★`} className="text-yellow-400" />
-            <SubMetric label="Отзывов" value={d.reviews.length} />
+            <SubMetric label="Отзывов" value={d.reviewsCount} />
           </BigMetricCard>
         </div>
 
         <SvgLineChart
           title="График дохода"
           subtitle="Доход от завершённых сделок по месяцам"
-          data={d.monthlyRevenue}
+          data={d.chartData}
           color="#9333ea"
           gradientId="lineGrad"
-          formatY={(v) => `$${Math.round(v)}`}
+          formatY={(v) => `${Math.round(v).toLocaleString()} AMD`}
           emptyMessage="График появится после первой завершённой сделки"
         />
 
@@ -466,7 +468,7 @@ export default function StatisticsPage() {
                   <div className="text-white font-medium truncate">{deal.advertiser_name || '—'}</div>
                   <div className="text-white/40 text-xs">{new Date(deal.created_at).toLocaleDateString('ru-RU')}</div>
                 </div>
-                <div className="text-purple-400 font-semibold">${safeNum(deal.budget)}</div>
+                <div className="text-purple-400 font-semibold">{formatAmdWithUsd(deal.budget)}</div>
               </div>
             ))}
           </div>
@@ -475,8 +477,8 @@ export default function StatisticsPage() {
     )
   }
 
-  if (advertiserData) {
-    const d = advertiserData
+  if (advertiserStats) {
+    const d = advertiserStats
     return (
       <div>
         <h1 className="text-2xl font-bold text-white mb-2">Статистика</h1>
@@ -490,40 +492,40 @@ export default function StatisticsPage() {
           </BigMetricCard>
 
           <BigMetricCard title="Кампании" iconClass="ti-clipboard-list" cols={3}>
-            <SubMetric label="Активные" value={d.activeCampaigns.length} className="text-green-400" />
-            <SubMetric label="Завершённые" value={d.completedCampaigns.length} className="text-blue-400" />
-            <SubMetric label="Все" value={d.allCampaigns.length} />
+            <SubMetric label="Активные" value={d.activeCampaigns} className="text-green-400" />
+            <SubMetric label="Завершённые" value={d.completedCampaigns} className="text-blue-400" />
+            <SubMetric label="Все" value={d.allCampaigns} />
           </BigMetricCard>
 
           <BigMetricCard title="Creators" iconClass="ti-users">
             <SubMetric label="Топ исполнитель" value={d.topCreator} />
-            <SubMetric label="Популярная тематика" value={d.mostPopularCategory} />
+            <SubMetric label="Популярная тематика" value={d.topCategory} />
           </BigMetricCard>
 
           <BigMetricCard title="Репутация" iconClass="ti-star">
             <SubMetric label="Рейтинг" value={`${d.avgRating.toFixed(1)} ★`} className="text-yellow-400" />
-            <SubMetric label="Отзывов" value={d.totalReviews} />
+            <SubMetric label="Отзывов" value={d.reviewsCount} />
           </BigMetricCard>
         </div>
 
         <SvgLineChart
           title="Приблизительный охват"
           subtitle="Суммарные просмотры рекламных постов за последние 6 месяцев"
-          data={d.monthlyReach}
+          data={d.chartData}
           color="#0d9488"
           gradientId="lineGradTeal"
           formatY={(v) => `${Math.round(v / 1000)}K`}
-          emptyMessage="График появится после первой завершённой кампании"
+          emptyMessage="График появится после первой завершённой сделки"
         />
 
         <h2 className="text-xl font-bold text-white mb-4">Активные кампании</h2>
-        {d.activeCampaigns.length === 0 ? (
+        {d.activeCampaignsList.length === 0 ? (
           <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center text-white/50 text-sm">
             Нет активных кампаний
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {d.activeCampaigns.map((camp) => (
+            {d.activeCampaignsList.map((camp) => (
               <div key={camp.id} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex-1 min-w-0">
                   <div className="text-white font-medium">{camp.name}</div>
