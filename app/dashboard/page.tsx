@@ -1,44 +1,12 @@
 'use client'
 
-/*
-IMPORTANT - Run in Supabase SQL Editor:
-
-alter table ad_requests add column if not exists advertiser_id uuid references profiles(id);
-alter table ad_requests add column if not exists advertiser_email text;
-
-drop policy if exists "Anyone can view ad requests" on ad_requests;
-drop policy if exists "Anyone can insert ad requests" on ad_requests;
-drop policy if exists "Anyone can update ad requests" on ad_requests;
-
-create policy "Anyone can insert ad requests"
-on ad_requests for insert
-with check (true);
-
-create policy "Channel owners can view their requests"
-on ad_requests for select
-using (
-  channel_id in (
-    select id from channels where owner_id = auth.uid()
-  )
-  or advertiser_id = auth.uid()
-  or auth.uid() in (select id from profiles where is_admin = true)
-);
-
-create policy "Users can update relevant requests"
-on ad_requests for update
-using (
-  channel_id in (
-    select id from channels where owner_id = auth.uid()
-  )
-  or advertiser_id = auth.uid()
-);
-*/
-
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from './layout'
+import { canLeaveReview, canMarkCompleted, canMarkReplied, getOrderStatusBadge } from '@/lib/deals'
+import { formatAmdWithUsd } from '@/lib/currency'
 
 const glassCardStyle: React.CSSProperties = {
   background: 'rgba(255,255,255,0.06)',
@@ -54,16 +22,6 @@ export default function DashboardPage() {
   return role === 'creator' ? <CreatorDashboard /> : <AdvertiserDashboard />
 }
 
-function getOrderStatusBadge(status: string) {
-  if (status === 'replied') {
-    return { label: 'Отвечено', className: 'bg-green-500/20 text-green-400' }
-  }
-  if (status === 'completed') {
-    return { label: 'Завершён', className: 'bg-blue-500/20 text-blue-400' }
-  }
-  return { label: 'Новый', className: 'bg-purple-500/20 text-purple-400' }
-}
-
 function CreatorDashboard() {
   const [channels, setChannels] = useState<any[]>([])
   const [adRequests, setAdRequests] = useState<any[]>([])
@@ -74,6 +32,7 @@ function CreatorDashboard() {
   const [reviewRating, setReviewRating] = useState(5)
   const [reviewComment, setReviewComment] = useState('')
   const [reviewSubmitted, setReviewSubmitted] = useState<string | null>(null)
+  const [reviewError, setReviewError] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
   const supabase = createClient()
 
@@ -101,7 +60,6 @@ function CreatorDashboard() {
         .select('*')
         .in('channel_id', channelIds)
         .order('created_at', { ascending: false })
-      console.log('Fetched requests:', reqs, 'Error:', error)
       requests = reqs || []
     }
     setAdRequests(requests)
@@ -111,14 +69,15 @@ function CreatorDashboard() {
     monthStart.setHours(0, 0, 0, 0)
 
     const replied = requests.filter((r) => r.status === 'replied')
-    const postsThisMonth = replied.filter(
-      (r) => new Date(r.created_at) >= monthStart
+    const completed = requests.filter((r) => r.status === 'completed')
+    const postsThisMonth = completed.filter(
+      (r) => new Date(r.updated_at || r.created_at) >= monthStart,
     ).length
 
     setMetrics({
       postsThisMonth,
       totalSubscribers,
-      adPosts: replied.length,
+      adPosts: completed.length,
     })
     setLoading(false)
   }
@@ -135,7 +94,20 @@ function CreatorDashboard() {
 
     if (!error) {
       setAdRequests((prev) =>
-        prev.map((r) => (r.id === requestId ? { ...r, status: 'replied' } : r))
+        prev.map((r) => (r.id === requestId ? { ...r, status: 'replied' } : r)),
+      )
+    }
+  }
+
+  const handleMarkCompleted = async (requestId: string) => {
+    const { error } = await supabase
+      .from('ad_requests')
+      .update({ status: 'completed' })
+      .eq('id', requestId)
+
+    if (!error) {
+      setAdRequests((prev) =>
+        prev.map((r) => (r.id === requestId ? { ...r, status: 'completed' } : r)),
       )
     }
   }
@@ -147,6 +119,12 @@ function CreatorDashboard() {
     if (!request) return
 
     const revieweeId = request.advertiser_id || null
+    if (!revieweeId) {
+      setReviewError('Нельзя оставить отзыв: не указан рекламодатель')
+      return
+    }
+
+    setReviewError('')
 
     const { error } = await supabase.from('reviews').insert({
       reviewer_id: userId,
@@ -156,18 +134,21 @@ function CreatorDashboard() {
       deal_id: requestId,
     })
 
-    if (!error) {
-      setReviewSubmitted(requestId)
-      setShowReviewFor(null)
-      setReviewComment('')
-      setReviewRating(5)
+    if (error) {
+      setReviewError('Ошибка: ' + error.message)
+      return
     }
+
+    setReviewSubmitted(requestId)
+    setShowReviewFor(null)
+    setReviewComment('')
+    setReviewRating(5)
   }
 
   const metricCards = [
-    { label: 'Постов в этом месяце', value: metrics.postsThisMonth.toLocaleString() },
-    { label: 'Рост подписчиков', value: metrics.totalSubscribers.toLocaleString() },
-    { label: 'Рекламных постов', value: metrics.adPosts.toLocaleString() },
+    { label: 'Завершено в этом месяце', value: metrics.postsThisMonth.toLocaleString() },
+    { label: 'Всего подписчиков', value: metrics.totalSubscribers.toLocaleString() },
+    { label: 'Завершённых сделок', value: metrics.adPosts.toLocaleString() },
   ]
 
   return (
@@ -241,7 +222,7 @@ function CreatorDashboard() {
                   <div className="text-white/40 text-xs">охваты</div>
                 </div>
                 <div>
-                  <div className="text-purple-400 font-semibold">${channel.ad_price}</div>
+                  <div className="text-purple-400 font-semibold">{formatAmdWithUsd(channel.ad_price)}</div>
                   <div className="text-white/40 text-xs">цена</div>
                 </div>
               </div>
@@ -288,7 +269,9 @@ function CreatorDashboard() {
                         </span>
                       </div>
                       <div className="text-white/40 text-sm">{request.advertiser_contact}</div>
-                      <div className="text-purple-400 font-semibold mt-2">${request.budget}</div>
+                      <div className="text-purple-400 font-semibold mt-2">
+                        {formatAmdWithUsd(request.budget)}
+                      </div>
                       <p className="text-white/70 text-sm mt-2 line-clamp-2">{request.message}</p>
                       <div className="text-white/40 text-xs mt-2">
                         {new Date(request.created_at).toLocaleDateString('ru-RU')}
@@ -329,13 +312,22 @@ function CreatorDashboard() {
                       </div>
 
                       <div className="flex flex-wrap gap-3">
-                        {request.status !== 'replied' && (
+                        {canMarkReplied(request.status) && (
                           <button
                             type="button"
                             onClick={() => handleMarkReplied(request.id)}
                             className="bg-purple-600 hover:bg-purple-500 text-white rounded-full px-4 py-2 text-sm transition"
                           >
                             Отметить как отвечено
+                          </button>
+                        )}
+                        {canMarkCompleted(request.status) && (
+                          <button
+                            type="button"
+                            onClick={() => handleMarkCompleted(request.id)}
+                            className="bg-purple-600 hover:bg-purple-500 text-white rounded-full px-4 py-2 text-sm transition"
+                          >
+                            Завершить заказ
                           </button>
                         )}
                         {reviewSubmitted === request.id ? (
@@ -362,6 +354,9 @@ function CreatorDashboard() {
                               rows={3}
                               className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm resize-none mb-3"
                             />
+                            {reviewError && (
+                              <p className="text-red-400 text-sm mb-3">{reviewError}</p>
+                            )}
                             <div className="flex gap-2">
                               <button
                                 type="button"
@@ -372,26 +367,30 @@ function CreatorDashboard() {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => setShowReviewFor(null)}
+                                onClick={() => {
+                                  setShowReviewFor(null)
+                                  setReviewError('')
+                                }}
                                 className="border border-white/20 text-white/60 rounded-full px-4 py-2 text-sm"
                               >
                                 Отмена
                               </button>
                             </div>
                           </div>
-                        ) : (
+                        ) : canLeaveReview(request.status) ? (
                           <button
                             type="button"
                             onClick={() => {
                               setShowReviewFor(request.id)
                               setReviewRating(5)
                               setReviewComment('')
+                              setReviewError('')
                             }}
                             className="border border-white/20 text-white/80 hover:text-white rounded-full px-4 py-2 text-sm transition"
                           >
                             Оставить отзыв
                           </button>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   )}
@@ -427,9 +426,15 @@ function AdvertiserDashboard() {
     const campaignList = campaignData || []
     setCampaigns(campaignList)
 
+    const { data: completedRequests } = await supabase
+      .from('ad_requests')
+      .select('budget')
+      .eq('advertiser_id', user.id)
+      .eq('status', 'completed')
+
     const activeCampaigns = campaignList.filter((c) => c.status === 'active').length
     const completedDeals = campaignList.filter((c) => c.status === 'completed').length
-    const spent = campaignList.reduce((sum, c) => sum + (Number(c.budget) || 0), 0)
+    const spent = (completedRequests || []).reduce((sum, r) => sum + (Number(r.budget) || 0), 0)
 
     setMetrics({ activeCampaigns, completedDeals, spent })
 

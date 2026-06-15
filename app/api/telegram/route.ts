@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
         if (fileData.ok) {
           const filePath = fileData.result.file_path
-          avatarUrl = `https://api.telegram.org/file/bot${token}/${filePath}`
+          avatarUrl = `/api/telegram/avatar?path=${encodeURIComponent(filePath)}`
         }
       } catch {}
     }

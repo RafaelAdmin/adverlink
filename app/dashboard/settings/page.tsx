@@ -386,7 +386,7 @@ export default function SettingsPage() {
 
             <button
               type="button"
-              onClick={() => window.open('https://adverlink.am/faq', '_blank')}
+              onClick={() => window.open('/faq', '_blank')}
               className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:border-purple-500/50 transition text-left w-full"
             >
               <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">

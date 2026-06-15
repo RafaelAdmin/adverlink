@@ -1,9 +1,9 @@
 import Link from 'next/link'
 
 const phoneChannels = [
-  { name: 'Tech Armenia', subs: '125K', price: '$50', color: '#9333ea' },
-  { name: 'Business AM', subs: '87K', price: '$35', color: '#0d9488' },
-  { name: 'News Today', subs: '56K', price: '$25', color: '#db2777' },
+  { name: 'Tech Armenia', subs: '125K', price: 'от 19 000 AMD', priceUsd: '≈ $50', color: '#9333ea' },
+  { name: 'Business AM', subs: '87K', price: 'от 13 500 AMD', priceUsd: '≈ $35', color: '#0d9488' },
+  { name: 'News Today', subs: '56K', price: 'от 9 600 AMD', priceUsd: '≈ $25', color: '#db2777' },
 ]
 
 const features = [
@@ -262,7 +262,10 @@ export default function Home() {
                       {ch.subs} подписчиков
                     </div>
                   </div>
-                  <div style={{ color: '#9333ea', fontSize: '8px', fontWeight: 'bold' }}>{ch.price}</div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ color: '#9333ea', fontSize: '8px', fontWeight: 'bold' }}>{ch.price}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '6px' }}>{ch.priceUsd}</div>
+                  </div>
                 </div>
               ))}
 

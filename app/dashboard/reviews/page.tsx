@@ -113,9 +113,6 @@ export default function ReviewsPage() {
           .order('created_at', { ascending: false }),
       ])
 
-      console.log('Current user ID:', user.id)
-      console.log('Reviews about me (reviewee_id = me):', aboutMe)
-      console.log('Reviews by me (reviewer_id = me):', byMe)
 
       setAboutMeReviews(aboutMe || [])
       setMyReviews(byMe || [])

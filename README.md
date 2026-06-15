@@ -1,41 +1,40 @@
-<<<<<<< HEAD
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AdverLink
 
-## Getting Started
+Маркетплейс рекламы в Telegram-каналах для создателей контента и рекламодателей.
 
-First, run the development server:
+## Стек
+
+- Next.js 16 (App Router)
+- React 19
+- Supabase (auth, database, storage)
+- Tailwind CSS 4
+
+## Запуск
 
 ```bash
+npm install
+cp .env.example .env.local   # заполните Supabase URL и anon key
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Откройте [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Переменные окружения
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `TELEGRAM_BOT_TOKEN` — для API подтягивания данных канала
 
-## Learn More
+## Основные маршруты
 
-To learn more about Next.js, take a look at the following resources:
+| Путь | Описание |
+|------|----------|
+| `/` | Лендинг |
+| `/dashboard` | Личный кабинет |
+| `/dashboard/marketplace` | Маркетплейс |
+| `/about` | О платформе |
+| `/faq` | FAQ |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Supabase
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-=======
-# adverlink
-Marketplace for Content Makers and Advertisers
->>>>>>> 6940d154f7e42fc37157b789f35028e96a84c0ff
+Схема БД настраивается в Supabase SQL Editor. SQL-подсказки для отдельных фич могут встречаться в комментариях исходников; актуальное состояние — в вашем проекте Supabase.

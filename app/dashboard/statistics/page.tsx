@@ -310,24 +310,32 @@ export default function StatisticsPage() {
             recentDeals,
           })
         } else {
-          const [campaignsRes, monthCampaignsRes, myRequestsRes, reviewsRes] = await Promise.all([
+          const firstDayOfMonth = new Date()
+          firstDayOfMonth.setDate(1)
+          firstDayOfMonth.setHours(0, 0, 0, 0)
+
+          const [campaignsRes, completedRequestsRes, monthCompletedRequestsRes, reviewsRes] = await Promise.all([
             supabase.from('campaigns').select('*').eq('advertiser_id', user.id),
             supabase
-              .from('campaigns')
-              .select('*')
+              .from('ad_requests')
+              .select('budget, created_at, channel_id, status')
               .eq('advertiser_id', user.id)
+              .eq('status', 'completed'),
+            supabase
+              .from('ad_requests')
+              .select('budget')
+              .eq('advertiser_id', user.id)
+              .eq('status', 'completed')
               .gte('created_at', firstDayOfMonth.toISOString()),
-            supabase.from('ad_requests').select('*').eq('advertiser_contact', user.email || ''),
             supabase.from('reviews').select('rating').eq('reviewee_id', user.id),
           ])
 
           const allCampaigns = campaignsRes.data || []
-          const monthCampaigns = monthCampaignsRes.data || []
-          const myRequests = myRequestsRes.data || []
+          const completedRequests = completedRequestsRes.data || []
           const reviewsAbout = reviewsRes.data || []
 
-          const totalSpent = allCampaigns.reduce((s, c) => s + safeNum(c.budget), 0)
-          const monthSpent = monthCampaigns.reduce((s, c) => s + safeNum(c.budget), 0)
+          const totalSpent = completedRequests.reduce((s, r) => s + safeNum(r.budget), 0)
+          const monthSpent = (monthCompletedRequestsRes.data || []).reduce((s, r) => s + safeNum(r.budget), 0)
           const activeCampaigns = allCampaigns.filter((c) => c.status === 'active')
           const completedCampaigns = allCampaigns.filter((c) => c.status === 'completed')
           const avgRating = reviewsAbout.length
@@ -344,7 +352,6 @@ export default function StatisticsPage() {
               ? '—'
               : Object.entries(categoryCount).sort((a, b) => b[1] - a[1])[0][0]
 
-          const completedRequests = myRequests.filter((r) => r.status === 'completed')
           const channelIds = [...new Set(completedRequests.map((r) => r.channel_id).filter(Boolean))]
           let topCreator = '—'
           const channelViews: Record<string, number> = {}

@@ -4,6 +4,15 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from '../layout'
+import {
+  canLeaveReview,
+  canMarkCompleted,
+  canMarkReplied,
+  getAdvertiserSteps,
+  getCreatorSteps,
+  statusBadge,
+} from '@/lib/deals'
+import { formatAmdWithUsd, toUsdEstimate } from '@/lib/currency'
 
 const CAMPAIGN_CATEGORIES = ['Все', 'Новости', 'Технологии', 'Бизнес', 'Спорт', 'Lifestyle', 'Юмор', 'Другое']
 const FORMATS = ['Все', 'Пост', 'Репост', 'Закреп', 'Пакет']
@@ -96,31 +105,6 @@ function openTelegram(contact: string) {
   window.open(`https://t.me/${username}`, '_blank')
 }
 
-function getCreatorSteps(status: string) {
-  return [
-    { label: 'Получен', done: true },
-    { label: 'Просмотрен', done: status !== 'new' },
-    { label: 'Отвечено', done: status === 'replied' || status === 'completed' },
-    { label: 'Завершён', done: status === 'completed' },
-  ]
-}
-
-function getAdvertiserSteps(status: string) {
-  return [
-    { label: 'Отправлен', done: true },
-    { label: 'Просмотрен', done: status !== 'new' },
-    { label: 'Отвечено', done: status === 'replied' || status === 'completed' },
-    { label: 'Размещено', done: status === 'completed' },
-  ]
-}
-
-function statusBadge(status: string) {
-  if (status === 'completed') return { label: 'Завершён', cls: 'bg-blue-500/20 text-blue-400' }
-  if (status === 'replied') return { label: 'Отвечено', cls: 'bg-green-500/20 text-green-400' }
-  if (status === 'cancelled') return { label: 'Отменён', cls: 'bg-white/10 text-white/40' }
-  return { label: 'Новый', cls: 'bg-orange-500/20 text-orange-400' }
-}
-
 function StatusToast({ message }: { message: string | null }) {
   if (!message) return null
   return (
@@ -145,6 +129,10 @@ function CreatorRequestCard({
 }) {
   const [expanded, setExpanded] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [reviewingId, setReviewingId] = useState<string | null>(null)
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewComment, setReviewComment] = useState('')
+  const [reviewSubmitted, setReviewSubmitted] = useState<string[]>([])
   const supabase = createClient()
   const badge = statusBadge(request.status)
   const channel = channelMap[request.channel_id]
@@ -169,7 +157,7 @@ function CreatorRequestCard({
         <div className="flex-1 min-w-0">
           <div className="text-white font-bold truncate">{request.advertiser_name}</div>
           <div className="flex flex-wrap items-center gap-3 mt-1 text-sm">
-            <span className="text-purple-400 font-semibold">${request.budget}</span>
+            <span className="text-purple-400 font-semibold">{formatAmdWithUsd(request.budget)}</span>
             <span className="text-white/40">{new Date(request.created_at).toLocaleDateString('ru-RU')}</span>
             <span className={`px-2 py-0.5 rounded-full text-xs ${badge.cls}`}>{badge.label}</span>
           </div>
@@ -197,7 +185,7 @@ function CreatorRequestCard({
             </div>
             <div>
               <div className="text-white/50 mb-1">Бюджет</div>
-              <p className="text-purple-400 font-semibold">${request.budget}</p>
+              <p className="text-purple-400 font-semibold">{formatAmdWithUsd(request.budget)}</p>
             </div>
             <div>
               <div className="text-white/50 mb-1">Канал</div>
@@ -217,7 +205,7 @@ function CreatorRequestCard({
           <ProgressTracker steps={getCreatorSteps(request.status)} />
 
           <div className="flex flex-wrap gap-2">
-            {request.status === 'new' && (
+            {canMarkReplied(request.status) && (
               <button
                 type="button"
                 disabled={saving}
@@ -227,7 +215,7 @@ function CreatorRequestCard({
                 {saving ? 'Сохранение...' : 'Отметить как отвечено'}
               </button>
             )}
-            {request.status === 'replied' && (
+            {canMarkCompleted(request.status) && (
               <button
                 type="button"
                 disabled={saving}
@@ -243,6 +231,140 @@ function CreatorRequestCard({
               </button>
             )}
           </div>
+
+          {request.status === 'completed' && !reviewSubmitted.includes(request.id) && (
+            <div>
+              {reviewingId === request.id ? (
+                <div style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  marginTop: '12px',
+                }}>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', marginBottom: '10px' }}>
+                    Оставить отзыв об этом рекламодателе
+                  </p>
+
+                  <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewRating(star)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          fontSize: '24px',
+                          cursor: 'pointer',
+                          color: star <= reviewRating ? '#eab308' : 'rgba(255,255,255,0.2)',
+                        }}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+
+                  <textarea
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    placeholder="Напиши отзыв о сотрудничестве..."
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '10px',
+                      padding: '10px 12px',
+                      color: 'white',
+                      fontSize: '13px',
+                      resize: 'none',
+                      outline: 'none',
+                      marginBottom: '10px',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const { data: { user } } = await supabase.auth.getUser()
+                        if (!user || !request.advertiser_id) return
+
+                        await supabase.from('reviews').insert({
+                          reviewer_id: user.id,
+                          reviewee_id: request.advertiser_id,
+                          rating: reviewRating,
+                          comment: reviewComment,
+                          deal_id: null,
+                        })
+
+                        setReviewSubmitted((prev) => [...prev, request.id])
+                        setReviewingId(null)
+                        setReviewComment('')
+                        setReviewRating(5)
+                      }}
+                      style={{
+                        backgroundColor: 'var(--accent-primary, #9333ea)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '20px',
+                        padding: '8px 16px',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Отправить отзыв
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setReviewingId(null)}
+                      style={{
+                        background: 'rgba(255,255,255,0.06)',
+                        color: 'rgba(255,255,255,0.5)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '20px',
+                        padding: '8px 16px',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setReviewingId(request.id)}
+                  style={{
+                    background: 'rgba(234,179,8,0.1)',
+                    color: '#fbbf24',
+                    border: '1px solid rgba(234,179,8,0.2)',
+                    borderRadius: '20px',
+                    padding: '8px 16px',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    marginTop: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <i className="ti ti-star" style={{ fontSize: '14px' }} />
+                  Оставить отзыв
+                </button>
+              )}
+
+              {reviewSubmitted.includes(request.id) && (
+                <p style={{ color: '#4ade80', fontSize: '12px', marginTop: '8px' }}>
+                  ✓ Отзыв отправлен
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -269,7 +391,7 @@ function CampaignCard({
   const [applied, setApplied] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
-  const budgetUsd = Math.round(Number(campaign.budget) / 385)
+  const budgetUsd = toUsdEstimate(campaign.budget)
 
   const handleApply = async () => {
     if (!channelId) { setError('Выберите канал'); return }
@@ -278,8 +400,10 @@ function CampaignCard({
     setError(null)
     const { error: insertError } = await supabase.from('ad_requests').insert({
       channel_id: channelId,
+      advertiser_id: campaign.advertiser_id || null,
       advertiser_name: campaign.name,
       advertiser_contact: campaign.advertiser_email,
+      advertiser_email: campaign.advertiser_email,
       message: message.trim(),
       budget: Number(price) || 0,
       status: 'new',
@@ -321,7 +445,7 @@ function CampaignCard({
             />
           </label>
           <label className="block mb-4">
-            <FilterLabel>Ваша цена ($)</FilterLabel>
+            <FilterLabel>Ваша цена (AMD)</FilterLabel>
             <FilterInput type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)} />
           </label>
           {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
@@ -403,6 +527,7 @@ function AdvertiserRequestCard({
   const [rating, setRating] = useState(5)
   const [comment, setComment] = useState('')
   const [reviewDone, setReviewDone] = useState(false)
+  const [reviewError, setReviewError] = useState('')
   const [saving, setSaving] = useState(false)
   const supabase = createClient()
   const channel = channelMap[request.channel_id]
@@ -431,13 +556,26 @@ function AdvertiserRequestCard({
       revieweeId = ch?.owner_id || null
     }
 
-    await supabase.from('reviews').insert({
+    if (!revieweeId) {
+      setReviewError('Нельзя оставить отзыв: не найден владелец канала')
+      return
+    }
+
+    setReviewError('')
+
+    const { error } = await supabase.from('reviews').insert({
       reviewer_id: userId,
       reviewee_id: revieweeId,
       rating,
       comment: comment.trim(),
       deal_id: request.id || null,
     })
+
+    if (error) {
+      setReviewError('Ошибка: ' + error.message)
+      return
+    }
+
     setReviewDone(true)
     setShowReview(false)
   }
@@ -449,7 +587,7 @@ function AdvertiserRequestCard({
         <div className="flex-1 min-w-0">
           <div className="text-white font-bold truncate">{channel?.name || 'Канал'}</div>
           <div className="flex flex-wrap items-center gap-3 mt-1 text-sm">
-            <span className="text-purple-400 font-semibold">${request.budget}</span>
+            <span className="text-purple-400 font-semibold">{formatAmdWithUsd(request.budget)}</span>
             <span className="text-white/40">{new Date(request.created_at).toLocaleDateString('ru-RU')}</span>
             <span className={`px-2 py-0.5 rounded-full text-xs ${badge.cls}`}>{badge.label}</span>
           </div>
@@ -462,7 +600,7 @@ function AdvertiserRequestCard({
           <div className="space-y-3 text-sm mb-4">
             <div><div className="text-white/50 mb-1">Канал</div><p className="text-white/80">{channel ? `${channel.name} (@${channel.telegram_username})` : '—'}</p></div>
             <div><div className="text-white/50 mb-1">Сообщение</div><p className="text-white/80">{request.message}</p></div>
-            <div><div className="text-white/50 mb-1">Бюджет</div><p className="text-purple-400 font-semibold">${request.budget}</p></div>
+            <div><div className="text-white/50 mb-1">Бюджет</div><p className="text-purple-400 font-semibold">{formatAmdWithUsd(request.budget)}</p></div>
             <div><div className="text-white/50 mb-1">Дата</div><p className="text-white/80">{new Date(request.created_at).toLocaleString('ru-RU')}</p></div>
           </div>
 
@@ -494,8 +632,8 @@ function AdvertiserRequestCard({
                 {saving ? 'Сохранение...' : 'Отменить запрос'}
               </button>
             )}
-            {request.status === 'completed' && !reviewDone && !showReview && (
-              <button type="button" onClick={() => setShowReview(true)} className="border border-white/20 text-white/80 rounded-full px-4 py-2 text-sm">
+            {canLeaveReview(request.status) && !reviewDone && !showReview && (
+              <button type="button" onClick={() => { setShowReview(true); setReviewError('') }} className="border border-white/20 text-white/80 rounded-full px-4 py-2 text-sm">
                 Оставить отзыв
               </button>
             )}
@@ -510,6 +648,7 @@ function AdvertiserRequestCard({
                 ))}
               </div>
               <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} placeholder="Комментарий..." className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-sm w-full mb-3 resize-none outline-none focus:border-purple-500" />
+              {reviewError && <p className="text-red-400 text-sm mb-3">{reviewError}</p>}
               <div className="flex gap-2">
                 <button type="button" onClick={submitReview} className="bg-purple-600 text-white rounded-full px-4 py-2 text-sm">Отправить</button>
                 <button type="button" onClick={() => setShowReview(false)} className="border border-white/20 text-white/60 rounded-full px-4 py-2 text-sm">Отмена</button>
@@ -591,13 +730,12 @@ export default function DashboardMarketplacePage() {
         const channelIds = (uc || []).map((c) => c.id)
 
         if (channelIds.length > 0) {
-          const { data: mine, error } = await supabase
+          const { data: mine } = await supabase
             .from('ad_requests')
             .select('*, channels(name, avatar_url)')
             .in('channel_id', channelIds)
             .order('created_at', { ascending: false })
 
-          console.log('My requests:', mine, error)
           setMyAdRequests(mine || [])
         } else {
           setMyAdRequests([])
@@ -628,15 +766,12 @@ export default function DashboardMarketplacePage() {
           .eq('owner_id', user.id)
         setMyChannelIds((myChannels || []).map((c) => c.id))
 
-        const { data: allReqs } = await supabase
+        const { data: sent } = await supabase
           .from('ad_requests')
           .select('*')
+          .eq('advertiser_id', user.id)
           .order('created_at', { ascending: false })
-        setSentRequests(
-          (allReqs || []).filter(
-            (r) => r.advertiser_id === user.id || r.advertiser_contact === user.email,
-          ),
-        )
+        setSentRequests(sent || [])
       }
       setLoading(false)
     }
@@ -814,7 +949,9 @@ export default function DashboardMarketplacePage() {
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <div className="text-purple-400 font-semibold">{channel.ad_price ? `от $${channel.ad_price}` : 'Цена по запросу'}</div>
+                      <div className="text-purple-400 font-semibold">
+                        {channel.ad_price ? `от ${formatAmdWithUsd(channel.ad_price)}` : 'Цена по запросу'}
+                      </div>
                       {myChannelIds.includes(channel.id) ? (
                         <span
                           style={{

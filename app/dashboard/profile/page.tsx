@@ -104,8 +104,6 @@ export default function ProfilePage() {
       .eq('id', user.id)
       .select()
 
-    console.log('Save result:', data, error)
-
     setSaving(false)
 
     if (error) {
