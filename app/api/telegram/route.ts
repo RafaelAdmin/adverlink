@@ -41,6 +41,9 @@ export async function GET(request: NextRequest) {
 
         if (fileData.ok) {
           const filePath = fileData.result.file_path
+          console.log('Got file path:', filePath)
+
+          avatarUrl = `/api/telegram/avatar?path=${encodeURIComponent(filePath)}`
 
           const supabaseAdmin = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -52,6 +55,7 @@ export async function GET(request: NextRequest) {
             const imageResponse = await fetch(
               `https://api.telegram.org/file/bot${token}/${filePath}`
             )
+            console.log('Image fetch status:', imageResponse.status)
 
             if (imageResponse.ok) {
               const imageBuffer = await imageResponse.arrayBuffer()
@@ -66,19 +70,18 @@ export async function GET(request: NextRequest) {
                   contentType: 'image/jpeg',
                   upsert: true,
                 })
+              console.log('Upload error:', uploadError)
 
               if (!uploadError) {
                 const { data: { publicUrl } } = supabaseAdmin.storage
                   .from('avatars')
                   .getPublicUrl(storagePath)
+                console.log('Public URL:', publicUrl)
 
                 avatarUrl = publicUrl
               }
             }
-          } catch {
-            // If upload fails, fall back to proxy URL
-            avatarUrl = `/api/telegram/avatar?path=${encodeURIComponent(filePath)}`
-          }
+          } catch {}
         }
       } catch {}
     }
