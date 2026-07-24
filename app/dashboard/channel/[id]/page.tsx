@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { formatAmdWithUsd } from '@/lib/currency'
+import { CurrencyCode, formatPrice, getExchangeRates } from '@/lib/currency'
+import CurrencySelector from '../components/CurrencySelector'
 
 export default function ChannelProfilePage() {
   const params = useParams()
@@ -13,8 +14,14 @@ export default function ChannelProfilePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isMyChannel, setIsMyChannel] = useState(false)
+  const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>('USD')
+  const [rates, setRates] = useState<Record<string, number>>({})
   const router = useRouter()
   const supabase = createClient()
+
+  useEffect(() => {
+    getExchangeRates().then(setRates)
+  }, [])
 
   useEffect(() => {
     const load = async () => {
@@ -80,11 +87,27 @@ export default function ChannelProfilePage() {
   const estimatedEngagement =
     subscribers > 0 ? ((avgViews / subscribers) * 100).toFixed(1) : '0'
 
+  const convertChannelPrice = (price: number, fromCurrency: string = 'USD'): string => {
+    if (!price) return '—'
+    if (!rates[fromCurrency] || !rates[displayCurrency]) {
+      return formatPrice(price, fromCurrency as CurrencyCode)
+    }
+    const inUSD = price / rates[fromCurrency]
+    const converted = Math.round(inUSD * rates[displayCurrency])
+    return formatPrice(converted, displayCurrency)
+  }
+
   const metrics = [
     { label: 'Подписчики', value: subscribers.toLocaleString() },
     { label: 'Средние охваты', value: avgViews.toLocaleString() },
     { label: 'Вовлечённость', value: `${channel.engagement_rate ?? 0}%` },
-    { label: 'Цена рекламы', value: channel.ad_price ? formatAmdWithUsd(channel.ad_price) : '—', accent: true },
+    {
+      label: 'Цена рекламы',
+      value: channel.ad_price
+        ? convertChannelPrice(channel.ad_price, channel.ad_price_currency || 'USD')
+        : '—',
+      accent: true,
+    },
     { label: 'Страна', value: channel.country || '—' },
     { label: 'Язык', value: channel.language || '—' },
   ]
@@ -154,6 +177,26 @@ export default function ChannelProfilePage() {
               </div>
             </div>
           </div>
+        </div>
+
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          marginBottom: '16px',
+          padding: '12px 16px',
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '14px',
+        }}>
+          <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>
+            Показывать цены в:
+          </span>
+          <CurrencySelector
+            value={displayCurrency}
+            onChange={setDisplayCurrency}
+            size="sm"
+          />
         </div>
 
         {/* Metrics */}

@@ -1,9 +1,15 @@
+/*
+Run in Supabase SQL Editor:
+alter table channels add column if not exists ad_price_currency text default 'USD';
+*/
 'use client'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import CurrencySelector from '@/app/dashboard/components/CurrencySelector'
+import { CurrencyCode } from '@/lib/currency'
 
 export default function AddChannelPage() {
   const [user, setUser] = useState<any>(null)
@@ -13,6 +19,7 @@ export default function AddChannelPage() {
   const [subscriberCount, setSubscriberCount] = useState('')
   const [avgViews, setAvgViews] = useState('')
   const [adPrice, setAdPrice] = useState('')
+  const [adPriceCurrency, setAdPriceCurrency] = useState<CurrencyCode>('USD')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [fetching, setFetching] = useState(false)
@@ -83,6 +90,7 @@ export default function AddChannelPage() {
         subscriber_count: subscriberCount ? Number(subscriberCount) : 0,
         avg_views: avgViews ? Number(avgViews) : 0,
         ad_price: adPrice ? Number(adPrice) : null,
+        ad_price_currency: adPriceCurrency,
         avatar_url: avatarUrl || null,
         verification_status: 'pending',
         is_active: true,
@@ -219,18 +227,27 @@ export default function AddChannelPage() {
         </div>
 
         {/* Цена */}
-        <label className="flex flex-col gap-2">
-          <span className="text-white/70 text-sm">Цена рекламы (USD)</span>
-          <input
-            type="number"
-            min={0}
-            step="0.01"
-            value={adPrice}
-            onChange={(e) => setAdPrice(e.target.value)}
-            placeholder="50"
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus-accent transition text-sm"
-          />
-        </label>
+        <div className="flex flex-col gap-2">
+          <label className="text-white/70 text-sm">Цена рекламы</label>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <CurrencySelector
+              value={adPriceCurrency}
+              onChange={setAdPriceCurrency}
+            />
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={adPrice}
+              onChange={(e) => setAdPrice(e.target.value)}
+              placeholder="100"
+              className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm"
+            />
+          </div>
+          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>
+            Укажите цену в удобной валюте
+          </span>
+        </div>
 
         {/* Важное примечание */}
         <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-3">

@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from '../layout'
-import { formatAmdWithUsd, toUsdEstimate } from '@/lib/currency'
+import { formatAmdWithUsd, toUsdEstimate, CurrencyCode, formatPrice, getExchangeRates } from '@/lib/currency'
+import CurrencySelector from '../components/CurrencySelector'
 import { AdvertiserDealCard, CreatorDealCard } from '../components/DealManagement'
 
 const CAMPAIGN_CATEGORIES = ['Все', 'Новости', 'Технологии', 'Бизнес', 'Спорт', 'Lifestyle', 'Юмор', 'Другое']
@@ -254,8 +255,14 @@ export default function DashboardMarketplacePage() {
   const [chVerifiedOnly, setChVerifiedOnly] = useState(false)
   const [chSort, setChSort] = useState('date')
   const [toast, setToast] = useState<string | null>(null)
+  const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>('USD')
+  const [rates, setRates] = useState<Record<string, number>>({})
 
   const creatorChannelMap = Object.fromEntries(userChannels.map((c) => [c.id, c]))
+
+  useEffect(() => {
+    getExchangeRates().then(setRates)
+  }, [])
 
   useEffect(() => {
     if (!toast) return
@@ -390,6 +397,16 @@ export default function DashboardMarketplacePage() {
     setChMinPrice(''); setChMaxPrice(''); setChVerifiedOnly(false); setChSort('date')
   }
 
+  const convertChannelPrice = (price: number, fromCurrency: string = 'USD'): string => {
+    if (!price) return 'По запросу'
+    if (!rates[fromCurrency] || !rates[displayCurrency]) {
+      return formatPrice(price, fromCurrency as CurrencyCode)
+    }
+    const inUSD = price / rates[fromCurrency]
+    const converted = Math.round(inUSD * rates[displayCurrency])
+    return formatPrice(converted, displayCurrency)
+  }
+
   const filteredSentRequests = sentRequests.filter((r) => {
     const ch = channelMap[r.channel_id]
     const q = search.toLowerCase()
@@ -423,6 +440,29 @@ export default function DashboardMarketplacePage() {
 
         {advertiserTab === 'catalog' && (
           <>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              marginBottom: '16px',
+              padding: '12px 16px',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '14px',
+            }}>
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>
+                Показывать цены в:
+              </span>
+              <CurrencySelector
+                value={displayCurrency}
+                onChange={setDisplayCurrency}
+                size="sm"
+              />
+              <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>
+                Курс обновляется ежедневно
+              </span>
+            </div>
+
             <button type="button" onClick={() => setShowChannelFilters(!showChannelFilters)} className="border border-white/20 text-white/70 rounded-full px-4 py-2 text-sm mb-4 hover:text-white transition">
               Фильтры {showChannelFilters ? '▲' : '▼'}
             </button>
@@ -498,7 +538,9 @@ export default function DashboardMarketplacePage() {
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="text-price-accent">
-                        {channel.ad_price ? `от ${formatAmdWithUsd(channel.ad_price)}` : 'Цена по запросу'}
+                        {channel.ad_price
+                          ? `от ${convertChannelPrice(channel.ad_price, channel.ad_price_currency || 'USD')}`
+                          : 'Цена по запросу'}
                       </div>
                       {myChannelIds.includes(channel.id) ? (
                         <span
