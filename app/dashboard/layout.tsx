@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { applyAccentColor, getAccentColor } from '@/lib/theme'
 import ProfileCard from './components/ProfileCard'
+import BreathingBackground from './components/BreathingBackground'
 
 type Role = 'creator' | 'advertiser'
 
@@ -30,11 +31,13 @@ function SidebarItem({
   label,
   href,
   active,
+  badge,
 }: {
   icon: string
   label: string
   href: string
   active?: boolean
+  badge?: number
 }) {
   return (
     <Link
@@ -65,13 +68,28 @@ function SidebarItem({
           transition: 'color 0.2s',
         }}
       />
-      <span style={{ fontWeight: active ? '500' : '400' }}>{label}</span>
-      {active && (
+      <span style={{ flex: 1, fontWeight: active ? '500' : '400' }}>{label}</span>
+      {badge && badge > 0 ? (
+        <span
+          style={{
+            backgroundColor: '#dc2626',
+            color: 'white',
+            fontSize: '10px',
+            fontWeight: '700',
+            padding: '2px 6px',
+            borderRadius: '10px',
+            minWidth: '18px',
+            textAlign: 'center',
+          }}
+        >
+          {badge > 99 ? '99+' : badge}
+        </span>
+      ) : active ? (
         <div
-          className="ml-auto w-1.5 h-1.5 rounded-full"
+          className="w-1.5 h-1.5 rounded-full"
           style={{ backgroundColor: 'var(--accent-primary, #9333ea)' }}
         />
-      )}
+      ) : null}
     </Link>
   )
 }
@@ -210,7 +228,7 @@ function GlobalSearch() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query && setOpen(true)}
-          className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 pl-9 text-white placeholder-white/30 outline-none focus:border-purple-500 transition w-72 text-sm"
+          className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 pl-9 text-white placeholder-white/30 outline-none focus-accent transition w-72 text-sm"
         />
         <span className="absolute left-3 top-2.5 text-white/30 text-sm">🔍</span>
         {query && (
@@ -247,7 +265,7 @@ function GlobalSearch() {
                       {ch.avatar_url ? (
                         <img src={ch.avatar_url} alt={ch.name} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full avatar-accent-fallback flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                           {ch.name[0]}
                         </div>
                       )}
@@ -484,6 +502,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   )
   const [showProfileCard, setShowProfileCard] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [newRequestsCount, setNewRequestsCount] = useState(0)
+  const [pendingReviewCount, setPendingReviewCount] = useState(0)
 
   const refreshAvatar = useCallback(async () => {
     if (!user) return
@@ -542,6 +562,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       if (profile?.is_admin) setIsAdmin(true)
       if (profile?.avatar_url) setAvatarUrl(profile.avatar_url)
+
+      const { data: userChannels } = await supabase
+        .from('channels')
+        .select('id')
+        .eq('owner_id', user.id)
+      const channelIds = (userChannels || []).map((c) => c.id)
+
+      if (channelIds.length > 0) {
+        const { count: newCount } = await supabase
+          .from('ad_requests')
+          .select('*', { count: 'exact', head: true })
+          .in('channel_id', channelIds)
+          .eq('status', 'new')
+        setNewRequestsCount(newCount || 0)
+      } else {
+        setNewRequestsCount(0)
+      }
+
+      const { count: pendingCount } = await supabase
+        .from('ad_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('advertiser_id', user.id)
+        .eq('status', 'submitted')
+      setPendingReviewCount(pendingCount || 0)
     }
     getUser()
   }, [])
@@ -557,12 +601,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!user) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center transition-all duration-500"
-        style={{ background: currentGradient }}
+      <BreathingBackground
+        gradient={currentGradient}
+        className="min-h-screen flex items-center justify-center"
       >
         <div className="text-white/50">Загрузка...</div>
-      </div>
+      </BreathingBackground>
     )
   }
 
@@ -572,19 +616,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (isStandalonePage) {
     return (
       <DashboardContext.Provider value={{ role, toggleRole, user, search, avatarUrl }}>
-        {children}
+        <BreathingBackground gradient={currentGradient}>
+          {children}
+        </BreathingBackground>
       </DashboardContext.Provider>
     )
   }
 
   return (
     <DashboardContext.Provider value={{ role, toggleRole, user, search, avatarUrl }}>
-      <div
-        className="min-h-screen flex transition-all duration-500"
-        style={{ background: currentGradient }}
-      >
+      <BreathingBackground gradient={currentGradient} lockViewport className="flex h-full">
         <aside
-          className="w-64 flex flex-col gap-1 p-4"
+          className="w-64 shrink-0 h-full flex flex-col gap-1 p-4 overflow-y-auto"
           style={{
             background: 'rgba(255,255,255,0.04)',
             backdropFilter: 'blur(20px)',
@@ -592,8 +635,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             borderRight: '1px solid rgba(255,255,255,0.08)',
           }}
         >
-          <Link href="/dashboard" className="flex items-center gap-2 px-4 py-3 mb-4">
-            <span className="text-white text-base font-semibold">
+          <Link href="/dashboard" className="flex items-center gap-2 px-4 py-3 mb-4 shrink-0">
+            <span className="text-white text-2xl font-bold tracking-tight">
               Adver<span style={{ color: 'var(--accent-primary, #9333ea)' }}>Link</span>
             </span>
           </Link>
@@ -617,7 +660,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {role === 'creator' ? (
             <>
               <SidebarItem icon="ti-brand-telegram" label="Мои каналы" href="/dashboard" active={isActive('/dashboard')} />
-              <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} />
+              <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} badge={newRequestsCount} />
               <SidebarItem icon="ti-chart-line" label="Статистика" href="/dashboard/statistics" active={isActive('/dashboard/statistics')} />
               <SidebarItem icon="ti-star" label="Отзывы" href="/dashboard/reviews" active={isActive('/dashboard/reviews')} />
               <SidebarItem icon="ti-users" label="Друзья" href="/dashboard/friends" active={isActive('/dashboard/friends')} />
@@ -627,7 +670,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ) : (
             <>
               <SidebarItem icon="ti-layout-dashboard" label="Мои кампании" href="/dashboard" active={isActive('/dashboard')} />
-              <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} />
+              <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} badge={pendingReviewCount} />
               <SidebarItem icon="ti-chart-line" label="Статистика" href="/dashboard/statistics" active={isActive('/dashboard/statistics')} />
               <SidebarItem icon="ti-star" label="Отзывы" href="/dashboard/reviews" active={isActive('/dashboard/reviews')} />
               <SidebarItem icon="ti-users" label="Друзья" href="/dashboard/friends" active={isActive('/dashboard/friends')} />
@@ -671,9 +714,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </aside>
 
-        <div className="flex-1 flex flex-col" style={{ minWidth: 0 }}>
+        <div className="flex-1 flex flex-col min-h-0 min-w-0 h-full">
           <header
-            className="flex items-center justify-between px-6 py-3"
+            className="shrink-0 flex items-center justify-between px-6 py-3 z-20"
             style={{
               background: 'rgba(255,255,255,0.03)',
               backdropFilter: 'blur(20px)',
@@ -729,9 +772,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             />
           )}
 
-          <main className="flex-1 p-8 overflow-auto">{children}</main>
+          <main className="flex-1 min-h-0 overflow-y-auto p-8">{children}</main>
         </div>
-      </div>
+      </BreathingBackground>
     </DashboardContext.Provider>
   )
 }

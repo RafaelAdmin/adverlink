@@ -171,7 +171,7 @@ export default function CreateCampaignPage() {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500 transition"
+            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition"
           />
         </label>
 
@@ -181,7 +181,7 @@ export default function CreateCampaignPage() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500 transition resize-none"
+            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition resize-none"
           />
         </label>
 
@@ -192,7 +192,7 @@ export default function CreateCampaignPage() {
             value={budget}
             onChange={(e) => setBudget(e.target.value)}
             placeholder="50000"
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500 transition"
+            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition"
           />
           {budgetNum > 0 && (
             <span className="text-white/50 text-sm">≈ ${budgetUsd} USD</span>
@@ -204,7 +204,7 @@ export default function CreateCampaignPage() {
           <input
             value={productLink}
             onChange={(e) => setProductLink(e.target.value)}
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500 transition"
+            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition"
           />
         </label>
 
@@ -213,7 +213,7 @@ export default function CreateCampaignPage() {
           <input
             value={targetAudience}
             onChange={(e) => setTargetAudience(e.target.value)}
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500 transition"
+            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition"
           />
         </label>
 
@@ -223,7 +223,7 @@ export default function CreateCampaignPage() {
             type="date"
             value={preferredDate}
             onChange={(e) => setPreferredDate(e.target.value)}
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500 transition"
+            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white outline-none focus-accent transition"
           />
         </label>
 
@@ -232,7 +232,7 @@ export default function CreateCampaignPage() {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500 transition"
+            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white outline-none focus-accent transition"
           >
             {CATEGORIES.map((cat) => (
               <option key={cat} value={cat} className="bg-[#1a1560]">{cat}</option>
@@ -248,7 +248,7 @@ export default function CreateCampaignPage() {
             value={minSubscribers}
             onChange={(e) => setMinSubscribers(e.target.value)}
             placeholder="Необязательно"
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500 transition"
+            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition"
           />
         </label>
 
@@ -258,7 +258,7 @@ export default function CreateCampaignPage() {
             value={requirements}
             onChange={(e) => setRequirements(e.target.value)}
             rows={2}
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500 transition resize-none"
+            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition resize-none"
           />
         </label>
       </div>
@@ -269,7 +269,7 @@ export default function CreateCampaignPage() {
         type="button"
         onClick={handleSubmit}
         disabled={submitting}
-        className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-full px-6 py-2.5 text-sm font-medium w-full transition"
+        className="btn-accent disabled:opacity-50 text-white rounded-full px-6 py-2.5 text-sm font-medium w-full transition"
       >
         {submitting ? 'Сохранение...' : editId ? 'Сохранить изменения' : 'Опубликовать кампанию'}
       </button>

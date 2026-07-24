@@ -164,7 +164,7 @@ export default function RequestAdPage() {
                 required
                 value={advertiserName}
                 onChange={(e) => setAdvertiserName(e.target.value)}
-                className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm"
+                className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition text-sm"
               />
             </label>
 
@@ -175,7 +175,7 @@ export default function RequestAdPage() {
                 value={contact}
                 onChange={(e) => setContact(e.target.value)}
                 placeholder="@telegram or email"
-                className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm"
+                className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition text-sm"
               />
             </label>
 
@@ -188,7 +188,7 @@ export default function RequestAdPage() {
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
                 placeholder="100"
-                className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm"
+                className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition text-sm"
               />
             </label>
 
@@ -200,7 +200,7 @@ export default function RequestAdPage() {
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Describe what you want to advertise"
                 rows={4}
-                className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm resize-none"
+                className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition text-sm resize-none"
               />
             </label>
 
@@ -209,7 +209,7 @@ export default function RequestAdPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 transition text-white rounded-full px-6 py-2.5 text-sm font-medium mt-2"
+              className="btn-accent disabled:opacity-50 transition text-white rounded-full px-6 py-2.5 text-sm font-medium mt-2"
             >
               {submitting ? 'Отправка...' : 'Отправить запрос'}
             </button>

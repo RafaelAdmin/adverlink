@@ -5,8 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from './layout'
-import { canLeaveReview, canMarkCompleted, canMarkReplied, getOrderStatusBadge } from '@/lib/deals'
 import { formatAmdWithUsd } from '@/lib/currency'
+import { CreatorDealCard, AdvertiserDealCard } from './components/DealManagement'
 
 const glassCardStyle: React.CSSProperties = {
   background: 'rgba(255,255,255,0.06)',
@@ -27,13 +27,7 @@ function CreatorDashboard() {
   const [adRequests, setAdRequests] = useState<any[]>([])
   const [metrics, setMetrics] = useState({ postsThisMonth: 0, totalSubscribers: 0, adPosts: 0 })
   const [loading, setLoading] = useState(true)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [showReviewFor, setShowReviewFor] = useState<string | null>(null)
-  const [reviewRating, setReviewRating] = useState(5)
-  const [reviewComment, setReviewComment] = useState('')
-  const [reviewSubmitted, setReviewSubmitted] = useState<string | null>(null)
-  const [reviewError, setReviewError] = useState('')
-  const [userId, setUserId] = useState<string | null>(null)
+  const [userId, setUserId] = useState('')
   const supabase = createClient()
 
   const channelMap = Object.fromEntries(channels.map((c) => [c.id, c]))
@@ -68,10 +62,9 @@ function CreatorDashboard() {
     monthStart.setDate(1)
     monthStart.setHours(0, 0, 0, 0)
 
-    const replied = requests.filter((r) => r.status === 'replied')
     const completed = requests.filter((r) => r.status === 'completed')
     const postsThisMonth = completed.filter(
-      (r) => new Date(r.updated_at || r.created_at) >= monthStart,
+      (r) => new Date(r.completed_at || r.updated_at || r.created_at) >= monthStart,
     ).length
 
     setMetrics({
@@ -86,63 +79,11 @@ function CreatorDashboard() {
     loadData()
   }, [])
 
-  const handleMarkReplied = async (requestId: string) => {
-    const { error } = await supabase
-      .from('ad_requests')
-      .update({ status: 'replied' })
-      .eq('id', requestId)
-
-    if (!error) {
-      setAdRequests((prev) =>
-        prev.map((r) => (r.id === requestId ? { ...r, status: 'replied' } : r)),
-      )
+  const handleDealUpdate = (id: string, patch: Record<string, unknown>) => {
+    setAdRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
+    if (patch.status === 'completed') {
+      setMetrics((m) => ({ ...m, adPosts: m.adPosts + 1 }))
     }
-  }
-
-  const handleMarkCompleted = async (requestId: string) => {
-    const { error } = await supabase
-      .from('ad_requests')
-      .update({ status: 'completed' })
-      .eq('id', requestId)
-
-    if (!error) {
-      setAdRequests((prev) =>
-        prev.map((r) => (r.id === requestId ? { ...r, status: 'completed' } : r)),
-      )
-    }
-  }
-
-  const handleSubmitReview = async (requestId: string) => {
-    if (!userId) return
-
-    const request = adRequests.find((r) => r.id === requestId)
-    if (!request) return
-
-    const revieweeId = request.advertiser_id || null
-    if (!revieweeId) {
-      setReviewError('Нельзя оставить отзыв: не указан рекламодатель')
-      return
-    }
-
-    setReviewError('')
-
-    const { error } = await supabase.from('reviews').insert({
-      reviewer_id: userId,
-      reviewee_id: revieweeId,
-      rating: reviewRating,
-      comment: reviewComment.trim(),
-      deal_id: requestId,
-    })
-
-    if (error) {
-      setReviewError('Ошибка: ' + error.message)
-      return
-    }
-
-    setReviewSubmitted(requestId)
-    setShowReviewFor(null)
-    setReviewComment('')
-    setReviewRating(5)
   }
 
   const metricCards = [
@@ -183,7 +124,7 @@ function CreatorDashboard() {
           <div className="text-white/40 text-sm mb-6">Добавь свой первый Telegram канал</div>
           <Link
             href="/dashboard/add-channel"
-            className="bg-purple-600 hover:bg-purple-500 transition text-white px-6 py-2.5 rounded-full text-sm font-medium"
+            className="btn-accent transition text-white px-6 py-2.5 rounded-full text-sm font-medium"
           >
             Добавить канал
           </Link>
@@ -194,7 +135,7 @@ function CreatorDashboard() {
             <Link
               key={channel.id}
               href={`/dashboard/edit-channel/${channel.id}`}
-              className="flex items-center gap-6 hover:border-purple-500/50 transition cursor-pointer"
+              className="flex items-center gap-6 hover-border-accent transition cursor-pointer"
               style={glassCardStyle}
             >
               {channel.avatar_url ? (
@@ -204,7 +145,7 @@ function CreatorDashboard() {
                   className="w-12 h-12 rounded-full object-cover flex-shrink-0"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                <div className="w-12 h-12 rounded-full avatar-accent-fallback flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                   {channel.name[0]}
                 </div>
               )}
@@ -222,7 +163,7 @@ function CreatorDashboard() {
                   <div className="text-white/40 text-xs">охваты</div>
                 </div>
                 <div>
-                  <div className="text-purple-400 font-semibold">{formatAmdWithUsd(channel.ad_price)}</div>
+                  <div className="text-price-accent">{formatAmdWithUsd(channel.ad_price)}</div>
                   <div className="text-white/40 text-xs">цена</div>
                 </div>
               </div>
@@ -242,161 +183,23 @@ function CreatorDashboard() {
       )}
 
       <div className="mt-10">
-        <h2 className="text-xl font-bold text-white mb-4">История заказов</h2>
+        <h2 className="text-xl font-bold text-white mb-4">Управление заказами</h2>
         {adRequests.length === 0 ? (
           <div className="text-center text-white/50" style={glassCardStyle}>
             Пока нет заказов
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
-            {adRequests.map((request) => {
-              const badge = getOrderStatusBadge(request.status)
-              const isExpanded = expandedId === request.id
-              const channel = channelMap[request.channel_id]
-
-              return (
-                <div key={request.id} className="overflow-hidden" style={glassCardStyle}>
-                  <button
-                    type="button"
-                    onClick={() => setExpandedId(isExpanded ? null : request.id)}
-                    className="w-full p-6 flex items-start justify-between gap-4 text-left hover:bg-white/5 transition"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1 flex-wrap">
-                        <div className="text-white font-semibold">{request.advertiser_name}</div>
-                        <span className={`px-3 py-1 rounded-full text-xs ${badge.className}`}>
-                          {badge.label}
-                        </span>
-                      </div>
-                      <div className="text-white/40 text-sm">{request.advertiser_contact}</div>
-                      <div className="text-purple-400 font-semibold mt-2">
-                        {formatAmdWithUsd(request.budget)}
-                      </div>
-                      <p className="text-white/70 text-sm mt-2 line-clamp-2">{request.message}</p>
-                      <div className="text-white/40 text-xs mt-2">
-                        {new Date(request.created_at).toLocaleDateString('ru-RU')}
-                      </div>
-                    </div>
-                    <span className="text-white/40 text-lg flex-shrink-0">→</span>
-                  </button>
-
-                  {isExpanded && (
-                    <div className="border-t border-white/10 p-6">
-                      <div className="space-y-3 text-sm mb-6">
-                        <div>
-                          <div className="text-white/50 mb-1">Сообщение</div>
-                          <p className="text-white/80">{request.message}</p>
-                        </div>
-                        <div>
-                          <div className="text-white/50 mb-1">Контакт</div>
-                          <p className="text-white/80">{request.advertiser_contact}</p>
-                        </div>
-                        <div>
-                          <div className="text-white/50 mb-1">Канал</div>
-                          <p className="text-white/80">
-                            {channel ? `${channel.name} (@${channel.telegram_username})` : '—'}
-                          </p>
-                        </div>
-                        <div>
-                          <div className="text-white/50 mb-1">Дата и время</div>
-                          <p className="text-white/80">
-                            {new Date(request.created_at).toLocaleString('ru-RU')}
-                          </p>
-                        </div>
-                        <div>
-                          <div className="text-white/50 mb-1">Статус</div>
-                          <span className={`px-3 py-1 rounded-full text-xs inline-block ${badge.className}`}>
-                            {badge.label}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-3">
-                        {canMarkReplied(request.status) && (
-                          <button
-                            type="button"
-                            onClick={() => handleMarkReplied(request.id)}
-                            className="bg-purple-600 hover:bg-purple-500 text-white rounded-full px-4 py-2 text-sm transition"
-                          >
-                            Отметить как отвечено
-                          </button>
-                        )}
-                        {canMarkCompleted(request.status) && (
-                          <button
-                            type="button"
-                            onClick={() => handleMarkCompleted(request.id)}
-                            className="bg-purple-600 hover:bg-purple-500 text-white rounded-full px-4 py-2 text-sm transition"
-                          >
-                            Завершить заказ
-                          </button>
-                        )}
-                        {reviewSubmitted === request.id ? (
-                          <span className="text-green-400 text-sm flex items-center">✓ Отзыв отправлен</span>
-                        ) : showReviewFor === request.id ? (
-                          <div className="w-full bg-white/5 border border-white/10 rounded-xl p-4 mt-2">
-                            <div className="text-white text-sm font-medium mb-3">Оставить отзыв</div>
-                            <div className="flex gap-1 mb-3">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <button
-                                  key={star}
-                                  type="button"
-                                  onClick={() => setReviewRating(star)}
-                                  className={`text-xl transition ${star <= reviewRating ? 'text-yellow-400' : 'text-white/20'}`}
-                                >
-                                  ★
-                                </button>
-                              ))}
-                            </div>
-                            <textarea
-                              value={reviewComment}
-                              onChange={(e) => setReviewComment(e.target.value)}
-                              placeholder="Комментарий..."
-                              rows={3}
-                              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm resize-none mb-3"
-                            />
-                            {reviewError && (
-                              <p className="text-red-400 text-sm mb-3">{reviewError}</p>
-                            )}
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleSubmitReview(request.id)}
-                                className="bg-purple-600 hover:bg-purple-500 text-white rounded-full px-4 py-2 text-sm"
-                              >
-                                Отправить
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setShowReviewFor(null)
-                                  setReviewError('')
-                                }}
-                                className="border border-white/20 text-white/60 rounded-full px-4 py-2 text-sm"
-                              >
-                                Отмена
-                              </button>
-                            </div>
-                          </div>
-                        ) : canLeaveReview(request.status) ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowReviewFor(request.id)
-                              setReviewRating(5)
-                              setReviewComment('')
-                              setReviewError('')
-                            }}
-                            className="border border-white/20 text-white/80 hover:text-white rounded-full px-4 py-2 text-sm transition"
-                          >
-                            Оставить отзыв
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+          <div className="flex flex-col gap-2">
+            {adRequests.map((request) => (
+              <CreatorDealCard
+                key={request.id}
+                request={request}
+                channelMap={channelMap}
+                userId={userId}
+                onUpdate={handleDealUpdate}
+                linkToDeal
+              />
+            ))}
           </div>
         )}
       </div>
@@ -407,6 +210,9 @@ function CreatorDashboard() {
 function AdvertiserDashboard() {
   const router = useRouter()
   const [campaigns, setCampaigns] = useState<any[]>([])
+  const [adOrders, setAdOrders] = useState<any[]>([])
+  const [orderChannelMap, setOrderChannelMap] = useState<Record<string, any>>({})
+  const [userId, setUserId] = useState('')
   const [responseCounts, setResponseCounts] = useState<Record<string, number>>({})
   const [metrics, setMetrics] = useState({ activeCampaigns: 0, completedDeals: 0, spent: 0 })
   const [loading, setLoading] = useState(true)
@@ -416,6 +222,7 @@ function AdvertiserDashboard() {
   const loadCampaigns = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
+    setUserId(user.id)
 
     const { data: campaignData } = await supabase
       .from('campaigns')
@@ -426,6 +233,25 @@ function AdvertiserDashboard() {
     const campaignList = campaignData || []
     setCampaigns(campaignList)
 
+    const { data: orders } = await supabase
+      .from('ad_requests')
+      .select('*')
+      .eq('advertiser_id', user.id)
+      .order('created_at', { ascending: false })
+
+    const orderList = orders || []
+    setAdOrders(orderList)
+
+    const channelIds = [...new Set(orderList.map((o) => o.channel_id).filter(Boolean))]
+    if (channelIds.length > 0) {
+      const { data: chData } = await supabase.from('channels').select('*').in('id', channelIds)
+      const map: Record<string, any> = {}
+      ;(chData || []).forEach((c) => {
+        map[c.id] = c
+      })
+      setOrderChannelMap(map)
+    }
+
     const { data: completedRequests } = await supabase
       .from('ad_requests')
       .select('budget')
@@ -433,7 +259,7 @@ function AdvertiserDashboard() {
       .eq('status', 'completed')
 
     const activeCampaigns = campaignList.filter((c) => c.status === 'active').length
-    const completedDeals = campaignList.filter((c) => c.status === 'completed').length
+    const completedDeals = orderList.filter((o) => o.status === 'completed').length
     const spent = (completedRequests || []).reduce((sum, r) => sum + (Number(r.budget) || 0), 0)
 
     setMetrics({ activeCampaigns, completedDeals, spent })
@@ -481,6 +307,13 @@ function AdvertiserDashboard() {
     }
   }
 
+  const handleOrderUpdate = (id: string, patch: Record<string, unknown>) => {
+    setAdOrders((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
+    if (patch.status === 'completed') {
+      setMetrics((m) => ({ ...m, completedDeals: m.completedDeals + 1 }))
+    }
+  }
+
   const getCampaignStatus = (status: string) => {
     if (status === 'active') return { label: 'Активна', className: 'bg-green-500/20 text-green-400' }
     if (status === 'completed') return { label: 'Завершена', className: 'bg-blue-500/20 text-blue-400' }
@@ -518,10 +351,32 @@ function AdvertiserDashboard() {
         <button
           type="button"
           onClick={() => router.push('/dashboard/create-campaign')}
-          className="bg-purple-600 hover:bg-purple-500 transition text-white px-6 py-2.5 rounded-full text-sm font-medium"
+          className="btn-accent transition text-white px-6 py-2.5 rounded-full text-sm font-medium"
         >
           + Создать кампанию
         </button>
+      </div>
+
+      <div className="mb-10">
+        <h2 className="text-xl font-bold text-white mb-4">Мои заказы</h2>
+        {adOrders.length === 0 ? (
+          <div className="text-center text-white/50" style={glassCardStyle}>
+            Заказов пока нет. Отправьте запрос на рекламу в маркетплейсе.
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {adOrders.map((order) => (
+              <AdvertiserDealCard
+                key={order.id}
+                request={order}
+                channelMap={orderChannelMap}
+                userId={userId}
+                onUpdate={handleOrderUpdate}
+                linkToDeal
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <div>
@@ -542,9 +397,7 @@ function AdvertiserDashboard() {
               return (
                 <div
                   key={campaign.id}
-                  className={`overflow-hidden transition ${
-                    isExpanded ? 'border-purple-500/30' : ''
-                  }`}
+                  className={`overflow-hidden transition ${isExpanded ? 'border-accent-expanded shadow-accent-expanded' : ''}`}
                   style={{
                     ...glassCardStyle,
                     background: isExpanded ? 'rgba(255,255,255,0.08)' : glassCardStyle.background,
@@ -559,7 +412,7 @@ function AdvertiserDashboard() {
                       <div className="flex items-center gap-3 flex-wrap mb-2">
                         <div className="text-white font-semibold">{campaign.name}</div>
                         {campaign.category && (
-                          <span className="bg-purple-500/20 text-purple-400 text-xs px-2 py-0.5 rounded-full">
+                          <span className="badge-accent text-xs px-2 py-0.5 rounded-full">
                             {campaign.category}
                           </span>
                         )}
@@ -568,7 +421,7 @@ function AdvertiserDashboard() {
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-4 text-sm text-white/50">
-                        <span className="text-purple-400">
+                        <span className="text-price-accent">
                           {Number(campaign.budget).toLocaleString()} AMD
                         </span>
                         <span>{new Date(campaign.created_at).toLocaleDateString('ru-RU')}</span>
@@ -589,7 +442,7 @@ function AdvertiserDashboard() {
                         )}
                         <div>
                           <div className="text-white/50 mb-1">Бюджет</div>
-                          <p className="text-white/80">
+                          <p className="text-price-accent">
                             {Number(campaign.budget).toLocaleString()} AMD
                             {campaign.budget ? ` (≈ $${Math.round(Number(campaign.budget) / 385)})` : ''}
                           </p>
@@ -636,7 +489,7 @@ function AdvertiserDashboard() {
                           <button
                             type="button"
                             onClick={() => handleCompleteCampaign(campaign.id)}
-                            className="bg-purple-600 hover:bg-purple-500 text-white rounded-full px-4 py-2 text-sm transition"
+                            className="btn-accent text-white rounded-full px-4 py-2 text-sm transition"
                           >
                             Завершить кампанию
                           </button>

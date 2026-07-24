@@ -224,7 +224,7 @@ export default function CampaignDetailPage() {
             href={campaign.product_link}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-purple-400 hover:text-purple-300 text-sm break-all transition"
+            className="text-accent hover:opacity-80 text-sm break-all transition"
           >
             {campaign.product_link}
           </a>

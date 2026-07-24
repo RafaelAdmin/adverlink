@@ -73,18 +73,22 @@ export default function AddChannelPage() {
 
     const username = telegramUsername.replace(/^@/, '').trim()
 
-    const { error: insertError } = await supabase.from('channels').insert({
-      owner_id: user.id,
-      name: name.trim(),
-      telegram_username: username,
-      description: description.trim() || null,
-      subscriber_count: subscriberCount ? Number(subscriberCount) : 0,
-      avg_views: avgViews ? Number(avgViews) : 0,
-      ad_price: adPrice ? Number(adPrice) : null,
-      avatar_url: avatarUrl || null,
-      verification_status: 'pending',
-      is_active: true,
-    })
+    const { data: newChannel, error: insertError } = await supabase
+      .from('channels')
+      .insert({
+        owner_id: user.id,
+        name: name.trim(),
+        telegram_username: username,
+        description: description.trim() || null,
+        subscriber_count: subscriberCount ? Number(subscriberCount) : 0,
+        avg_views: avgViews ? Number(avgViews) : 0,
+        ad_price: adPrice ? Number(adPrice) : null,
+        avatar_url: avatarUrl || null,
+        verification_status: 'pending',
+        is_active: true,
+      })
+      .select('id')
+      .single()
 
     setSubmitting(false)
 
@@ -93,7 +97,7 @@ export default function AddChannelPage() {
       return
     }
 
-    router.push('/dashboard')
+    router.push(`/dashboard/verify-channel/${newChannel.id}`)
   }
 
   if (!user) {

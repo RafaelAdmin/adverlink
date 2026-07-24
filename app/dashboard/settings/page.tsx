@@ -167,7 +167,7 @@ export default function SettingsPage() {
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm w-full"
+                className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition text-sm w-full"
               />
             </label>
 
@@ -187,7 +187,7 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={saving}
-              className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white px-6 py-2.5 rounded-full text-sm font-medium transition"
+              className="btn-accent disabled:opacity-50 text-white px-6 py-2.5 rounded-full text-sm font-medium transition"
             >
               {saving ? 'Сохранение...' : 'Сохранить'}
             </button>
@@ -318,7 +318,7 @@ export default function SettingsPage() {
           <button
             type="button"
             disabled
-            className="bg-purple-600 text-white px-6 py-2.5 rounded-full text-sm font-medium opacity-50 cursor-not-allowed"
+            className="btn-accent text-white px-6 py-2.5 rounded-full text-sm font-medium opacity-50 cursor-not-allowed"
           >
             Сохранить реквизиты
           </button>
@@ -357,7 +357,7 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={() => window.open('https://t.me/adverlink_support', '_blank')}
-              className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:border-purple-500/50 transition text-left w-full"
+              className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4 cursor-pointer hover-border-accent transition text-left w-full"
             >
               <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
                 <i className="ti ti-brand-telegram" style={{ fontSize: '18px', color: '#60a5fa' }} />
@@ -372,9 +372,9 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={() => window.open('mailto:support@adverlink.am')}
-              className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:border-purple-500/50 transition text-left w-full"
+              className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4 cursor-pointer hover-border-accent transition text-left w-full"
             >
-              <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-accent-muted-icon flex items-center justify-center flex-shrink-0">
                 <i className="ti ti-mail" style={{ fontSize: '18px', color: '#a78bfa' }} />
               </div>
               <div className="flex-1 min-w-0">
@@ -387,7 +387,7 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={() => window.open('/faq', '_blank')}
-              className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:border-purple-500/50 transition text-left w-full"
+              className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4 cursor-pointer hover-border-accent transition text-left w-full"
             >
               <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
                 <i className="ti ti-book" style={{ fontSize: '18px', color: '#4ade80' }} />

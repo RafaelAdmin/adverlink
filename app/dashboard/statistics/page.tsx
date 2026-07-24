@@ -5,6 +5,26 @@ import { createClient } from '@/lib/supabase'
 import { useDashboard } from '../layout'
 import { formatAmdWithUsd } from '@/lib/currency'
 
+function useAccentColor() {
+  const [color, setColor] = useState('#9333ea')
+
+  useEffect(() => {
+    const read = () => {
+      const c = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim()
+      if (c) setColor(c)
+    }
+    read()
+    window.addEventListener('adverlink-accent-change', read)
+    window.addEventListener('adverlink-theme-change', read)
+    return () => {
+      window.removeEventListener('adverlink-accent-change', read)
+      window.removeEventListener('adverlink-theme-change', read)
+    }
+  }, [])
+
+  return color
+}
+
 function safeNum(n: unknown, fallback = 0): number {
   const v = Number(n)
   return Number.isFinite(v) ? v : fallback
@@ -190,9 +210,9 @@ function SvgLineChart({
 }
 
 function dealStatusDot(status: string) {
-  if (status === 'completed') return 'bg-blue-400'
-  if (status === 'replied') return 'bg-green-400'
-  return 'bg-orange-400'
+  if (status === 'completed') return 'bg-green-400'
+  if (status === 'replied') return 'status-dot-accent'
+  return 'status-dot-accent'
 }
 
 type CreatorStats = {
@@ -227,6 +247,7 @@ type AdvertiserStats = {
 export default function StatisticsPage() {
   const { role } = useDashboard()
   const supabase = createClient()
+  const accentColor = useAccentColor()
   const [loading, setLoading] = useState(true)
   const [creatorStats, setCreatorStats] = useState<CreatorStats | null>(null)
   const [advertiserStats, setAdvertiserStats] = useState<AdvertiserStats | null>(null)
@@ -448,7 +469,7 @@ export default function StatisticsPage() {
           title="График дохода"
           subtitle="Доход от завершённых сделок по месяцам"
           data={d.chartData}
-          color="#9333ea"
+          color={accentColor}
           gradientId="lineGrad"
           formatY={(v) => `${Math.round(v).toLocaleString()} AMD`}
           emptyMessage="График появится после первой завершённой сделки"
@@ -468,7 +489,7 @@ export default function StatisticsPage() {
                   <div className="text-white font-medium truncate">{deal.advertiser_name || '—'}</div>
                   <div className="text-white/40 text-xs">{new Date(deal.created_at).toLocaleDateString('ru-RU')}</div>
                 </div>
-                <div className="text-purple-400 font-semibold">{formatAmdWithUsd(deal.budget)}</div>
+                <div className="text-price-accent">{formatAmdWithUsd(deal.budget)}</div>
               </div>
             ))}
           </div>
@@ -530,9 +551,9 @@ export default function StatisticsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="text-white font-medium">{camp.name}</div>
                   <div className="flex flex-wrap gap-3 mt-1 text-sm text-white/50">
-                    <span className="text-purple-400">{safeNum(camp.budget).toLocaleString()} AMD</span>
+                    <span className="text-price-accent">{safeNum(camp.budget).toLocaleString()} AMD</span>
                     {camp.category && (
-                      <span className="bg-purple-500/20 text-purple-400 text-xs px-2 py-0.5 rounded-full">{camp.category}</span>
+                      <span className="badge-accent text-xs px-2 py-0.5 rounded-full">{camp.category}</span>
                     )}
                     <span>{new Date(camp.created_at).toLocaleDateString('ru-RU')}</span>
                   </div>

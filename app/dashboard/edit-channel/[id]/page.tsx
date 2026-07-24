@@ -80,7 +80,7 @@ export default function EditChannelPage() {
           {channel.avatar_url ? (
             <img src={channel.avatar_url} alt={channel.name} className="w-14 h-14 rounded-full object-cover" />
           ) : (
-            <div className="w-14 h-14 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-xl">
+            <div className="w-14 h-14 rounded-full avatar-accent-fallback flex items-center justify-center text-white font-bold text-xl">
               {channel.name[0]}
             </div>
           )}
@@ -101,7 +101,7 @@ export default function EditChannelPage() {
           <input
             value={channel.name}
             onChange={(e) => setChannel({ ...channel, name: e.target.value })}
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500 transition text-sm"
+            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus-accent transition text-sm"
           />
         </div>
 
@@ -112,7 +112,7 @@ export default function EditChannelPage() {
             value={channel.description || ''}
             onChange={(e) => setChannel({ ...channel, description: e.target.value })}
             rows={3}
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500 transition text-sm resize-none"
+            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus-accent transition text-sm resize-none"
           />
         </div>
 
@@ -124,7 +124,7 @@ export default function EditChannelPage() {
               type="number"
               value={channel.avg_views || 0}
               onChange={(e) => setChannel({ ...channel, avg_views: e.target.value })}
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500 transition text-sm"
+              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus-accent transition text-sm"
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -133,7 +133,7 @@ export default function EditChannelPage() {
               type="number"
               value={channel.ad_price || 0}
               onChange={(e) => setChannel({ ...channel, ad_price: e.target.value })}
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500 transition text-sm"
+              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus-accent transition text-sm"
             />
           </div>
         </div>
@@ -145,7 +145,7 @@ export default function EditChannelPage() {
             value={channel.contact_telegram || ''}
             onChange={(e) => setChannel({ ...channel, contact_telegram: e.target.value })}
             placeholder="@username"
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500 transition text-sm"
+            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus-accent transition text-sm"
           />
         </div>
 
@@ -156,7 +156,7 @@ export default function EditChannelPage() {
             <select
               value={channel.language || 'ru'}
               onChange={(e) => setChannel({ ...channel, language: e.target.value })}
-              className="bg-white/10 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500 transition text-sm"
+              className="bg-white/10 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus-accent transition text-sm"
             >
               <option value="ru">Русский</option>
               <option value="hy">Армянский</option>
@@ -168,7 +168,7 @@ export default function EditChannelPage() {
             <select
               value={channel.country || 'AM'}
               onChange={(e) => setChannel({ ...channel, country: e.target.value })}
-              className="bg-white/10 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500 transition text-sm"
+              className="bg-white/10 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus-accent transition text-sm"
             >
               <option value="AM">Армения</option>
               <option value="RU">Россия</option>
@@ -183,7 +183,7 @@ export default function EditChannelPage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 transition text-white px-6 py-2.5 rounded-full text-sm font-medium"
+          className="btn-accent disabled:opacity-50 transition text-white px-6 py-2.5 rounded-full text-sm font-medium"
         >
           {saving ? 'Сохранение...' : 'Сохранить изменения'}
         </button>

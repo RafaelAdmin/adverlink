@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { formatAmdWithUsd } from '@/lib/currency'
 
 export default function ChannelProfilePage() {
   const params = useParams()
@@ -83,7 +84,7 @@ export default function ChannelProfilePage() {
     { label: 'Подписчики', value: subscribers.toLocaleString() },
     { label: 'Средние охваты', value: avgViews.toLocaleString() },
     { label: 'Вовлечённость', value: `${channel.engagement_rate ?? 0}%` },
-    { label: 'Цена рекламы', value: channel.ad_price ? `$${channel.ad_price}` : '—' },
+    { label: 'Цена рекламы', value: channel.ad_price ? formatAmdWithUsd(channel.ad_price) : '—', accent: true },
     { label: 'Страна', value: channel.country || '—' },
     { label: 'Язык', value: channel.language || '—' },
   ]
@@ -146,7 +147,7 @@ export default function ChannelProfilePage() {
                 )}
                 <button
                   onClick={openTelegram}
-                  className="border border-white/20 text-white/80 hover:border-purple-500 hover:text-white transition text-sm px-4 py-1.5 rounded-full"
+                  className="border border-white/20 text-white/80 hover-border-accent hover:text-white transition text-sm px-4 py-1.5 rounded-full"
                 >
                   Открыть в Telegram
                 </button>
@@ -159,7 +160,9 @@ export default function ChannelProfilePage() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
           {metrics.map((item) => (
             <div key={item.label} className="bg-white/5 border border-white/10 rounded-2xl p-5">
-              <div className="text-2xl font-bold text-white mb-1">{item.value}</div>
+              <div className={`text-2xl font-bold mb-1 ${'accent' in item && item.accent ? 'text-price-accent' : 'text-white'}`}>
+                {item.value}
+              </div>
               <div className="text-white/50 text-sm">{item.label}</div>
             </div>
           ))}
@@ -212,18 +215,7 @@ export default function ChannelProfilePage() {
           ) : (
             <Link
               href={`/dashboard/add-channel/request-ad?channelId=${channel.id}`}
-              style={{
-                display: 'block',
-                width: '100%',
-                padding: '14px',
-                backgroundColor: 'var(--accent-primary, #9333ea)',
-                color: 'white',
-                borderRadius: '14px',
-                textAlign: 'center',
-                fontWeight: '500',
-                fontSize: '15px',
-                textDecoration: 'none',
-              }}
+              className="btn-accent block w-full py-3.5 rounded-xl text-center font-medium text-white text-[15px] no-underline"
             >
               <i className="ti ti-speakerphone" style={{ marginRight: '8px' }} />
               Запросить рекламу

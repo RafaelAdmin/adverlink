@@ -132,9 +132,7 @@ export default function ReviewsPage() {
         <button
           onClick={() => setTab('about')}
           className={`rounded-full px-4 py-2 text-sm transition ${
-            tab === 'about'
-              ? 'bg-purple-600 text-white'
-              : 'border border-white/20 text-white/70'
+            tab === 'about' ? 'tab-pill-active' : 'border border-white/20 text-white/70'
           }`}
         >
           Обо мне
@@ -142,9 +140,7 @@ export default function ReviewsPage() {
         <button
           onClick={() => setTab('mine')}
           className={`rounded-full px-4 py-2 text-sm transition ${
-            tab === 'mine'
-              ? 'bg-purple-600 text-white'
-              : 'border border-white/20 text-white/70'
+            tab === 'mine' ? 'tab-pill-active' : 'border border-white/20 text-white/70'
           }`}
         >
           Мои отзывы

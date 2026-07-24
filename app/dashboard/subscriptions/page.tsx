@@ -92,19 +92,19 @@ export default function SubscriptionsPage() {
                     Текущий план
                   </button>
                 ) : (
-                  <button disabled className="opacity-50 cursor-not-allowed bg-purple-600 text-white rounded-full px-4 py-2 text-sm mt-4 w-full">
+                  <button disabled className="opacity-50 cursor-not-allowed btn-accent text-white rounded-full px-4 py-2 text-sm mt-4 w-full">
                     Перейти на Pro
                   </button>
                 )}
               </div>
 
-              <div className={`bg-white/5 border rounded-2xl p-6 ${isPro ? 'border-2 border-purple-500' : 'border-white/10'}`}>
+              <div className={`bg-white/5 border rounded-2xl p-6 ${isPro ? 'border-2 border-accent-strong' : 'border-white/10'}`}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-white font-semibold text-lg">Creator Pro</h3>
-                  <span className="text-purple-400 text-sm font-medium">$19/мес</span>
+                  <span className="text-price-accent text-sm font-medium">$19/мес</span>
                 </div>
                 {isPro && (
-                  <span className="inline-block bg-purple-600/20 text-purple-400 text-xs px-3 py-1 rounded-full mb-4">
+                  <span className="inline-block badge-accent text-xs px-3 py-1 rounded-full mb-4">
                     ✓ Активен
                   </span>
                 )}
@@ -144,19 +144,19 @@ export default function SubscriptionsPage() {
                     Текущий план
                   </button>
                 ) : (
-                  <button disabled className="opacity-50 cursor-not-allowed bg-purple-600 text-white rounded-full px-4 py-2 text-sm mt-4 w-full">
+                  <button disabled className="opacity-50 cursor-not-allowed btn-accent text-white rounded-full px-4 py-2 text-sm mt-4 w-full">
                     Перейти на Pro
                   </button>
                 )}
               </div>
 
-              <div className={`bg-white/5 border rounded-2xl p-6 ${isPro ? 'border-2 border-purple-500' : 'border-white/10'}`}>
+              <div className={`bg-white/5 border rounded-2xl p-6 ${isPro ? 'border-2 border-accent-strong' : 'border-white/10'}`}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-white font-semibold text-lg">Advertiser Pro</h3>
-                  <span className="text-purple-400 text-sm font-medium">$29/мес</span>
+                  <span className="text-price-accent text-sm font-medium">$29/мес</span>
                 </div>
                 {isPro && (
-                  <span className="inline-block bg-purple-600/20 text-purple-400 text-xs px-3 py-1 rounded-full mb-4">
+                  <span className="inline-block badge-accent text-xs px-3 py-1 rounded-full mb-4">
                     ✓ Активен
                   </span>
                 )}
@@ -184,7 +184,7 @@ export default function SubscriptionsPage() {
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center">
             <div className="text-3xl mb-3">🚀</div>
             <h3 className="text-white font-semibold mb-1">Стандарт</h3>
-            <p className="text-purple-400 text-sm mb-4">$10/неделя</p>
+            <p className="text-price-accent text-sm mb-4">$10/неделя</p>
             <ul className="text-white/60 text-sm space-y-1 text-left">
               <li>• Приоритет в поиске на 7 дней</li>
               <li>• +50% видимости</li>
@@ -192,13 +192,13 @@ export default function SubscriptionsPage() {
             <SoonButton label="Активировать" />
           </div>
 
-          <div className="bg-white/5 border-2 border-purple-500 rounded-2xl p-6 text-center relative">
-            <span className="absolute top-4 right-4 bg-purple-600 text-white text-xs px-2 py-0.5 rounded-full">
+          <div className="bg-white/5 border-2 border-accent-strong rounded-2xl p-6 text-center relative">
+            <span className="absolute top-4 right-4 btn-accent text-white text-xs px-2 py-0.5 rounded-full">
               Популярный
             </span>
             <div className="text-3xl mb-3">⭐</div>
             <h3 className="text-white font-semibold mb-1">Премиум</h3>
-            <p className="text-purple-400 text-sm mb-4">$25/неделя</p>
+            <p className="text-price-accent text-sm mb-4">$25/неделя</p>
             <ul className="text-white/60 text-sm space-y-1 text-left">
               <li>• Топ позиция в поиске</li>
               <li>• +150% видимости</li>
@@ -210,7 +210,7 @@ export default function SubscriptionsPage() {
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center">
             <div className="text-3xl mb-3">💎</div>
             <h3 className="text-white font-semibold mb-1">VIP</h3>
-            <p className="text-purple-400 text-sm mb-4">$50/неделя</p>
+            <p className="text-price-accent text-sm mb-4">$50/неделя</p>
             <ul className="text-white/60 text-sm space-y-1 text-left">
               <li>• Первая позиция</li>
               <li>• +300% видимости</li>
@@ -243,7 +243,7 @@ export default function SubscriptionsPage() {
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-white font-semibold">Pro аналитика</h3>
-              <span className="text-purple-400 text-sm">$9/мес</span>
+              <span className="text-price-accent text-sm">$9/мес</span>
             </div>
             <ul className="text-white/60 text-sm space-y-2 mb-4">
               <li>• Детальная статистика охватов</li>
@@ -272,7 +272,7 @@ export default function SubscriptionsPage() {
             <div key={badge.name} className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center w-36">
               <div className="text-3xl mb-2">{badge.icon}</div>
               <div className="text-white text-sm font-medium">{badge.name}</div>
-              <div className="text-purple-400 text-xs mt-1">{badge.price}</div>
+              <div className="text-price-accent text-xs mt-1">{badge.price}</div>
               <button
                 disabled
                 className="opacity-50 cursor-not-allowed border border-white/20 text-white/50 rounded-full text-xs px-3 py-1 mt-2"

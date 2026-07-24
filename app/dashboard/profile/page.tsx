@@ -198,7 +198,7 @@ export default function ProfilePage() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Ваше имя"
-              className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm"
+              className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition text-sm"
             />
           </div>
 
@@ -210,7 +210,7 @@ export default function ProfilePage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                 placeholder="username"
-                className="w-full bg-white/10 border border-white/20 rounded-xl pl-8 pr-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm"
+                className="w-full bg-white/10 border border-white/20 rounded-xl pl-8 pr-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition text-sm"
               />
             </div>
             <span className="text-white/25 text-xs">Только латинские буквы, цифры и _</span>
@@ -223,7 +223,7 @@ export default function ProfilePage() {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Расскажи о себе, своих каналах или бизнесе..."
               rows={3}
-              className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus:border-purple-500 transition text-sm resize-none"
+              className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition text-sm resize-none"
             />
             <span className="text-white/25 text-xs">{description.length}/200 символов</span>
           </div>
@@ -254,7 +254,7 @@ export default function ProfilePage() {
           <h2 className="text-white text-xl font-semibold">Мои каналы</h2>
           <button
             onClick={() => router.push('/dashboard/add-channel')}
-            className="bg-purple-600 hover:bg-purple-500 transition text-white px-5 py-2 rounded-full text-sm font-medium"
+            className="btn-accent transition text-white px-5 py-2 rounded-full text-sm font-medium"
           >
             + Добавить канал
           </button>
@@ -274,7 +274,7 @@ export default function ProfilePage() {
                 key={channel.id}
                 className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4"
               >
-                <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold flex-shrink-0">
+                <div className="w-10 h-10 rounded-full avatar-accent-fallback flex items-center justify-center text-white font-bold flex-shrink-0">
                   {channel.name[0]}
                 </div>
                 <div className="flex-1">

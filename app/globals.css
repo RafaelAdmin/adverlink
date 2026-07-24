@@ -59,6 +59,68 @@ body {
   border-color: var(--accent-primary) !important;
 }
 
+.text-price-accent {
+  color: var(--accent-primary) !important;
+  font-weight: 600;
+}
+
+.badge-accent {
+  background: var(--accent-bg) !important;
+  color: var(--accent-primary) !important;
+}
+
+.border-accent-expanded {
+  border-color: var(--accent-border) !important;
+}
+
+.shadow-accent-expanded {
+  box-shadow: 0 0 0 1px var(--accent-border), 0 12px 40px var(--accent-bg) !important;
+}
+
+.hover-border-accent:hover {
+  border-color: var(--accent-border) !important;
+}
+
+.tab-pill-active {
+  background-color: var(--accent-primary) !important;
+  color: white !important;
+  border-color: transparent !important;
+}
+
+.panel-accent-soft {
+  background: var(--accent-bg) !important;
+  border: 1px solid var(--accent-border) !important;
+}
+
+.border-accent-strong {
+  border-color: var(--accent-primary) !important;
+}
+
+.bg-accent-muted-icon {
+  background: var(--accent-bg) !important;
+}
+
+.progress-step-done {
+  background-color: var(--accent-primary) !important;
+  color: white !important;
+}
+
+.progress-step-label-done {
+  color: var(--accent-primary) !important;
+}
+
+.progress-line-done {
+  background-color: var(--accent-primary) !important;
+}
+
+.status-dot-accent {
+  background-color: var(--accent-primary) !important;
+}
+
+.avatar-accent-fallback {
+  background-color: var(--accent-primary) !important;
+}
+
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -97,5 +159,156 @@ body {
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* Slow ambient "breathing" background */
+.breathing-bg {
+  position: relative;
+  min-height: 100vh;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.breathing-bg__shimmer {
+  position: fixed;
+  inset: -40%;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 25%, color-mix(in srgb, var(--accent-primary, #9333ea) 32%, transparent), transparent 70%),
+    radial-gradient(ellipse 70% 55% at 85% 75%, color-mix(in srgb, var(--accent-hover, #a855f7) 26%, transparent), transparent 65%),
+    radial-gradient(ellipse 60% 50% at 55% 45%, rgba(5, 4, 18, 0.92), transparent 72%);
+  animation: breathe-shimmer 14s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+.breathing-bg__orb {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(72px);
+  will-change: transform, opacity;
+}
+
+.breathing-bg__orb--1 {
+  width: min(72vw, 640px);
+  height: min(72vw, 640px);
+  top: -18%;
+  left: -14%;
+  background: color-mix(in srgb, var(--accent-primary, #9333ea) 48%, transparent);
+  animation: breathe-orb-1 18s ease-in-out infinite;
+}
+
+.breathing-bg__orb--2 {
+  width: min(68vw, 600px);
+  height: min(68vw, 600px);
+  right: -16%;
+  bottom: -22%;
+  background: color-mix(in srgb, var(--accent-hover, #a855f7) 38%, #1a1560);
+  animation: breathe-orb-2 22s ease-in-out infinite;
+}
+
+.breathing-bg__orb--3 {
+  width: min(56vw, 500px);
+  height: min(56vw, 500px);
+  top: 32%;
+  left: 38%;
+  background: rgba(4, 3, 14, 0.92);
+  animation: breathe-orb-3 16s ease-in-out infinite;
+}
+
+.breathing-bg__orb--4 {
+  width: min(48vw, 420px);
+  height: min(48vw, 420px);
+  top: 8%;
+  right: 18%;
+  background: color-mix(in srgb, var(--accent-primary, #9333ea) 24%, #24243e);
+  animation: breathe-orb-4 20s ease-in-out infinite;
+}
+
+.breathing-bg__content {
+  position: relative;
+  z-index: 1;
+  min-height: inherit;
+}
+
+@keyframes breathe-shimmer {
+  0% {
+    transform: translate(0%, 0%) rotate(0deg) scale(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translate(4%, -3%) rotate(6deg) scale(1.06);
+    opacity: 0.62;
+  }
+  100% {
+    transform: translate(-3%, 5%) rotate(-4deg) scale(1.04);
+    opacity: 0.52;
+  }
+}
+
+@keyframes breathe-orb-1 {
+  0%,
+  100% {
+    transform: translate(0%, 0%) scale(1);
+    opacity: 0.32;
+  }
+  33% {
+    transform: translate(12%, 10%) scale(1.18);
+    opacity: 0.52;
+  }
+  66% {
+    transform: translate(6%, 16%) scale(1.05);
+    opacity: 0.38;
+  }
+}
+
+@keyframes breathe-orb-2 {
+  0%,
+  100% {
+    transform: translate(0%, 0%) scale(1);
+    opacity: 0.28;
+  }
+  50% {
+    transform: translate(-14%, -10%) scale(1.2);
+    opacity: 0.48;
+  }
+}
+
+@keyframes breathe-orb-3 {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.38;
+  }
+  50% {
+    transform: translate(-42%, -58%) scale(1.25);
+    opacity: 0.55;
+  }
+}
+
+@keyframes breathe-orb-4 {
+  0%,
+  100% {
+    transform: translate(0%, 0%) scale(1);
+    opacity: 0.22;
+  }
+  40% {
+    transform: translate(-10%, 12%) scale(1.15);
+    opacity: 0.4;
+  }
+  70% {
+    transform: translate(8%, -6%) scale(0.95);
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breathing-bg__shimmer,
+  .breathing-bg__orb {
+    animation: none !important;
+    opacity: 0.3;
   }
 }
