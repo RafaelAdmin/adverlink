@@ -4,24 +4,45 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from '../layout'
-import { formatAmdWithUsd, toUsdEstimate, CurrencyCode, formatPrice, getExchangeRates } from '@/lib/currency'
+import { formatAmdWithUsd, toUsdEstimate, CurrencyCode, formatPrice, getExchangeRates, getCurrencySymbol } from '@/lib/currency'
 import CurrencySelector from '../components/CurrencySelector'
+import FilterDropdown from '../components/FilterDropdown'
 import { AdvertiserDealCard, CreatorDealCard } from '../components/DealManagement'
+
+const ADVERTISER_SORT_OPTIONS = [
+  { value: 'newest', label: 'Новые' },
+  { value: 'subscribers_desc', label: 'Подписчики ↓' },
+  { value: 'subscribers_asc', label: 'Подписчики ↑' },
+  { value: 'price_desc', label: 'Цена ↓' },
+  { value: 'price_asc', label: 'Цена ↑' },
+  { value: 'views_desc', label: 'Охваты ↓' },
+]
+
+const CAMPAIGN_SORT_OPTIONS = [
+  { value: 'newest', label: 'Новые' },
+  { value: 'budget_desc', label: 'Бюджет ↓' },
+  { value: 'budget_asc', label: 'Бюджет ↑' },
+  { value: 'subs_desc', label: 'Подписчики ↓' },
+]
+
+const COUNTRY_FILTER_OPTIONS = [
+  { value: 'all', label: 'Все страны', icon: '🌐' },
+  { value: 'AM', label: 'Армения', icon: '🇦🇲' },
+  { value: 'RU', label: 'Россия', icon: '🇷🇺' },
+  { value: 'GE', label: 'Грузия', icon: '🇬🇪' },
+  { value: 'KZ', label: 'Казахстан', icon: '🇰🇿' },
+  { value: 'UA', label: 'Украина', icon: '🇺🇦' },
+]
+
+const SOCIAL_FILTER_OPTIONS = [
+  { value: 'all', label: 'Все соцсети', icon: '🌐' },
+  { value: 'telegram', label: 'Telegram', icon: '✈️' },
+  { value: 'youtube', label: 'YouTube', icon: '▶️' },
+  { value: 'instagram', label: 'Instagram', icon: '📸' },
+]
 
 const CAMPAIGN_CATEGORIES = ['Все', 'Новости', 'Технологии', 'Бизнес', 'Спорт', 'Lifestyle', 'Юмор', 'Другое']
 const FORMATS = ['Все', 'Пост', 'Репост', 'Закреп', 'Пакет']
-const COUNTRIES = [
-  { value: 'Все', label: 'Все' },
-  { value: 'AM', label: 'AM (Армения)' },
-  { value: 'RU', label: 'RU (Россия)' },
-  { value: 'GE', label: 'GE (Грузия)' },
-]
-const LANGUAGES = [
-  { value: 'Все', label: 'Все' },
-  { value: 'ru', label: 'ru (Русский)' },
-  { value: 'hy', label: 'hy (Армянский)' },
-  { value: 'en', label: 'en (English)' },
-]
 
 function FilterLabel({ children }: { children: React.ReactNode }) {
   return <span className="text-white/50 text-xs mb-1 block">{children}</span>
@@ -226,15 +247,16 @@ export default function DashboardMarketplacePage() {
   const [activeCampaigns, setActiveCampaigns] = useState<any[]>([])
   const [userChannels, setUserChannels] = useState<any[]>([])
   const [expandedCampaignId, setExpandedCampaignId] = useState<string | null>(null)
+  const [minBudget, setMinBudget] = useState(0)
+  const [maxBudget, setMaxBudget] = useState(10000000)
+  const [minRequiredSubs, setMinRequiredSubs] = useState(0)
+  const [maxRequiredSubs, setMaxRequiredSubs] = useState(1000000)
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [filterCountry, setFilterCountry] = useState('all')
+  const [filterSocialNet, setFilterSocialNet] = useState('all')
+  const [campaignSortBy, setCampaignSortBy] = useState('newest')
   const [showCampaignFilters, setShowCampaignFilters] = useState(false)
-  const [cfCategory, setCfCategory] = useState('Все')
-  const [cfMinBudget, setCfMinBudget] = useState('')
-  const [cfMaxBudget, setCfMaxBudget] = useState('')
-  const [cfMinSubs, setCfMinSubs] = useState('')
-  const [cfMaxSubs, setCfMaxSubs] = useState('')
-  const [cfDateFrom, setCfDateFrom] = useState('')
-  const [cfDateTo, setCfDateTo] = useState('')
-  const [cfFormat, setCfFormat] = useState('Все')
 
   // Advertiser state
   const [advertiserTab, setAdvertiserTab] = useState<'catalog' | 'requests'>('catalog')
@@ -242,18 +264,16 @@ export default function DashboardMarketplacePage() {
   const [sentRequests, setSentRequests] = useState<any[]>([])
   const [channelMap, setChannelMap] = useState<Record<string, any>>({})
   const [myChannelIds, setMyChannelIds] = useState<string[]>([])
-  const [showChannelFilters, setShowChannelFilters] = useState(false)
-  const [chMinSubs, setChMinSubs] = useState('')
-  const [chMaxSubs, setChMaxSubs] = useState('')
-  const [chMinViews, setChMinViews] = useState('')
-  const [chMaxViews, setChMaxViews] = useState('')
-  const [chMinEngagement, setChMinEngagement] = useState('')
-  const [chCountry, setChCountry] = useState('Все')
-  const [chLanguage, setChLanguage] = useState('Все')
-  const [chMinPrice, setChMinPrice] = useState('')
-  const [chMaxPrice, setChMaxPrice] = useState('')
-  const [chVerifiedOnly, setChVerifiedOnly] = useState(false)
-  const [chSort, setChSort] = useState('date')
+  const [minSubs, setMinSubs] = useState(0)
+  const [maxSubs, setMaxSubs] = useState(1000000)
+  const [minViews, setMinViews] = useState(0)
+  const [maxViews, setMaxViews] = useState(500000)
+  const [minPrice, setMinPrice] = useState(0)
+  const [maxPrice, setMaxPrice] = useState(10000)
+  const [selectedSocialNet, setSelectedSocialNet] = useState('all')
+  const [selectedCountry, setSelectedCountry] = useState('all')
+  const [sortBy, setSortBy] = useState('newest')
+  const [showFilters, setShowFilters] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>('USD')
   const [rates, setRates] = useState<Record<string, number>>({})
@@ -347,55 +367,69 @@ export default function DashboardMarketplacePage() {
     return !q || r.advertiser_name?.toLowerCase().includes(q) || r.advertiser_contact?.toLowerCase().includes(q) || r.message?.toLowerCase().includes(q)
   })
 
-  const filteredCampaigns = activeCampaigns.filter((c) => {
-    const q = search.toLowerCase()
-    if (q && !c.name?.toLowerCase().includes(q) && !c.description?.toLowerCase().includes(q) && !c.category?.toLowerCase().includes(q)) return false
-    if (cfCategory !== 'Все' && c.category !== cfCategory) return false
-    if (cfMinBudget && Number(c.budget) < Number(cfMinBudget)) return false
-    if (cfMaxBudget && Number(c.budget) > Number(cfMaxBudget)) return false
-    if (cfMinSubs && (c.min_subscribers || 0) < Number(cfMinSubs)) return false
-    if (cfMaxSubs && (c.min_subscribers || 0) > Number(cfMaxSubs)) return false
-    if (cfDateFrom && c.preferred_date && new Date(c.preferred_date) < new Date(cfDateFrom)) return false
-    if (cfDateTo && c.preferred_date && new Date(c.preferred_date) > new Date(cfDateTo)) return false
-    if (cfFormat !== 'Все' && c.format && c.format !== cfFormat) return false
-    return true
-  })
+  const filteredCampaigns = activeCampaigns
+    .filter((req) => {
+      const q = search.toLowerCase()
+      const matchSearch = req.advertiser_name?.toLowerCase().includes(q) ||
+        req.advertiser_contact?.toLowerCase().includes(q) ||
+        req.message?.toLowerCase().includes(q) ||
+        req.name?.toLowerCase().includes(q) ||
+        req.description?.toLowerCase().includes(q)
 
-  const resetCampaignFilters = () => {
-    setCfCategory('Все'); setCfMinBudget(''); setCfMaxBudget('')
-    setCfMinSubs(''); setCfMaxSubs(''); setCfDateFrom(''); setCfDateTo(''); setCfFormat('Все')
-  }
+      const budget = req.budget || 0
+      const matchBudget = budget >= minBudget && budget <= maxBudget
 
-  // Advertiser channel filters
-  let filteredChannels = channels.filter((ch) => {
-    const q = search.toLowerCase()
-    if (q && !ch.name?.toLowerCase().includes(q) && !ch.telegram_username?.toLowerCase().includes(q)) return false
-    if (chMinSubs && (ch.subscriber_count || 0) < Number(chMinSubs)) return false
-    if (chMaxSubs && (ch.subscriber_count || 0) > Number(chMaxSubs)) return false
-    if (chMinViews && (ch.avg_views || 0) < Number(chMinViews)) return false
-    if (chMaxViews && (ch.avg_views || 0) > Number(chMaxViews)) return false
-    if (chMinEngagement && (ch.engagement_rate || 0) < Number(chMinEngagement)) return false
-    if (chCountry !== 'Все' && ch.country !== chCountry) return false
-    if (chLanguage !== 'Все' && ch.language !== chLanguage) return false
-    if (chMinPrice && (ch.ad_price || 0) < Number(chMinPrice)) return false
-    if (chMaxPrice && (ch.ad_price || 0) > Number(chMaxPrice)) return false
-    if (chVerifiedOnly && !ch.is_verified && ch.verification_status !== 'verified') return false
-    return true
-  })
+      const reqSubs = req.min_subscribers || 0
+      const matchSubs = reqSubs >= minRequiredSubs && reqSubs <= maxRequiredSubs
 
-  filteredChannels = [...filteredChannels].sort((a, b) => {
-    if (chSort === 'subs') return (b.subscriber_count || 0) - (a.subscriber_count || 0)
-    if (chSort === 'price_asc') return (a.ad_price || 0) - (b.ad_price || 0)
-    if (chSort === 'price_desc') return (b.ad_price || 0) - (a.ad_price || 0)
-    if (chSort === 'engagement') return (b.engagement_rate || 0) - (a.engagement_rate || 0)
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  })
+      const matchDate = (!dateFrom || !req.preferred_date || req.preferred_date >= dateFrom) &&
+        (!dateTo || !req.preferred_date || req.preferred_date <= dateTo)
 
-  const resetChannelFilters = () => {
-    setChMinSubs(''); setChMaxSubs(''); setChMinViews(''); setChMaxViews('')
-    setChMinEngagement(''); setChCountry('Все'); setChLanguage('Все')
-    setChMinPrice(''); setChMaxPrice(''); setChVerifiedOnly(false); setChSort('date')
-  }
+      const matchCountry = filterCountry === 'all' || (req.country || '') === filterCountry
+      const matchSocial = filterSocialNet === 'all' ||
+        (req.platform || 'telegram') === filterSocialNet
+
+      return matchSearch && matchBudget && matchSubs && matchDate && matchCountry && matchSocial
+    })
+    .sort((a, b) => {
+      switch (campaignSortBy) {
+        case 'budget_desc': return (b.budget || 0) - (a.budget || 0)
+        case 'budget_asc': return (a.budget || 0) - (b.budget || 0)
+        case 'subs_desc': return (b.min_subscribers || 0) - (a.min_subscribers || 0)
+        default: return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      }
+    })
+
+  const filteredChannels = channels
+    .filter((ch) => {
+      const matchSearch = ch.name?.toLowerCase().includes(search.toLowerCase()) ||
+        ch.telegram_username?.toLowerCase().includes(search.toLowerCase())
+      const matchSubs = (ch.subscriber_count || 0) >= minSubs && (ch.subscriber_count || 0) <= maxSubs
+      const matchViews = (ch.avg_views || 0) >= minViews && (ch.avg_views || 0) <= maxViews
+
+      const channelPriceInDisplayCurrency = ch.ad_price
+        ? Math.round((ch.ad_price / (rates[ch.ad_price_currency || 'USD'] || 1)) * (rates[displayCurrency] || 1))
+        : 0
+      const matchPrice = !ch.ad_price || (channelPriceInDisplayCurrency >= minPrice && channelPriceInDisplayCurrency <= maxPrice)
+
+      const matchSocial = selectedSocialNet === 'all' ||
+        (ch.platform || 'telegram') === selectedSocialNet
+
+      const matchCountry = selectedCountry === 'all' ||
+        (ch.country || '') === selectedCountry
+
+      return matchSearch && matchSubs && matchViews && matchPrice && matchSocial && matchCountry
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'subscribers_desc': return (b.subscriber_count || 0) - (a.subscriber_count || 0)
+        case 'subscribers_asc': return (a.subscriber_count || 0) - (b.subscriber_count || 0)
+        case 'price_desc': return (b.ad_price || 0) - (a.ad_price || 0)
+        case 'price_asc': return (a.ad_price || 0) - (b.ad_price || 0)
+        case 'views_desc': return (b.avg_views || 0) - (a.avg_views || 0)
+        default: return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      }
+    })
 
   const convertChannelPrice = (price: number, fromCurrency: string = 'USD'): string => {
     if (!price) return 'По запросу'
@@ -431,71 +465,204 @@ export default function DashboardMarketplacePage() {
           </button>
         </div>
 
-        <input
-          placeholder={advertiserTab === 'catalog' ? 'Поиск по названию или username...' : 'Поиск по каналу или сообщению...'}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3 text-white placeholder-white/30 outline-none focus-accent transition mb-4"
-        />
-
         {advertiserTab === 'catalog' && (
           <>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              marginBottom: '16px',
-              padding: '12px 16px',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: '14px',
-            }}>
-              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>
-                Показывать цены в:
-              </span>
-              <CurrencySelector
-                value={displayCurrency}
-                onChange={setDisplayCurrency}
-                size="sm"
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <input
+                placeholder="Поиск по названию или username..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{
+                  flex: 1,
+                  minWidth: '200px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '12px',
+                  padding: '10px 16px',
+                  color: 'white',
+                  fontSize: '14px',
+                  outline: 'none',
+                }}
               />
-              <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>
-                Курс обновляется ежедневно
-              </span>
+              <button
+                type="button"
+                onClick={() => setShowFilters(!showFilters)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '4px 10px',
+                  borderRadius: '10px',
+                  border: showFilters
+                    ? '1px solid var(--accent-primary, #9333ea)'
+                    : '1px solid rgba(255,255,255,0.15)',
+                  background: showFilters
+                    ? 'color-mix(in srgb, var(--accent-primary, #9333ea) 15%, transparent)'
+                    : 'rgba(255,255,255,0.08)',
+                  color: showFilters ? 'white' : 'rgba(255,255,255,0.7)',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <i className="ti ti-adjustments-horizontal" style={{ fontSize: '14px' }} />
+                Фильтры {showFilters ? '▲' : '▼'}
+              </button>
+              <FilterDropdown
+                value={sortBy}
+                onChange={setSortBy}
+                options={ADVERTISER_SORT_OPTIONS}
+                size="sm"
+                minWidth={180}
+              />
+              <CurrencySelector value={displayCurrency} onChange={setDisplayCurrency} size="sm" />
             </div>
 
-            <button type="button" onClick={() => setShowChannelFilters(!showChannelFilters)} className="border border-white/20 text-white/70 rounded-full px-4 py-2 text-sm mb-4 hover:text-white transition">
-              Фильтры {showChannelFilters ? '▲' : '▼'}
-            </button>
+            {showFilters && (
+              <div style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '16px',
+                padding: '20px',
+                marginBottom: '16px',
+              }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                  <div>
+                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '8px' }}>Страна</span>
+                    <FilterDropdown
+                      value={selectedCountry}
+                      onChange={setSelectedCountry}
+                      options={COUNTRY_FILTER_OPTIONS}
+                      size="sm"
+                      minWidth={200}
+                    />
+                  </div>
 
-            {showChannelFilters && (
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <label><FilterLabel>Мин. подписчиков</FilterLabel><FilterInput type="number" value={chMinSubs} onChange={(e) => setChMinSubs(e.target.value)} /></label>
-                  <label><FilterLabel>Макс. подписчиков</FilterLabel><FilterInput type="number" value={chMaxSubs} onChange={(e) => setChMaxSubs(e.target.value)} /></label>
-                  <label><FilterLabel>Мин. просмотры</FilterLabel><FilterInput type="number" value={chMinViews} onChange={(e) => setChMinViews(e.target.value)} /></label>
-                  <label><FilterLabel>Макс. просмотры</FilterLabel><FilterInput type="number" value={chMaxViews} onChange={(e) => setChMaxViews(e.target.value)} /></label>
-                  <label><FilterLabel>Вовлечённость от %</FilterLabel><FilterInput type="number" value={chMinEngagement} onChange={(e) => setChMinEngagement(e.target.value)} /></label>
-                  <label><FilterLabel>Страна</FilterLabel><FilterSelect value={chCountry} onChange={(e) => setChCountry(e.target.value)}>{COUNTRIES.map((c) => <option key={c.value} value={c.value} className="bg-[#1a1560]">{c.label}</option>)}</FilterSelect></label>
-                  <label><FilterLabel>Язык</FilterLabel><FilterSelect value={chLanguage} onChange={(e) => setChLanguage(e.target.value)}>{LANGUAGES.map((l) => <option key={l.value} value={l.value} className="bg-[#1a1560]">{l.label}</option>)}</FilterSelect></label>
-                  <label><FilterLabel>Мин. цена $</FilterLabel><FilterInput type="number" value={chMinPrice} onChange={(e) => setChMinPrice(e.target.value)} /></label>
-                  <label><FilterLabel>Макс. цена $</FilterLabel><FilterInput type="number" value={chMaxPrice} onChange={(e) => setChMaxPrice(e.target.value)} /></label>
-                  <label><FilterLabel>Сортировка</FilterLabel>
-                    <FilterSelect value={chSort} onChange={(e) => setChSort(e.target.value)}>
-                      <option value="date" className="bg-[#1a1560]">По дате</option>
-                      <option value="subs" className="bg-[#1a1560]">По подписчикам</option>
-                      <option value="price_asc" className="bg-[#1a1560]">По цене (возрастание)</option>
-                      <option value="price_desc" className="bg-[#1a1560]">По цене (убывание)</option>
-                      <option value="engagement" className="bg-[#1a1560]">По вовлечённости</option>
-                    </FilterSelect>
-                  </label>
-                  <label className="flex items-center gap-2 pt-5">
-                    <input type="checkbox" checked={chVerifiedOnly} onChange={(e) => setChVerifiedOnly(e.target.checked)} className="rounded" />
-                    <span className="text-white/70 text-sm">Только верифицированные</span>
-                  </label>
+                  <div>
+                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '8px' }}>Соцсеть</span>
+                    <FilterDropdown
+                      value={selectedSocialNet}
+                      onChange={setSelectedSocialNet}
+                      options={SOCIAL_FILTER_OPTIONS}
+                      size="sm"
+                      minWidth={200}
+                    />
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Подписчики</span>
+                      <span style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>
+                        {minSubs.toLocaleString()} — {maxSubs >= 1000000 ? '1M+' : maxSubs.toLocaleString()}
+                      </span>
+                    </div>
+                    <div style={{ position: 'relative', height: '20px', display: 'flex', alignItems: 'center' }}>
+                      <input
+                        type="range"
+                        min={0}
+                        max={1000000}
+                        step={1000}
+                        value={minSubs}
+                        onChange={(e) => setMinSubs(Math.min(Number(e.target.value), maxSubs - 1000))}
+                        style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary, #9333ea)', zIndex: 1 }}
+                      />
+                      <input
+                        type="range"
+                        min={0}
+                        max={1000000}
+                        step={1000}
+                        value={maxSubs}
+                        onChange={(e) => setMaxSubs(Math.max(Number(e.target.value), minSubs + 1000))}
+                        style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary, #9333ea)', zIndex: 2, background: 'transparent' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Охваты</span>
+                      <span style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>
+                        {minViews.toLocaleString()} — {maxViews >= 500000 ? '500K+' : maxViews.toLocaleString()}
+                      </span>
+                    </div>
+                    <div style={{ position: 'relative', height: '20px', display: 'flex', alignItems: 'center' }}>
+                      <input
+                        type="range"
+                        min={0}
+                        max={500000}
+                        step={500}
+                        value={minViews}
+                        onChange={(e) => setMinViews(Math.min(Number(e.target.value), maxViews - 500))}
+                        style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary, #9333ea)', zIndex: 1 }}
+                      />
+                      <input
+                        type="range"
+                        min={0}
+                        max={500000}
+                        step={500}
+                        value={maxViews}
+                        onChange={(e) => setMaxViews(Math.max(Number(e.target.value), minViews + 500))}
+                        style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary, #9333ea)', zIndex: 2, background: 'transparent' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Цена</span>
+                      <span style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>
+                        {getCurrencySymbol(displayCurrency)}{minPrice} — {maxPrice >= 10000 ? '10K+' : getCurrencySymbol(displayCurrency) + maxPrice}
+                      </span>
+                    </div>
+                    <div style={{ position: 'relative', height: '20px', display: 'flex', alignItems: 'center' }}>
+                      <input
+                        type="range"
+                        min={0}
+                        max={10000}
+                        step={10}
+                        value={minPrice}
+                        onChange={(e) => setMinPrice(Math.min(Number(e.target.value), maxPrice - 10))}
+                        style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary, #9333ea)', zIndex: 1 }}
+                      />
+                      <input
+                        type="range"
+                        min={0}
+                        max={10000}
+                        step={10}
+                        value={maxPrice}
+                        onChange={(e) => setMaxPrice(Math.max(Number(e.target.value), minPrice + 10))}
+                        style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary, #9333ea)', zIndex: 2, background: 'transparent' }}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <button type="button" onClick={resetChannelFilters} className="border border-white/20 text-white/50 rounded-full px-3 py-1.5 text-xs mt-4 hover:text-white">
-                  Сбросить фильтры
-                </button>
+
+                <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMinSubs(0)
+                      setMaxSubs(1000000)
+                      setMinViews(0)
+                      setMaxViews(500000)
+                      setMinPrice(0)
+                      setMaxPrice(10000)
+                      setSelectedSocialNet('all')
+                      setSelectedCountry('all')
+                    }}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      borderRadius: '8px',
+                      padding: '6px 14px',
+                      color: 'rgba(255,255,255,0.4)',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Сбросить фильтры
+                  </button>
+                </div>
               </div>
             )}
 
@@ -572,6 +739,15 @@ export default function DashboardMarketplacePage() {
         )}
 
         {advertiserTab === 'requests' && (
+          <input
+            placeholder="Поиск по каналу или сообщению..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3 text-white placeholder-white/30 outline-none focus-accent transition mb-4"
+          />
+        )}
+
+        {advertiserTab === 'requests' && (
           loading ? (
             <div className="text-white/50 text-center py-24">Загрузка...</div>
           ) : filteredSentRequests.length === 0 ? (
@@ -624,6 +800,7 @@ export default function DashboardMarketplacePage() {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3 text-white placeholder-white/30 outline-none focus-accent transition mb-4"
+        style={{ display: creatorTab === 'campaigns' ? 'none' : 'block' }}
       />
 
       {creatorTab === 'mine' && (
@@ -656,33 +833,188 @@ export default function DashboardMarketplacePage() {
 
       {creatorTab === 'campaigns' && (
         <>
-          <button type="button" onClick={() => setShowCampaignFilters(!showCampaignFilters)} className="border border-white/20 text-white/70 rounded-full px-4 py-2 text-sm mb-4 hover:text-white transition">
-            Фильтры {showCampaignFilters ? '▲' : '▼'}
-          </button>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <input
+              placeholder="Поиск по названию, категории или описанию..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                flex: 1,
+                minWidth: '200px',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '12px',
+                padding: '10px 16px',
+                color: 'white',
+                fontSize: '14px',
+                outline: 'none',
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowCampaignFilters(!showCampaignFilters)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '4px 10px',
+                borderRadius: '10px',
+                border: showCampaignFilters
+                  ? '1px solid var(--accent-primary, #9333ea)'
+                  : '1px solid rgba(255,255,255,0.15)',
+                background: showCampaignFilters
+                  ? 'color-mix(in srgb, var(--accent-primary, #9333ea) 15%, transparent)'
+                  : 'rgba(255,255,255,0.08)',
+                color: showCampaignFilters ? 'white' : 'rgba(255,255,255,0.7)',
+                fontSize: '13px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <i className="ti ti-adjustments-horizontal" style={{ fontSize: '14px' }} />
+              Фильтры {showCampaignFilters ? '▲' : '▼'}
+            </button>
+            <FilterDropdown
+              value={campaignSortBy}
+              onChange={setCampaignSortBy}
+              options={CAMPAIGN_SORT_OPTIONS}
+              size="sm"
+              minWidth={180}
+            />
+            <CurrencySelector value={displayCurrency} onChange={setDisplayCurrency} size="sm" />
+          </div>
 
           {showCampaignFilters && (
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <label><FilterLabel>Тематика</FilterLabel>
-                  <FilterSelect value={cfCategory} onChange={(e) => setCfCategory(e.target.value)}>
-                    {CAMPAIGN_CATEGORIES.map((c) => <option key={c} value={c} className="bg-[#1a1560]">{c}</option>)}
-                  </FilterSelect>
-                </label>
-                <label><FilterLabel>Минимальный бюджет (AMD)</FilterLabel><FilterInput type="number" value={cfMinBudget} onChange={(e) => setCfMinBudget(e.target.value)} /></label>
-                <label><FilterLabel>Максимальный бюджет (AMD)</FilterLabel><FilterInput type="number" value={cfMaxBudget} onChange={(e) => setCfMaxBudget(e.target.value)} /></label>
-                <label><FilterLabel>Мин. подписчиков канала</FilterLabel><FilterInput type="number" value={cfMinSubs} onChange={(e) => setCfMinSubs(e.target.value)} /></label>
-                <label><FilterLabel>Макс. подписчиков канала</FilterLabel><FilterInput type="number" value={cfMaxSubs} onChange={(e) => setCfMaxSubs(e.target.value)} /></label>
-                <label><FilterLabel>Дата от</FilterLabel><FilterInput type="date" value={cfDateFrom} onChange={(e) => setCfDateFrom(e.target.value)} /></label>
-                <label><FilterLabel>Дата до</FilterLabel><FilterInput type="date" value={cfDateTo} onChange={(e) => setCfDateTo(e.target.value)} /></label>
-                <label><FilterLabel>Формат</FilterLabel>
-                  <FilterSelect value={cfFormat} onChange={(e) => setCfFormat(e.target.value)}>
-                    {FORMATS.map((f) => <option key={f} value={f} className="bg-[#1a1560]">{f}</option>)}
-                  </FilterSelect>
-                </label>
+            <div style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '16px',
+              padding: '20px',
+              marginBottom: '16px',
+            }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+                <div>
+                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '8px' }}>Страна</span>
+                  <FilterDropdown
+                    value={filterCountry}
+                    onChange={setFilterCountry}
+                    options={COUNTRY_FILTER_OPTIONS}
+                    size="sm"
+                    minWidth={200}
+                  />
+                </div>
+
+                <div>
+                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '8px' }}>Соцсеть</span>
+                  <FilterDropdown
+                    value={filterSocialNet}
+                    onChange={setFilterSocialNet}
+                    options={SOCIAL_FILTER_OPTIONS}
+                    size="sm"
+                    minWidth={200}
+                  />
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Бюджет (AMD)</span>
+                    <span style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>
+                      {minBudget.toLocaleString()} — {maxBudget >= 10000000 ? '10M+' : maxBudget.toLocaleString()}
+                    </span>
+                  </div>
+                  <div style={{ position: 'relative', height: '20px', display: 'flex', alignItems: 'center' }}>
+                    <input type="range" min={0} max={10000000} step={10000} value={minBudget}
+                      onChange={(e) => setMinBudget(Math.min(Number(e.target.value), maxBudget - 10000))}
+                      style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary, #9333ea)', zIndex: 1 }} />
+                    <input type="range" min={0} max={10000000} step={10000} value={maxBudget}
+                      onChange={(e) => setMaxBudget(Math.max(Number(e.target.value), minBudget + 10000))}
+                      style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary, #9333ea)', zIndex: 2, background: 'transparent' }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Мин. подписчиков</span>
+                    <span style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>
+                      {minRequiredSubs.toLocaleString()} — {maxRequiredSubs >= 1000000 ? '1M+' : maxRequiredSubs.toLocaleString()}
+                    </span>
+                  </div>
+                  <div style={{ position: 'relative', height: '20px', display: 'flex', alignItems: 'center' }}>
+                    <input type="range" min={0} max={1000000} step={1000} value={minRequiredSubs}
+                      onChange={(e) => setMinRequiredSubs(Math.min(Number(e.target.value), maxRequiredSubs - 1000))}
+                      style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary, #9333ea)', zIndex: 1 }} />
+                    <input type="range" min={0} max={1000000} step={1000} value={maxRequiredSubs}
+                      onChange={(e) => setMaxRequiredSubs(Math.max(Number(e.target.value), minRequiredSubs + 1000))}
+                      style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary, #9333ea)', zIndex: 2, background: 'transparent' }} />
+                  </div>
+                </div>
+
+                <div>
+                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '8px' }}>Дата размещения</span>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                      style={{
+                        flex: 1,
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        borderRadius: '8px',
+                        padding: '6px 10px',
+                        color: 'white',
+                        fontSize: '12px',
+                        outline: 'none',
+                        colorScheme: 'dark',
+                      }}
+                    />
+                    <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>—</span>
+                    <input
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                      style={{
+                        flex: 1,
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        borderRadius: '8px',
+                        padding: '6px 10px',
+                        color: 'white',
+                        fontSize: '12px',
+                        outline: 'none',
+                        colorScheme: 'dark',
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
-              <button type="button" onClick={resetCampaignFilters} className="border border-white/20 text-white/50 rounded-full px-3 py-1.5 text-xs mt-4 hover:text-white">
-                Сбросить
-              </button>
+
+              <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMinBudget(0)
+                    setMaxBudget(10000000)
+                    setMinRequiredSubs(0)
+                    setMaxRequiredSubs(1000000)
+                    setDateFrom('')
+                    setDateTo('')
+                    setFilterCountry('all')
+                    setFilterSocialNet('all')
+                  }}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: '8px',
+                    padding: '6px 14px',
+                    color: 'rgba(255,255,255,0.4)',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Сбросить фильтры
+                </button>
+              </div>
             </div>
           )}
 

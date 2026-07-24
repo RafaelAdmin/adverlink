@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { CurrencyCode, formatPrice, getExchangeRates } from '@/lib/currency'
-import CurrencySelector from '../components/CurrencySelector'
+import CurrencySelector from '@/app/dashboard/components/CurrencySelector'
 
 export default function ChannelProfilePage() {
   const params = useParams()

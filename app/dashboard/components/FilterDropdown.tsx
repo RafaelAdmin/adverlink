@@ -1,19 +1,35 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { CURRENCIES, CurrencyCode } from '@/lib/currency'
+import { useEffect, useRef, useState } from 'react'
 
-interface CurrencySelectorProps {
-  value: CurrencyCode
-  onChange: (currency: CurrencyCode) => void
-  size?: 'sm' | 'md'
+export type FilterOption = {
+  value: string
+  label: string
+  icon?: string
+  sublabel?: string
 }
 
-export default function CurrencySelector({ value, onChange, size = 'md' }: CurrencySelectorProps) {
+type FilterDropdownProps = {
+  value: string
+  onChange: (value: string) => void
+  options: FilterOption[]
+  size?: 'sm' | 'md'
+  minWidth?: number
+}
+
+const accentSelectedBg = 'color-mix(in srgb, var(--accent-primary, #9333ea) 20%, transparent)'
+
+export default function FilterDropdown({
+  value,
+  onChange,
+  options,
+  size = 'sm',
+  minWidth = 160,
+}: FilterDropdownProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-
-  const selected = CURRENCIES.find(c => c.code === value) || CURRENCIES[0]
+  const selected = options.find((o) => o.value === value) || options[0]
+  const isSmall = size === 'sm'
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -24,8 +40,6 @@ export default function CurrencySelector({ value, onChange, size = 'md' }: Curre
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
-
-  const isSmall = size === 'sm'
 
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
@@ -47,33 +61,37 @@ export default function CurrencySelector({ value, onChange, size = 'md' }: Curre
           transition: 'all 0.2s',
         }}
       >
-        <span style={{ fontSize: isSmall ? '14px' : '16px' }}>{selected.symbol}</span>
-        <span>{selected.code}</span>
+        {selected.icon && (
+          <span style={{ fontSize: isSmall ? '14px' : '16px' }}>{selected.icon}</span>
+        )}
+        <span>{selected.label}</span>
         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>
           {open ? '▲' : '▼'}
         </span>
       </button>
 
       {open && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 6px)',
-          left: 0,
-          zIndex: 50,
-          background: 'rgba(15,12,41,0.98)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          minWidth: '160px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-        }}>
-          {CURRENCIES.map(currency => (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 6px)',
+            right: 0,
+            zIndex: 50,
+            background: 'rgba(15,12,41,0.98)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            minWidth,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          }}
+        >
+          {options.map((option) => (
             <button
-              key={currency.code}
+              key={option.value}
               type="button"
               onClick={() => {
-                onChange(currency.code as CurrencyCode)
+                onChange(option.value)
                 setOpen(false)
               }}
               style={{
@@ -82,39 +100,41 @@ export default function CurrencySelector({ value, onChange, size = 'md' }: Curre
                 gap: '10px',
                 width: '100%',
                 padding: '10px 14px',
-                background: value === currency.code
-                  ? 'color-mix(in srgb, var(--accent-primary, #9333ea) 20%, transparent)'
-                  : 'transparent',
+                background: value === option.value ? accentSelectedBg : 'transparent',
                 border: 'none',
-                color: value === currency.code ? 'white' : 'rgba(255,255,255,0.7)',
+                color: value === option.value ? 'white' : 'rgba(255,255,255,0.7)',
                 fontSize: '13px',
                 cursor: 'pointer',
                 textAlign: 'left',
                 transition: 'background 0.15s',
               }}
-              onMouseEnter={e => {
-                if (value !== currency.code) {
+              onMouseEnter={(e) => {
+                if (value !== option.value) {
                   e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
                 }
               }}
-              onMouseLeave={e => {
-                if (value !== currency.code) {
+              onMouseLeave={(e) => {
+                if (value !== option.value) {
                   e.currentTarget.style.background = 'transparent'
                 }
               }}
             >
-              <span style={{ fontSize: '18px', width: '24px', textAlign: 'center' }}>
-                {currency.symbol}
-              </span>
+              {option.icon && (
+                <span style={{ fontSize: '18px', width: '24px', textAlign: 'center' }}>
+                  {option.icon}
+                </span>
+              )}
               <div>
-                <div style={{ fontWeight: value === currency.code ? '600' : '400' }}>
-                  {currency.code}
+                <div style={{ fontWeight: value === option.value ? '600' : '400' }}>
+                  {option.label}
                 </div>
-                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
-                  {currency.name}
-                </div>
+                {option.sublabel && (
+                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
+                    {option.sublabel}
+                  </div>
+                )}
               </div>
-              {value === currency.code && (
+              {value === option.value && (
                 <span style={{ marginLeft: 'auto', color: 'var(--accent-primary, #9333ea)' }}>
                   ✓
                 </span>
