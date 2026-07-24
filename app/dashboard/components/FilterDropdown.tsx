@@ -15,9 +15,8 @@ type FilterDropdownProps = {
   options: FilterOption[]
   size?: 'sm' | 'md'
   minWidth?: number
+  fullWidth?: boolean
 }
-
-const accentSelectedBg = 'color-mix(in srgb, var(--accent-primary, #9333ea) 20%, transparent)'
 
 export default function FilterDropdown({
   value,
@@ -25,6 +24,7 @@ export default function FilterDropdown({
   options,
   size = 'sm',
   minWidth = 160,
+  fullWidth = false,
 }: FilterDropdownProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -42,9 +42,13 @@ export default function FilterDropdown({
   }, [])
 
   return (
-    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+    <div
+      ref={ref}
+      style={{ position: 'relative', display: fullWidth ? 'block' : 'inline-block', width: fullWidth ? '100%' : undefined }}
+    >
       <button
         type="button"
+        className={`filter-dropdown-trigger${open ? ' filter-dropdown-trigger--open' : ''}`}
         onClick={() => setOpen(!open)}
         style={{
           display: 'flex',
@@ -59,30 +63,34 @@ export default function FilterDropdown({
           cursor: 'pointer',
           whiteSpace: 'nowrap',
           transition: 'all 0.2s',
+          width: fullWidth ? '100%' : undefined,
         }}
       >
         {selected.icon && (
           <span style={{ fontSize: isSmall ? '14px' : '16px' }}>{selected.icon}</span>
         )}
         <span>{selected.label}</span>
-        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>
+        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', marginLeft: fullWidth ? 'auto' : undefined }}>
           {open ? '▲' : '▼'}
         </span>
       </button>
 
       {open && (
         <div
+          className="filter-dropdown-menu"
           style={{
             position: 'absolute',
             top: 'calc(100% + 6px)',
-            right: 0,
+            left: fullWidth ? 0 : undefined,
+            right: fullWidth ? undefined : 0,
             zIndex: 50,
             background: 'rgba(15,12,41,0.98)',
             backdropFilter: 'blur(20px)',
             border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: '12px',
             overflow: 'hidden',
-            minWidth,
+            minWidth: fullWidth ? undefined : minWidth,
+            width: fullWidth ? '100%' : undefined,
             boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           }}
         >
@@ -90,6 +98,7 @@ export default function FilterDropdown({
             <button
               key={option.value}
               type="button"
+              className={`filter-dropdown-item${value === option.value ? ' filter-dropdown-item--selected' : ''}`}
               onClick={() => {
                 onChange(option.value)
                 setOpen(false)
@@ -100,23 +109,12 @@ export default function FilterDropdown({
                 gap: '10px',
                 width: '100%',
                 padding: '10px 14px',
-                background: value === option.value ? accentSelectedBg : 'transparent',
                 border: 'none',
                 color: value === option.value ? 'white' : 'rgba(255,255,255,0.7)',
                 fontSize: '13px',
                 cursor: 'pointer',
                 textAlign: 'left',
-                transition: 'background 0.15s',
-              }}
-              onMouseEnter={(e) => {
-                if (value !== option.value) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (value !== option.value) {
-                  e.currentTarget.style.background = 'transparent'
-                }
+                transition: 'background 0.15s, box-shadow 0.15s',
               }}
             >
               {option.icon && (
@@ -135,7 +133,7 @@ export default function FilterDropdown({
                 )}
               </div>
               {value === option.value && (
-                <span style={{ marginLeft: 'auto', color: 'var(--accent-primary, #9333ea)' }}>
+                <span style={{ marginLeft: 'auto', color: 'var(--accent-primary)' }}>
                   ✓
                 </span>
               )}

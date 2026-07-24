@@ -121,6 +121,61 @@ body {
   background-color: var(--accent-primary) !important;
 }
 
+.filter-dropdown-trigger,
+.filter-dropdown-item,
+.currency-dropdown-trigger,
+.currency-dropdown-item {
+  -webkit-tap-highlight-color: transparent;
+  outline: none !important;
+}
+
+.filter-dropdown-trigger:focus,
+.filter-dropdown-trigger:focus-visible,
+.currency-dropdown-trigger:focus,
+.currency-dropdown-trigger:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 45%, transparent);
+  border-color: var(--accent-primary) !important;
+}
+
+.filter-dropdown-trigger--open,
+.currency-dropdown-trigger--open {
+  border-color: var(--accent-primary) !important;
+  background: color-mix(in srgb, var(--accent-primary) 15%, rgba(255, 255, 255, 0.08)) !important;
+}
+
+.filter-dropdown-item:hover,
+.currency-dropdown-item:hover {
+  background: color-mix(in srgb, var(--accent-primary) 14%, transparent) !important;
+}
+
+.filter-dropdown-item:focus,
+.filter-dropdown-item:focus-visible,
+.currency-dropdown-item:focus,
+.currency-dropdown-item:focus-visible {
+  background: color-mix(in srgb, var(--accent-primary) 18%, transparent) !important;
+  box-shadow: inset 3px 0 0 var(--accent-primary);
+}
+
+.filter-dropdown-item--selected,
+.currency-dropdown-item--selected {
+  background: color-mix(in srgb, var(--accent-primary) 22%, transparent) !important;
+}
+
+.filter-dropdown-item--selected:hover,
+.filter-dropdown-item--selected:focus,
+.filter-dropdown-item--selected:focus-visible,
+.currency-dropdown-item--selected:hover,
+.currency-dropdown-item--selected:focus,
+.currency-dropdown-item--selected:focus-visible {
+  background: color-mix(in srgb, var(--accent-primary) 30%, transparent) !important;
+  box-shadow: inset 3px 0 0 var(--accent-primary);
+}
+
+.filter-dropdown-menu,
+.currency-dropdown-menu {
+  border-color: color-mix(in srgb, var(--accent-primary) 25%, rgba(255, 255, 255, 0.12)) !important;
+}
+
 @keyframes slideDown {
   from {
     opacity: 0;

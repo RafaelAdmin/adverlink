@@ -12,6 +12,18 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'api.telegram.org',
       },
+      {
+        protocol: 'https',
+        hostname: '**.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.ggpht.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.ytimg.com',
+      },
     ],
   },
   async headers() {

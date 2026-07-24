@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { formatAmdWithUsd } from '@/lib/currency'
+import { getChannelHandle } from '@/lib/channel-helpers'
+import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
 
 const getLevelBadge = (deals: number) => {
   if (deals >= 100) return { label: 'Diamond', icon: '💎', color: '#60a5fa' }
@@ -48,7 +50,7 @@ export default function PublicProfilePage() {
       const [channelsRes, reviewsRes, campaignsRes] = await Promise.all([
         supabase
           .from('channels')
-          .select('id, name, telegram_username, avatar_url, subscriber_count, is_verified, ad_price, verification_status')
+          .select('id, name, telegram_username, avatar_url, subscriber_count, is_verified, ad_price, verification_status, platform')
           .eq('owner_id', profileData.id)
           .eq('is_active', true),
         supabase
@@ -327,9 +329,12 @@ export default function PublicProfilePage() {
                   </div>
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ color: 'white', fontWeight: '600', fontSize: '15px' }}>{channel.name}</div>
+                  <div style={{ color: 'white', fontWeight: '600', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    {channel.name}
+                    <PlatformBadge platform={channel.platform} />
+                  </div>
                   <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>
-                    @{channel.telegram_username} · {Number(channel.subscriber_count || 0).toLocaleString()} подписчиков
+                    {getChannelHandle(channel)} · {Number(channel.subscriber_count || 0).toLocaleString()} подписчиков
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                     {(channel.is_verified || channel.verification_status === 'verified') && (

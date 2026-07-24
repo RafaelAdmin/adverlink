@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from './layout'
 import { formatAmdWithUsd } from '@/lib/currency'
+import { getChannelHandle } from '@/lib/channel-helpers'
+import PlatformBadge from './components/PlatformBadge'
 import { CreatorDealCard, AdvertiserDealCard } from './components/DealManagement'
 
 const glassCardStyle: React.CSSProperties = {
@@ -150,8 +152,11 @@ function CreatorDashboard() {
                 </div>
               )}
               <div className="flex-1">
-                <div className="text-white font-semibold">{channel.name}</div>
-                <div className="text-white/40 text-sm">@{channel.telegram_username}</div>
+                <div className="text-white font-semibold flex items-center gap-2 flex-wrap">
+                  {channel.name}
+                  <PlatformBadge platform={channel.platform} />
+                </div>
+                <div className="text-white/40 text-sm">{getChannelHandle(channel)}</div>
               </div>
               <div className="flex gap-6 text-center">
                 <div>

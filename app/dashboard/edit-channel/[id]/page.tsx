@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { useRouter, useParams } from 'next/navigation'
+import { getChannelHandle } from '@/lib/channel-helpers'
+import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
 
 export default function EditChannelPage() {
   const [channel, setChannel] = useState<any>(null)
@@ -85,8 +87,11 @@ export default function EditChannelPage() {
             </div>
           )}
           <div>
-            <div className="text-white font-semibold">{channel.name}</div>
-            <div className="text-white/40 text-sm">@{channel.telegram_username}</div>
+            <div className="text-white font-semibold flex items-center gap-2 flex-wrap">
+              {channel.name}
+              <PlatformBadge platform={channel.platform} />
+            </div>
+            <div className="text-white/40 text-sm">{getChannelHandle(channel)}</div>
             <div className={`text-xs mt-1 ${
               channel.verification_status === 'verified' ? 'text-green-400' : 'text-yellow-400'
             }`}>

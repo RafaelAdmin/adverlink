@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { getChannelHandle } from '@/lib/channel-helpers'
+import PlatformBadge from './PlatformBadge'
 
 interface UserProfileCardProps {
   profileId: string
@@ -38,7 +40,7 @@ export default function UserProfileCard({ profileId, onClose }: UserProfileCardP
         supabase.from('profiles').select('*').eq('id', profileId).single(),
         supabase
           .from('channels')
-          .select('id, name, telegram_username, avatar_url, subscriber_count, is_verified')
+          .select('id, name, telegram_username, avatar_url, subscriber_count, is_verified, platform')
           .eq('owner_id', profileId)
           .eq('is_active', true),
         supabase.from('reviews').select('rating').eq('reviewee_id', profileId),
@@ -504,14 +506,18 @@ export default function UserProfileCard({ profileId, onClose }: UserProfileCardP
                           display: 'flex',
                           alignItems: 'center',
                           gap: '4px',
+                          flexWrap: 'wrap',
                         }}
                       >
                         {channel.name}
+                        <PlatformBadge platform={channel.platform} />
                         {channel.is_verified && (
                           <span style={{ color: '#4ade80', fontSize: '10px' }}>✓</span>
                         )}
                       </div>
                       <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>
+                        {getChannelHandle(channel)}
+                        {' · '}
                         {channel.subscriber_count >= 1000
                           ? Math.round(channel.subscriber_count / 1000) + 'K'
                           : channel.subscriber_count}{' '}

@@ -8,6 +8,8 @@ import { formatAmdWithUsd, toUsdEstimate, CurrencyCode, formatPrice, getExchange
 import CurrencySelector from '../components/CurrencySelector'
 import FilterDropdown from '../components/FilterDropdown'
 import { AdvertiserDealCard, CreatorDealCard } from '../components/DealManagement'
+import { getChannelHandle } from '@/lib/channel-helpers'
+import PlatformBadge from '../components/PlatformBadge'
 
 const ADVERTISER_SORT_OPTIONS = [
   { value: 'newest', label: 'Новые' },
@@ -535,6 +537,7 @@ export default function DashboardMarketplacePage() {
                       options={COUNTRY_FILTER_OPTIONS}
                       size="sm"
                       minWidth={200}
+                      fullWidth
                     />
                   </div>
 
@@ -546,6 +549,7 @@ export default function DashboardMarketplacePage() {
                       options={SOCIAL_FILTER_OPTIONS}
                       size="sm"
                       minWidth={200}
+                      fullWidth
                     />
                   </div>
 
@@ -680,9 +684,10 @@ export default function DashboardMarketplacePage() {
                   <Link key={channel.id} href={`/dashboard/channel/${channel.id}`} className="bg-white/5 border border-white/10 rounded-2xl p-6 hover-border-accent transition cursor-pointer block">
                     <div className="flex items-center gap-4 mb-4">
                       <ChannelAvatar channel={channel} />
+                      <PlatformBadge platform={channel.platform} />
                       <div className="flex-1 min-w-0">
                         <div className="text-white font-semibold truncate">{channel.name}</div>
-                        <div className="text-white/40 text-sm">@{channel.telegram_username}</div>
+                        <div className="text-white/40 text-sm truncate">{getChannelHandle(channel)}</div>
                       </div>
                       {(channel.is_verified || channel.verification_status === 'verified') && (
                         <span className="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full">✓</span>
@@ -901,6 +906,7 @@ export default function DashboardMarketplacePage() {
                     options={COUNTRY_FILTER_OPTIONS}
                     size="sm"
                     minWidth={200}
+                    fullWidth
                   />
                 </div>
 
@@ -912,6 +918,7 @@ export default function DashboardMarketplacePage() {
                     options={SOCIAL_FILTER_OPTIONS}
                     size="sm"
                     minWidth={200}
+                    fullWidth
                   />
                 </div>
 

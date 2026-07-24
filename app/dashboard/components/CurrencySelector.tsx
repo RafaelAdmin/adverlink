@@ -31,6 +31,7 @@ export default function CurrencySelector({ value, onChange, size = 'md' }: Curre
     <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
       <button
         type="button"
+        className={`currency-dropdown-trigger${open ? ' currency-dropdown-trigger--open' : ''}`}
         onClick={() => setOpen(!open)}
         style={{
           display: 'flex',
@@ -55,23 +56,27 @@ export default function CurrencySelector({ value, onChange, size = 'md' }: Curre
       </button>
 
       {open && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 6px)',
-          left: 0,
-          zIndex: 50,
-          background: 'rgba(15,12,41,0.98)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          minWidth: '160px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-        }}>
+        <div
+          className="currency-dropdown-menu"
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 6px)',
+            left: 0,
+            zIndex: 50,
+            background: 'rgba(15,12,41,0.98)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            minWidth: '160px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          }}
+        >
           {CURRENCIES.map(currency => (
             <button
               key={currency.code}
               type="button"
+              className={`currency-dropdown-item${value === currency.code ? ' currency-dropdown-item--selected' : ''}`}
               onClick={() => {
                 onChange(currency.code as CurrencyCode)
                 setOpen(false)
@@ -82,25 +87,12 @@ export default function CurrencySelector({ value, onChange, size = 'md' }: Curre
                 gap: '10px',
                 width: '100%',
                 padding: '10px 14px',
-                background: value === currency.code
-                  ? 'color-mix(in srgb, var(--accent-primary, #9333ea) 20%, transparent)'
-                  : 'transparent',
                 border: 'none',
                 color: value === currency.code ? 'white' : 'rgba(255,255,255,0.7)',
                 fontSize: '13px',
                 cursor: 'pointer',
                 textAlign: 'left',
-                transition: 'background 0.15s',
-              }}
-              onMouseEnter={e => {
-                if (value !== currency.code) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
-                }
-              }}
-              onMouseLeave={e => {
-                if (value !== currency.code) {
-                  e.currentTarget.style.background = 'transparent'
-                }
+                transition: 'background 0.15s, box-shadow 0.15s',
               }}
             >
               <span style={{ fontSize: '18px', width: '24px', textAlign: 'center' }}>
@@ -115,7 +107,7 @@ export default function CurrencySelector({ value, onChange, size = 'md' }: Curre
                 </div>
               </div>
               {value === currency.code && (
-                <span style={{ marginLeft: 'auto', color: 'var(--accent-primary, #9333ea)' }}>
+                <span style={{ marginLeft: 'auto', color: 'var(--accent-primary)' }}>
                   ✓
                 </span>
               )}

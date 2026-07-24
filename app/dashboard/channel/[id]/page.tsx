@@ -5,7 +5,9 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { CurrencyCode, formatPrice, getExchangeRates } from '@/lib/currency'
+import { getChannelHandle, getChannelLink, getPlatformLabel } from '@/lib/channel-helpers'
 import CurrencySelector from '@/app/dashboard/components/CurrencySelector'
+import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
 
 export default function ChannelProfilePage() {
   const params = useParams()
@@ -48,9 +50,9 @@ export default function ChannelProfilePage() {
     load()
   }, [id])
 
-  const openTelegram = () => {
+  const openChannel = () => {
     if (channel?.telegram_username) {
-      window.open(`https://t.me/${channel.telegram_username.replace(/^@/, '')}`, '_blank')
+      window.open(getChannelLink(channel), '_blank')
     }
   }
 
@@ -157,7 +159,10 @@ export default function ChannelProfilePage() {
             </div>
             <div className="flex-1">
               <h1 className="text-3xl font-bold text-white mb-2">{channel.name}</h1>
-              <p className="text-white/50 text-lg mb-4">@{channel.telegram_username}</p>
+              <div className="mb-3">
+                <PlatformBadge platform={channel.platform} />
+              </div>
+              <p className="text-white/50 text-lg mb-4">{getChannelHandle(channel)}</p>
               <div className="flex flex-wrap items-center gap-3">
                 {isVerified ? (
                   <span className="bg-green-500/20 text-green-400 text-sm px-3 py-1 rounded-full">
@@ -169,10 +174,10 @@ export default function ChannelProfilePage() {
                   </span>
                 )}
                 <button
-                  onClick={openTelegram}
+                  onClick={openChannel}
                   className="border border-white/20 text-white/80 hover-border-accent hover:text-white transition text-sm px-4 py-1.5 rounded-full"
                 >
-                  Открыть в Telegram
+                  Открыть в {getPlatformLabel(channel.platform || 'telegram')}
                 </button>
               </div>
             </div>
