@@ -97,22 +97,62 @@ function SidebarItem({
 function RoleToggle({ role, onToggle }: { role: Role; onToggle: () => void }) {
   const isCreator = role === 'creator'
   return (
-    <div className="flex items-center gap-3">
-      <span className={`text-xs font-medium transition ${!isCreator ? 'text-white' : 'text-white/40'}`}>
-        Рекламодатель
-      </span>
-      <button
-        onClick={onToggle}
-        className="relative w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none"
-        style={{ background: isCreator ? 'var(--accent-primary)' : 'rgba(255,255,255,0.15)' }}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div
+          title="Рекламодатель"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            color: !isCreator ? 'white' : 'rgba(255,255,255,0.35)',
+            transition: 'color 0.2s',
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 8a3 3 0 0 1 0 6" />
+            <path d="M10 8v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-5" />
+            <path d="M12 8H5l-2 4l2 4h14l2-4l-2-4z" />
+          </svg>
+        </div>
+
+        <button
+          onClick={onToggle}
+          className="relative w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none"
+          style={{ background: isCreator ? 'var(--accent-primary, #9333ea)' : 'rgba(255,255,255,0.15)' }}
+        >
+          <span
+            className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-300"
+            style={{ transform: isCreator ? 'translateX(24px)' : 'translateX(0)' }}
+          />
+        </button>
+
+        <div
+          title="Создатель"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            color: isCreator ? 'white' : 'rgba(255,255,255,0.35)',
+            transition: 'color 0.2s',
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 21a9 9 0 0 1 0-18c4.97 0 9 3.582 9 8c0 1.06-.474 2.078-1.318 2.828-.844.75-1.989 1.172-3.182 1.172h-2.5a2 2 0 0 0-1 3.75a1.3 1.3 0 0 1-1 2.25" />
+            <path d="M7.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0" />
+            <path d="M11.5 7.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0" />
+            <path d="M15.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0" />
+          </svg>
+        </div>
+      </div>
+
+      <span
+        style={{
+          color: 'rgba(255,255,255,0.35)',
+          fontSize: '11px',
+          fontWeight: '500',
+          whiteSpace: 'nowrap',
+        }}
       >
-        <span
-          className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-300"
-          style={{ transform: isCreator ? 'translateX(24px)' : 'translateX(0)' }}
-        />
-      </button>
-      <span className={`text-xs font-medium transition ${isCreator ? 'text-white' : 'text-white/40'}`}>
-        Создатель
+        {isCreator ? 'Режим создателя' : 'Режим рекламодателя'}
       </span>
     </div>
   )
@@ -642,20 +682,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </Link>
 
           <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '0 4px 8px' }} />
-
-          <div className="px-4 mb-2">
-            <span
-              style={{
-                color: 'rgba(255,255,255,0.25)',
-                fontSize: '10px',
-                fontWeight: '600',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-              }}
-            >
-              {role === 'creator' ? 'Режим создателя' : 'Режим рекламодателя'}
-            </span>
-          </div>
 
           {role === 'creator' ? (
             <>
