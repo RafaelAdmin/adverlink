@@ -12,6 +12,7 @@ import {
 } from '../../components/DealManagement'
 import { formatAmdWithUsd } from '@/lib/currency'
 import { glassDealCard } from '@/lib/deals'
+import DealChat from '@/app/dashboard/components/DealChat'
 
 export default function DealDetailPage() {
   const params = useParams()
@@ -200,6 +201,12 @@ export default function DealDetailPage() {
           />
         )}
       </div>
+
+      {userId && request && (
+        <div style={{ marginTop: '24px' }}>
+          <DealChat dealId={request.id} currentUserId={userId} />
+        </div>
+      )}
     </div>
   )
 }

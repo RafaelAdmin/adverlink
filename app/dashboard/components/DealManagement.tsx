@@ -13,6 +13,7 @@ import {
   normalizeDealStatus,
 } from '@/lib/deals'
 import { formatAmdWithUsd, toUsdEstimate } from '@/lib/currency'
+import DealChat from './DealChat'
 
 export function DealStatusPill({ status, large }: { status: string; large?: boolean }) {
   const badge = getDealStatusBadge(status)
@@ -1085,6 +1086,11 @@ export function CreatorDealCard({
             userId={userId}
             onUpdate={(patch) => onUpdate(request.id, patch)}
           />
+          {request.status !== 'new' && request.status !== 'rejected' && userId && (
+            <div style={{ marginTop: '16px' }}>
+              <DealChat dealId={request.id} currentUserId={userId} />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -1152,6 +1158,11 @@ export function AdvertiserDealCard({
             userId={userId}
             onUpdate={(patch) => onUpdate(request.id, patch)}
           />
+          {request.status !== 'new' && request.status !== 'rejected' && userId && (
+            <div style={{ marginTop: '16px' }}>
+              <DealChat dealId={request.id} currentUserId={userId} />
+            </div>
+          )}
         </div>
       )}
     </div>

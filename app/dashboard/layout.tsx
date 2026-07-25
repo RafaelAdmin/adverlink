@@ -544,6 +544,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [newRequestsCount, setNewRequestsCount] = useState(0)
   const [pendingReviewCount, setPendingReviewCount] = useState(0)
+  const [unreadMessages, setUnreadMessages] = useState(0)
 
   const refreshAvatar = useCallback(async () => {
     if (!user) return
@@ -626,6 +627,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .eq('advertiser_id', user.id)
         .eq('status', 'submitted')
       setPendingReviewCount(pendingCount || 0)
+
+      const { count: unreadCount } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .neq('sender_id', user.id)
+        .gt('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      setUnreadMessages(unreadCount || 0)
     }
     getUser()
   }, [])
@@ -686,7 +694,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {role === 'creator' ? (
             <>
               <SidebarItem icon="ti-brand-telegram" label="Мои каналы" href="/dashboard" active={isActive('/dashboard')} />
-              <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} badge={newRequestsCount} />
+              <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} badge={newRequestsCount + unreadMessages} />
               <SidebarItem icon="ti-chart-line" label="Статистика" href="/dashboard/statistics" active={isActive('/dashboard/statistics')} />
               <SidebarItem icon="ti-star" label="Отзывы" href="/dashboard/reviews" active={isActive('/dashboard/reviews')} />
               <SidebarItem icon="ti-users" label="Друзья" href="/dashboard/friends" active={isActive('/dashboard/friends')} />
@@ -696,7 +704,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ) : (
             <>
               <SidebarItem icon="ti-layout-dashboard" label="Мои кампании" href="/dashboard" active={isActive('/dashboard')} />
-              <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} badge={pendingReviewCount} />
+              <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} badge={pendingReviewCount + unreadMessages} />
               <SidebarItem icon="ti-chart-line" label="Статистика" href="/dashboard/statistics" active={isActive('/dashboard/statistics')} />
               <SidebarItem icon="ti-star" label="Отзывы" href="/dashboard/reviews" active={isActive('/dashboard/reviews')} />
               <SidebarItem icon="ti-users" label="Друзья" href="/dashboard/friends" active={isActive('/dashboard/friends')} />
