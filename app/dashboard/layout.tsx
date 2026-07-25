@@ -97,63 +97,76 @@ function SidebarItem({
 function RoleToggle({ role, onToggle }: { role: Role; onToggle: () => void }) {
   const isCreator = role === 'creator'
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div
-          title="Рекламодатель"
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: !isCreator ? 'white' : 'rgba(255,255,255,0.35)', transition: 'color 0.2s', flexShrink: 0 }}>
+          <path d="M18 8a3 3 0 0 1 0 6" />
+          <path d="M10 8v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-5" />
+          <path d="M12 8H5l-2 4l2 4h14l2-4l-2-4z" />
+        </svg>
+        <span
           style={{
-            display: 'flex',
-            alignItems: 'center',
             color: !isCreator ? 'white' : 'rgba(255,255,255,0.35)',
+            fontSize: '12px',
+            fontWeight: !isCreator ? '600' : '400',
             transition: 'color 0.2s',
+            whiteSpace: 'nowrap',
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M18 8a3 3 0 0 1 0 6" />
-            <path d="M10 8v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-5" />
-            <path d="M12 8H5l-2 4l2 4h14l2-4l-2-4z" />
-          </svg>
-        </div>
-
-        <button
-          onClick={onToggle}
-          className="relative w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none"
-          style={{ background: isCreator ? 'var(--accent-primary, #9333ea)' : 'rgba(255,255,255,0.15)' }}
-        >
-          <span
-            className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-300"
-            style={{ transform: isCreator ? 'translateX(24px)' : 'translateX(0)' }}
-          />
-        </button>
-
-        <div
-          title="Создатель"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            color: isCreator ? 'white' : 'rgba(255,255,255,0.35)',
-            transition: 'color 0.2s',
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 21a9 9 0 0 1 0-18c4.97 0 9 3.582 9 8c0 1.06-.474 2.078-1.318 2.828-.844.75-1.989 1.172-3.182 1.172h-2.5a2 2 0 0 0-1 3.75a1.3 1.3 0 0 1-1 2.25" />
-            <path d="M7.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0" />
-            <path d="M11.5 7.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0" />
-            <path d="M15.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0" />
-          </svg>
-        </div>
+          Рекламодатель
+        </span>
       </div>
 
-      <span
+      <button
+        type="button"
+        onClick={onToggle}
         style={{
-          color: 'rgba(255,255,255,0.35)',
-          fontSize: '11px',
-          fontWeight: '500',
-          whiteSpace: 'nowrap',
+          position: 'relative',
+          width: '44px',
+          height: '24px',
+          borderRadius: '12px',
+          border: 'none',
+          cursor: 'pointer',
+          flexShrink: 0,
+          transition: 'background 0.3s',
+          background: isCreator ? 'var(--accent-primary, #9333ea)' : 'rgba(255,255,255,0.15)',
         }}
       >
-        {isCreator ? 'Режим создателя' : 'Режим рекламодателя'}
-      </span>
+        <span
+          style={{
+            position: 'absolute',
+            top: '2px',
+            left: '2px',
+            width: '20px',
+            height: '20px',
+            borderRadius: '50%',
+            background: 'white',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            transition: 'transform 0.3s',
+            transform: isCreator ? 'translateX(20px)' : 'translateX(0)',
+          }}
+        />
+      </button>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: isCreator ? 'white' : 'rgba(255,255,255,0.35)', transition: 'color 0.2s', flexShrink: 0 }}>
+          <path d="M12 21a9 9 0 0 1 0-18c4.97 0 9 3.582 9 8c0 1.06-.474 2.078-1.318 2.828-.844.75-1.989 1.172-3.182 1.172h-2.5a2 2 0 0 0-1 3.75a1.3 1.3 0 0 1-1 2.25" />
+          <path d="M7.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0" />
+          <path d="M11.5 7.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0" />
+          <path d="M15.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0" />
+        </svg>
+        <span
+          style={{
+            color: isCreator ? 'white' : 'rgba(255,255,255,0.35)',
+            fontSize: '12px',
+            fontWeight: isCreator ? '600' : '400',
+            transition: 'color 0.2s',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Создатель
+        </span>
+      </div>
     </div>
   )
 }
@@ -270,7 +283,20 @@ function GlobalSearch() {
           onFocus={() => query && setOpen(true)}
           className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 pl-9 text-white placeholder-white/30 outline-none focus-accent transition w-72 text-sm"
         />
-        <span className="absolute left-3 top-2.5 text-white/30 text-sm">🔍</span>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="rgba(255,255,255,0.4)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', flexShrink: 0 }}
+        >
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
+        </svg>
         {query && (
           <button
             onClick={() => { setQuery(''); setOpen(false) }}
@@ -680,7 +706,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <DashboardContext.Provider value={{ role, toggleRole, user, search, avatarUrl }}>
       <BreathingBackground gradient={currentGradient} lockViewport className="flex h-full">
         <aside
-          className="w-64 shrink-0 h-full flex flex-col gap-1 p-4 overflow-y-auto"
+          className="w-64 shrink-0 h-full flex flex-col gap-1 px-4 pb-4 pt-0 overflow-y-auto"
           style={{
             background: 'rgba(255,255,255,0.04)',
             backdropFilter: 'blur(20px)',
@@ -688,7 +714,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             borderRight: '1px solid rgba(255,255,255,0.08)',
           }}
         >
-          <Link href="/dashboard" className="flex items-center gap-2 px-4 py-3 mb-4 shrink-0">
+          <Link
+            href="/dashboard"
+            className="shrink-0 block"
+            style={{
+              height: '64px',
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0 16px',
+              marginBottom: '8px',
+            }}
+          >
             <span className="text-white text-2xl font-bold tracking-tight">
               Adver<span style={{ color: 'var(--accent-primary, #9333ea)' }}>Link</span>
             </span>
@@ -755,8 +791,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <div className="flex-1 flex flex-col min-h-0 min-w-0 h-full">
           <header
-            className="shrink-0 flex items-center justify-between px-6 py-3 z-20"
+            className="shrink-0 flex items-center justify-between px-6 z-20"
             style={{
+              minHeight: '64px',
+              display: 'flex',
+              alignItems: 'center',
               background: 'rgba(255,255,255,0.03)',
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
