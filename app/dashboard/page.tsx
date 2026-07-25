@@ -93,11 +93,11 @@ function CreatorDashboard() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
         <h1 className="text-2xl font-bold text-white">Мои каналы</h1>
         <Link
           href="/dashboard/add-channel"
-          className="btn-accent transition text-white px-5 py-2 rounded-full text-sm font-medium flex items-center gap-2"
+          className="btn-accent transition text-white px-5 py-2 rounded-full text-sm font-medium flex items-center gap-2 self-start sm:self-auto"
         >
           <i className="ti ti-plus" style={{ fontSize: '14px' }} />
           Добавить канал
@@ -105,7 +105,10 @@ function CreatorDashboard() {
       </div>
       <p className="text-white/50 mb-8">Управляй своими Telegram каналами</p>
 
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div
+        className="stats-grid mb-8"
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}
+      >
         {metricCards.map((item) => (
           <div key={item.label} style={glassCardStyle}>
             <div className="text-3xl font-bold text-white mb-1">{item.value}</div>
@@ -134,8 +137,10 @@ function CreatorDashboard() {
             <Link
               key={channel.id}
               href={`/dashboard/edit-channel/${channel.id}`}
+              className="channel-row"
               style={{
                 display: 'flex',
+                flexWrap: 'wrap',
                 alignItems: 'center',
                 gap: '16px',
                 padding: '14px 20px',
@@ -174,7 +179,7 @@ function CreatorDashboard() {
                 </div>
               )}
 
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ flex: '1 1 160px', minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span
                     style={{
@@ -211,14 +216,17 @@ function CreatorDashboard() {
               </div>
 
               <div
+                className="channel-row-stats"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0',
-                  flexShrink: 0,
+                  flexWrap: 'wrap',
+                  gap: '16px',
+                  marginTop: '8px',
+                  flex: '1 1 100%',
                 }}
               >
-                <div style={{ width: '110px', textAlign: 'center' }}>
+                <div className="channel-stat-col" style={{ minWidth: '70px', textAlign: 'center' }}>
                   <div style={{ color: 'white', fontSize: '14px', fontWeight: '600' }}>
                     {channel.subscriber_count >= 1000
                       ? `${(channel.subscriber_count / 1000).toFixed(1)}K`
@@ -227,7 +235,7 @@ function CreatorDashboard() {
                   <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>подписчиков</div>
                 </div>
 
-                <div style={{ width: '90px', textAlign: 'center' }}>
+                <div className="channel-stat-col" style={{ minWidth: '70px', textAlign: 'center' }}>
                   <div style={{ color: 'white', fontSize: '14px', fontWeight: '600' }}>
                     {channel.avg_views >= 1000
                       ? `${(channel.avg_views / 1000).toFixed(1)}K`
@@ -236,7 +244,7 @@ function CreatorDashboard() {
                   <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>охваты</div>
                 </div>
 
-                <div style={{ width: '160px', textAlign: 'center' }}>
+                <div className="channel-stat-col" style={{ minWidth: '90px', textAlign: 'center' }}>
                   <div
                     style={{
                       color: 'var(--accent-primary, #9333ea)',
@@ -254,7 +262,7 @@ function CreatorDashboard() {
                   <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>цена</div>
                 </div>
 
-                <div style={{ width: '130px', display: 'flex', justifyContent: 'center' }}>
+                <div className="channel-stat-col" style={{ minWidth: '100px', display: 'flex', justifyContent: 'center' }}>
                   {channel.is_verified ? (
                     <div
                       style={{
@@ -297,7 +305,7 @@ function CreatorDashboard() {
 
                 <i
                   className="ti ti-chevron-right"
-                  style={{ fontSize: '16px', color: 'rgba(255,255,255,0.2)', width: '20px' }}
+                  style={{ fontSize: '16px', color: 'rgba(255,255,255,0.2)', width: '20px', marginLeft: 'auto' }}
                 />
               </div>
             </Link>
@@ -454,7 +462,10 @@ function AdvertiserDashboard() {
       <h1 className="text-2xl font-bold text-white mb-2">Мои кампании</h1>
       <p className="text-white/50 mb-8">Создавай кампании — создатели каналов откликнутся сами</p>
 
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div
+        className="stats-grid mb-8"
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}
+      >
         {metricCards.map((item) => (
           <div key={item.label} style={glassCardStyle}>
             <div className="text-3xl font-bold text-white mb-1">{item.value}</div>

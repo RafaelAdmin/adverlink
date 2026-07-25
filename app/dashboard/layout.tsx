@@ -32,16 +32,19 @@ function SidebarItem({
   href,
   active,
   badge,
+  onNavigate,
 }: {
   icon: string
   label: string
   href: string
   active?: boolean
   badge?: number
+  onNavigate?: () => void
 }) {
   return (
     <Link
       href={href}
+      onClick={onNavigate}
       className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all duration-200 w-full group ${
         active ? 'text-white' : 'text-white/50 hover:text-white'
       }`}
@@ -148,7 +151,7 @@ function LockedAnalyticsItem({ onNavigate }: { onNavigate: () => void }) {
 function RoleToggle({ role, onToggle }: { role: Role; onToggle: () => void }) {
   const isCreator = role === 'creator'
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: !isCreator ? 'white' : 'rgba(255,255,255,0.35)', transition: 'color 0.2s', flexShrink: 0 }}>
           <path d="M18 8a3 3 0 0 1 0 6" />
@@ -156,6 +159,7 @@ function RoleToggle({ role, onToggle }: { role: Role; onToggle: () => void }) {
           <path d="M12 8H5l-2 4l2 4h14l2-4l-2-4z" />
         </svg>
         <span
+          className="topbar-role-label"
           style={{
             color: !isCreator ? 'white' : 'rgba(255,255,255,0.35)',
             fontSize: '12px',
@@ -207,6 +211,7 @@ function RoleToggle({ role, onToggle }: { role: Role; onToggle: () => void }) {
           <path d="M15.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0" />
         </svg>
         <span
+          className="topbar-role-label"
           style={{
             color: isCreator ? 'white' : 'rgba(255,255,255,0.35)',
             fontSize: '12px',
@@ -324,15 +329,39 @@ function GlobalSearch() {
     return () => clearTimeout(timeout)
   }, [query, currentUserId])
 
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+
   return (
     <div ref={ref} className="relative">
-      <div className="relative">
+      <button
+        type="button"
+        className="mobile-search-btn"
+        onClick={() => setMobileSearchOpen((v) => !v)}
+        aria-label="Поиск"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '8px',
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '10px',
+          cursor: 'pointer',
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
+        </svg>
+      </button>
+
+      <div className={`relative topbar-search ${mobileSearchOpen ? 'topbar-search--open' : ''}`}>
         <input
           placeholder="Поиск..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query && setOpen(true)}
-          className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 pl-9 text-white placeholder-white/30 outline-none focus-accent transition w-72 text-sm"
+          className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 pl-9 text-white placeholder-white/30 outline-none focus-accent transition w-72 text-sm full-width-mobile"
         />
         <svg
           width="16"
@@ -628,6 +657,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [newRequestsCount, setNewRequestsCount] = useState(0)
   const [pendingReviewCount, setPendingReviewCount] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const closeSidebar = () => setSidebarOpen(false)
 
   const refreshAvatar = useCallback(async () => {
     if (!user) return
@@ -757,14 +789,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <DashboardContext.Provider value={{ role, toggleRole, user, search, avatarUrl }}>
-      <BreathingBackground gradient={currentGradient} lockViewport className="flex h-full">
+      <BreathingBackground gradient={currentGradient} lockViewport className="min-h-screen flex h-full">
+        {sidebarOpen && (
+          <div
+            className="sidebar-overlay"
+            onClick={closeSidebar}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.5)',
+              zIndex: 39,
+              backdropFilter: 'blur(2px)',
+            }}
+          />
+        )}
+
         <aside
-          className="w-64 shrink-0 h-full flex flex-col gap-1 px-4 pb-4 pt-0 overflow-y-auto"
+          className="md-sidebar w-64 shrink-0 h-full flex flex-col gap-1 px-4 pb-4 pt-0 overflow-y-auto"
           style={{
+            width: '256px',
+            flexShrink: 0,
+            display: 'flex',
+            flexDirection: 'column',
             background: 'rgba(255,255,255,0.04)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
             borderRight: '1px solid rgba(255,255,255,0.08)',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            height: '100vh',
+            zIndex: 40,
+            transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+            transition: 'transform 0.3s ease',
           }}
         >
           <Link
@@ -787,35 +844,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {role === 'creator' ? (
             <>
-              <SidebarItem icon="ti-brand-telegram" label="Мои каналы" href="/dashboard" active={isActive('/dashboard')} />
-              <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} badge={newRequestsCount + unreadMessages} />
-              <SidebarItem icon="ti-chart-line" label="Статистика" href="/dashboard/statistics" active={isActive('/dashboard/statistics')} />
+              <SidebarItem icon="ti-brand-telegram" label="Мои каналы" href="/dashboard" active={isActive('/dashboard')} onNavigate={closeSidebar} />
+              <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} badge={newRequestsCount + unreadMessages} onNavigate={closeSidebar} />
+              <SidebarItem icon="ti-chart-line" label="Статистика" href="/dashboard/statistics" active={isActive('/dashboard/statistics')} onNavigate={closeSidebar} />
               {isPro && (
-                <SidebarItem icon="ti-report-analytics" label="Аналитика" href="/dashboard/analytics" active={isActive('/dashboard/analytics')} />
+                <SidebarItem icon="ti-report-analytics" label="Аналитика" href="/dashboard/analytics" active={isActive('/dashboard/analytics')} onNavigate={closeSidebar} />
               )}
-              <SidebarItem icon="ti-star" label="Отзывы" href="/dashboard/reviews" active={isActive('/dashboard/reviews')} />
-              <SidebarItem icon="ti-users" label="Друзья" href="/dashboard/friends" active={isActive('/dashboard/friends')} />
-              <SidebarItem icon="ti-diamond" label="Подписки" href="/dashboard/subscriptions" active={isActive('/dashboard/subscriptions')} />
-              <SidebarItem icon="ti-settings" label="Настройки" href="/dashboard/settings" active={isActive('/dashboard/settings')} />
+              <SidebarItem icon="ti-star" label="Отзывы" href="/dashboard/reviews" active={isActive('/dashboard/reviews')} onNavigate={closeSidebar} />
+              <SidebarItem icon="ti-users" label="Друзья" href="/dashboard/friends" active={isActive('/dashboard/friends')} onNavigate={closeSidebar} />
+              <SidebarItem icon="ti-diamond" label="Подписки" href="/dashboard/subscriptions" active={isActive('/dashboard/subscriptions')} onNavigate={closeSidebar} />
+              <SidebarItem icon="ti-settings" label="Настройки" href="/dashboard/settings" active={isActive('/dashboard/settings')} onNavigate={closeSidebar} />
             </>
           ) : (
             <>
-              <SidebarItem icon="ti-layout-dashboard" label="Мои кампании" href="/dashboard" active={isActive('/dashboard')} />
-              <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} badge={pendingReviewCount + unreadMessages} />
-              <SidebarItem icon="ti-chart-line" label="Статистика" href="/dashboard/statistics" active={isActive('/dashboard/statistics')} />
+              <SidebarItem icon="ti-layout-dashboard" label="Мои кампании" href="/dashboard" active={isActive('/dashboard')} onNavigate={closeSidebar} />
+              <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} badge={pendingReviewCount + unreadMessages} onNavigate={closeSidebar} />
+              <SidebarItem icon="ti-chart-line" label="Статистика" href="/dashboard/statistics" active={isActive('/dashboard/statistics')} onNavigate={closeSidebar} />
               {isPro && (
-                <SidebarItem icon="ti-report-analytics" label="Аналитика" href="/dashboard/analytics" active={isActive('/dashboard/analytics')} />
+                <SidebarItem icon="ti-report-analytics" label="Аналитика" href="/dashboard/analytics" active={isActive('/dashboard/analytics')} onNavigate={closeSidebar} />
               )}
-              <SidebarItem icon="ti-star" label="Отзывы" href="/dashboard/reviews" active={isActive('/dashboard/reviews')} />
-              <SidebarItem icon="ti-users" label="Друзья" href="/dashboard/friends" active={isActive('/dashboard/friends')} />
-              <SidebarItem icon="ti-diamond" label="Подписки" href="/dashboard/subscriptions" active={isActive('/dashboard/subscriptions')} />
-              <SidebarItem icon="ti-settings" label="Настройки" href="/dashboard/settings" active={isActive('/dashboard/settings')} />
+              <SidebarItem icon="ti-star" label="Отзывы" href="/dashboard/reviews" active={isActive('/dashboard/reviews')} onNavigate={closeSidebar} />
+              <SidebarItem icon="ti-users" label="Друзья" href="/dashboard/friends" active={isActive('/dashboard/friends')} onNavigate={closeSidebar} />
+              <SidebarItem icon="ti-diamond" label="Подписки" href="/dashboard/subscriptions" active={isActive('/dashboard/subscriptions')} onNavigate={closeSidebar} />
+              <SidebarItem icon="ti-settings" label="Настройки" href="/dashboard/settings" active={isActive('/dashboard/settings')} onNavigate={closeSidebar} />
             </>
           )}
 
           <div className="flex-1" />
 
-          {!isPro && <LockedAnalyticsItem onNavigate={() => router.push('/dashboard/subscriptions')} />}
+          {!isPro && (
+            <LockedAnalyticsItem
+              onNavigate={() => {
+                closeSidebar()
+                router.push('/dashboard/subscriptions')
+              }}
+            />
+          )}
 
           <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '8px 4px' }} />
 
@@ -827,8 +891,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.08)',
             }}
-            onClick={() => router.push('/dashboard/profile')}
-            onKeyDown={(e) => e.key === 'Enter' && router.push('/dashboard/profile')}
+            onClick={() => {
+              closeSidebar()
+              router.push('/dashboard/profile')
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                closeSidebar()
+                router.push('/dashboard/profile')
+              }
+            }}
           >
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0 overflow-hidden"
@@ -850,9 +922,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </aside>
 
-        <div className="flex-1 flex flex-col min-h-0 min-w-0 h-full">
+        <div className="flex-1 flex flex-col min-h-0 min-w-0 h-full md-main-content">
           <header
-            className="shrink-0 flex items-center justify-between px-6 z-20"
+            className="topbar-header shrink-0 flex items-center justify-between z-20"
             style={{
               minHeight: '64px',
               display: 'flex',
@@ -863,11 +935,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               borderBottom: '1px solid rgba(255,255,255,0.07)',
             }}
           >
-            <div className="relative">
-              <GlobalSearch />
+            <div className="flex items-center gap-1 min-w-0">
+              <button
+                type="button"
+                className="mobile-menu-btn"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                aria-label="Меню"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                  padding: '8px',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  marginRight: '8px',
+                  flexShrink: 0,
+                }}
+              >
+                <span style={{ width: '20px', height: '2px', background: 'white', borderRadius: '1px', display: 'block' }} />
+                <span style={{ width: '20px', height: '2px', background: 'white', borderRadius: '1px', display: 'block' }} />
+                <span style={{ width: '20px', height: '2px', background: 'white', borderRadius: '1px', display: 'block' }} />
+              </button>
+
+              <div className="relative min-w-0">
+                <GlobalSearch />
+              </div>
             </div>
 
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-3 md:gap-5 flex-shrink-0">
               <RoleToggle role={role} onToggle={toggleRole} />
 
               {isAdmin && (
@@ -882,7 +978,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   }}
                 >
                   <i className="ti ti-shield" style={{ fontSize: '14px' }} />
-                  <span className="text-xs font-medium">Админ</span>
+                  <span className="hide-on-mobile text-xs font-medium">Админ</span>
                 </Link>
               )}
 
@@ -920,7 +1016,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           )}
 
-          <main className="flex-1 min-h-0 overflow-y-auto p-8">{children}</main>
+          <main className="dashboard-content flex-1 min-h-0 overflow-y-auto p-8">{children}</main>
         </div>
       </BreathingBackground>
     </DashboardContext.Provider>

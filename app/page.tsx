@@ -83,7 +83,7 @@ export default function Home() {
           Adver<span style={{ color: 'var(--accent-primary, #9333ea)' }}>Link</span>
         </div>
 
-        <div className="hidden md:flex items-center gap-8">
+        <div className="nav-links hidden md:flex items-center gap-8">
           <Link href="/marketplace" className="text-white/60 hover:text-white text-sm transition">
             Каталог каналов
           </Link>
@@ -104,7 +104,18 @@ export default function Home() {
       </nav>
 
       {/* Hero */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center max-w-7xl mx-auto px-8 py-20">
+      <section
+        className="hero-section"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: '48px',
+          alignItems: 'center',
+          maxWidth: '80rem',
+          margin: '0 auto',
+          padding: '80px 32px',
+        }}
+      >
         <div>
           <div className="inline-flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs px-3 py-1.5 rounded-full mb-6">
             ⭐ №1 маркетплейс рекламы в социальных сетях
@@ -146,7 +157,7 @@ export default function Home() {
         {/* iPhone mockup */}
         <div
           style={{ transform: 'rotate(-8deg)', transformOrigin: 'center' }}
-          className="relative hidden md:block"
+          className="iphone-mockup relative hidden md:block"
         >
           <div
             style={{
@@ -438,8 +449,15 @@ export default function Home() {
           Тысячи каналов. Удобный поиск. Честная статистика.
         </h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          <div className="lg:col-span-2 bg-white/5 border border-white/10 rounded-2xl p-4">
+        <div
+          className="marketplace-preview-grid"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '32px',
+          }}
+        >
+          <div className="marketplace-preview-sidebar bg-white/5 border border-white/10 rounded-2xl p-4">
             <div className="text-white text-sm font-bold mb-4">
               Adver<span style={{ color: 'var(--accent-primary, #9333ea)' }}>Link</span>
             </div>
@@ -459,7 +477,7 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="lg:col-span-3">
+          <div className="marketplace-preview-channels">
             <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 flex items-center gap-2 mb-4 text-white/40 text-sm">
               🔍 Поиск по названию или тематике...
             </div>
