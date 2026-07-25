@@ -94,6 +94,57 @@ function SidebarItem({
   )
 }
 
+function LockedAnalyticsItem({ onNavigate }: { onNavigate: () => void }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onNavigate}
+      onKeyDown={(e) => e.key === 'Enter' && onNavigate()}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        padding: '10px 16px',
+        borderRadius: '12px',
+        cursor: 'pointer',
+        opacity: 0.45,
+        border: '1px dashed rgba(234,179,8,0.25)',
+        background: 'rgba(234,179,8,0.04)',
+        transition: 'all 0.2s',
+        marginTop: '2px',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.opacity = '0.75'
+        e.currentTarget.style.background = 'rgba(234,179,8,0.08)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.opacity = '0.45'
+        e.currentTarget.style.background = 'rgba(234,179,8,0.04)'
+      }}
+    >
+      <i className="ti ti-report-analytics" style={{ fontSize: '18px', color: 'rgba(255,255,255,0.35)' }} />
+      <span style={{ flex: 1, color: 'rgba(255,255,255,0.35)', fontSize: '14px', fontWeight: '400' }}>
+        Аналитика
+      </span>
+      <span
+        style={{
+          background: 'rgba(234,179,8,0.15)',
+          border: '1px solid rgba(234,179,8,0.35)',
+          color: '#fbbf24',
+          fontSize: '10px',
+          fontWeight: '700',
+          padding: '2px 7px',
+          borderRadius: '20px',
+          flexShrink: 0,
+        }}
+      >
+        PRO
+      </span>
+    </div>
+  )
+}
+
 function RoleToggle({ role, onToggle }: { role: Role; onToggle: () => void }) {
   const isCreator = role === 'creator'
   return (
@@ -558,6 +609,7 @@ function GlobalSearch() {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isPro, setIsPro] = useState(false)
   const [search, setSearch] = useState('')
   const [role, setRole] = useState<Role>(() => {
     if (typeof window !== 'undefined') {
@@ -628,11 +680,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('is_admin, avatar_url')
+        .select('is_admin, avatar_url, subscription_plan')
         .eq('id', user.id)
         .single()
 
       if (profile?.is_admin) setIsAdmin(true)
+      setIsPro(profile?.subscription_plan === 'pro' || profile?.is_admin === true)
       if (profile?.avatar_url) setAvatarUrl(profile.avatar_url)
 
       const { data: userChannels } = await supabase
@@ -737,6 +790,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <SidebarItem icon="ti-brand-telegram" label="Мои каналы" href="/dashboard" active={isActive('/dashboard')} />
               <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} badge={newRequestsCount + unreadMessages} />
               <SidebarItem icon="ti-chart-line" label="Статистика" href="/dashboard/statistics" active={isActive('/dashboard/statistics')} />
+              {isPro && (
+                <SidebarItem icon="ti-report-analytics" label="Аналитика" href="/dashboard/analytics" active={isActive('/dashboard/analytics')} />
+              )}
               <SidebarItem icon="ti-star" label="Отзывы" href="/dashboard/reviews" active={isActive('/dashboard/reviews')} />
               <SidebarItem icon="ti-users" label="Друзья" href="/dashboard/friends" active={isActive('/dashboard/friends')} />
               <SidebarItem icon="ti-diamond" label="Подписки" href="/dashboard/subscriptions" active={isActive('/dashboard/subscriptions')} />
@@ -747,6 +803,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <SidebarItem icon="ti-layout-dashboard" label="Мои кампании" href="/dashboard" active={isActive('/dashboard')} />
               <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} badge={pendingReviewCount + unreadMessages} />
               <SidebarItem icon="ti-chart-line" label="Статистика" href="/dashboard/statistics" active={isActive('/dashboard/statistics')} />
+              {isPro && (
+                <SidebarItem icon="ti-report-analytics" label="Аналитика" href="/dashboard/analytics" active={isActive('/dashboard/analytics')} />
+              )}
               <SidebarItem icon="ti-star" label="Отзывы" href="/dashboard/reviews" active={isActive('/dashboard/reviews')} />
               <SidebarItem icon="ti-users" label="Друзья" href="/dashboard/friends" active={isActive('/dashboard/friends')} />
               <SidebarItem icon="ti-diamond" label="Подписки" href="/dashboard/subscriptions" active={isActive('/dashboard/subscriptions')} />
@@ -755,6 +814,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
 
           <div className="flex-1" />
+
+          {!isPro && <LockedAnalyticsItem onNavigate={() => router.push('/dashboard/subscriptions')} />}
 
           <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '8px 4px' }} />
 

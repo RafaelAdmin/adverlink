@@ -27,10 +27,10 @@ export default function EditChannelPage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('subscription_plan')
+        .select('subscription_plan, is_admin')
         .eq('id', user.id)
         .single()
-      setIsPro(profile?.subscription_plan === 'pro')
+      setIsPro(profile?.subscription_plan === 'pro' || profile?.is_admin === true)
 
       const { data } = await supabase
         .from('channels')

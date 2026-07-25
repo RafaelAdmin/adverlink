@@ -14,7 +14,7 @@ export default function ChannelCard({
   rates,
   myChannelIds,
 }: {
-  channel: Channel
+  channel: Channel & { owner_profile?: { subscription_plan?: string; is_admin?: boolean } | null }
   displayCurrency: CurrencyCode
   rates: Record<string, number>
   myChannelIds: string[]
@@ -50,6 +50,25 @@ export default function ChannelCard({
           </div>
           {(channel.is_verified || channel.verification_status === 'verified') && (
             <VerifiedBadge gradId={`verifiedGrad-card-${channel.id}`} />
+          )}
+          {(channel.owner_profile?.subscription_plan === 'pro' || channel.owner_profile?.is_admin === true) && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '3px',
+                background: 'rgba(234,179,8,0.15)',
+                border: '1px solid rgba(234,179,8,0.35)',
+                color: '#fbbf24',
+                fontSize: '10px',
+                fontWeight: '700',
+                padding: '2px 7px',
+                borderRadius: '20px',
+                flexShrink: 0,
+              }}
+            >
+              PRO
+            </span>
           )}
         </div>
 

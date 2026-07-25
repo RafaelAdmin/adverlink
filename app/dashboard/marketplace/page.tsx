@@ -12,6 +12,7 @@ import {
   filterChannels,
   filterSentRequests,
 } from '../components/marketplace/filter-logic'
+import { sortCampaignsWithProPriority, sortChannelsWithProPriority } from '@/lib/pro-rotation'
 
 export default function DashboardMarketplacePage() {
   const { role } = useDashboard()
@@ -79,10 +80,22 @@ export default function DashboardMarketplacePage() {
           const { data: mine } = await supabase.from('ad_requests').select('*, channels(name, avatar_url)').in('channel_id', channelIds).order('created_at', { ascending: false })
           setMyAdRequests(mine || [])
         } else setMyAdRequests([])
-        const { data: camps } = await supabase.from('campaigns').select('*').eq('status', 'active').order('created_at', { ascending: false })
+        const { data: camps } = await supabase
+          .from('campaigns')
+          .select(`
+            *,
+            advertiser_profile:profiles!advertiser_id(subscription_plan, is_admin)
+          `)
+          .eq('status', 'active')
         setActiveCampaigns(camps || [])
       } else {
-        const { data: ch } = await supabase.from('channels').select('*').eq('is_active', true).order('created_at', { ascending: false })
+        const { data: ch } = await supabase
+          .from('channels')
+          .select(`
+            *,
+            owner_profile:profiles!owner_id(subscription_plan, is_admin)
+          `)
+          .eq('is_active', true)
         setChannels(ch || [])
         const map: Record<string, any> = {}
         ;(ch || []).forEach((c) => { map[c.id] = c })
@@ -103,8 +116,12 @@ export default function DashboardMarketplacePage() {
   }
 
   const filteredCreatorRequests = filterCreatorRequests(myAdRequests, search)
-  const filteredCampaigns = filterCampaigns(activeCampaigns, search, minBudget, maxBudget, minRequiredSubs, maxRequiredSubs, dateFrom, dateTo, filterCountry, filterSocialNet, campaignSortBy)
-  const filteredChannels = filterChannels(channels, search, minSubs, maxSubs, minViews, maxViews, minPrice, maxPrice, selectedSocialNet, selectedCountry, displayCurrency, rates, sortBy)
+  const filteredCampaigns = sortCampaignsWithProPriority(
+    filterCampaigns(activeCampaigns, search, minBudget, maxBudget, minRequiredSubs, maxRequiredSubs, dateFrom, dateTo, filterCountry, filterSocialNet, campaignSortBy)
+  )
+  const filteredChannels = sortChannelsWithProPriority(
+    filterChannels(channels, search, minSubs, maxSubs, minViews, maxViews, minPrice, maxPrice, selectedSocialNet, selectedCountry, displayCurrency, rates, sortBy)
+  )
   const filteredSentRequests = filterSentRequests(sentRequests, channelMap, search)
 
   if (role === 'advertiser') {
