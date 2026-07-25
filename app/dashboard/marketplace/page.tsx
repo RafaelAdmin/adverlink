@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from '../layout'
-import { formatAmdWithUsd, toUsdEstimate, CurrencyCode, formatPrice, getExchangeRates, getCurrencySymbol } from '@/lib/currency'
+import { formatAmdWithUsd, toUsdEstimate, CurrencyCode, formatPrice, getExchangeRates, getCurrencySymbol, formatConvertedPrice } from '@/lib/currency'
 import CurrencySelector from '../components/CurrencySelector'
 import FilterDropdown from '../components/FilterDropdown'
 import { AdvertiserDealCard, CreatorDealCard } from '../components/DealManagement'
@@ -283,7 +283,7 @@ export default function DashboardMarketplacePage() {
   const creatorChannelMap = Object.fromEntries(userChannels.map((c) => [c.id, c]))
 
   useEffect(() => {
-    getExchangeRates().then(setRates)
+    getExchangeRates().then(setRates).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -433,15 +433,8 @@ export default function DashboardMarketplacePage() {
       }
     })
 
-  const convertChannelPrice = (price: number, fromCurrency: string = 'USD'): string => {
-    if (!price) return 'По запросу'
-    if (!rates[fromCurrency] || !rates[displayCurrency]) {
-      return formatPrice(price, fromCurrency as CurrencyCode)
-    }
-    const inUSD = price / rates[fromCurrency]
-    const converted = Math.round(inUSD * rates[displayCurrency])
-    return formatPrice(converted, displayCurrency)
-  }
+  const convertChannelPrice = (price: number, fromCurrency: string = 'USD'): string =>
+    formatConvertedPrice(price, fromCurrency, displayCurrency, rates, 'По запросу')
 
   const filteredSentRequests = sentRequests.filter((r) => {
     const ch = channelMap[r.channel_id]

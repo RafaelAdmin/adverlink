@@ -5,8 +5,14 @@ This will show placeholder letters until channels are re-added or manually updat
 */
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireAuth } from '@/lib/api-auth'
 
 export async function GET(request: NextRequest) {
+  const session = await requireAuth()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const username = request.nextUrl.searchParams.get('username')
 
   if (!username) {
@@ -14,7 +20,14 @@ export async function GET(request: NextRequest) {
   }
 
   const token = process.env.TELEGRAM_BOT_TOKEN
-  const cleanUsername = username.replace('@', '')
+  if (!token) {
+    return NextResponse.json({ error: 'Bot token not configured' }, { status: 500 })
+  }
+
+  const cleanUsername = username.replace('@', '').replace(/[^a-zA-Z0-9_]/g, '')
+  if (!cleanUsername) {
+    return NextResponse.json({ error: 'Invalid username' }, { status: 400 })
+  }
 
   try {
     const [chatRes, countRes] = await Promise.all([
@@ -35,33 +48,28 @@ export async function GET(request: NextRequest) {
     if (chat.photo?.big_file_id) {
       try {
         const fileRes = await fetch(
-          `https://api.telegram.org/bot${token}/getFile?file_id=${chat.photo.big_file_id}`
+          `https://api.telegram.org/bot${token}/getFile?file_id=${chat.photo.big_file_id}`,
         )
         const fileData = await fileRes.json()
 
         if (fileData.ok) {
           const filePath = fileData.result.file_path
-          console.log('Got file path:', filePath)
 
           avatarUrl = `/api/telegram/avatar?path=${encodeURIComponent(filePath)}`
 
           const supabaseAdmin = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
           )
 
           try {
-            // Download image from Telegram
             const imageResponse = await fetch(
-              `https://api.telegram.org/file/bot${token}/${filePath}`
+              `https://api.telegram.org/file/bot${token}/${filePath}`,
             )
-            console.log('Image fetch status:', imageResponse.status)
 
             if (imageResponse.ok) {
               const imageBuffer = await imageResponse.arrayBuffer()
               const uint8Array = new Uint8Array(imageBuffer)
-
-              // Upload to Supabase Storage
               const storagePath = `channels/${cleanUsername}/avatar.jpg`
 
               const { error: uploadError } = await supabaseAdmin.storage
@@ -70,20 +78,21 @@ export async function GET(request: NextRequest) {
                   contentType: 'image/jpeg',
                   upsert: true,
                 })
-              console.log('Upload error:', uploadError)
 
               if (!uploadError) {
-                const { data: { publicUrl } } = supabaseAdmin.storage
-                  .from('avatars')
-                  .getPublicUrl(storagePath)
-                console.log('Public URL:', publicUrl)
-
+                const {
+                  data: { publicUrl },
+                } = supabaseAdmin.storage.from('avatars').getPublicUrl(storagePath)
                 avatarUrl = publicUrl
               }
             }
-          } catch {}
+          } catch {
+            // Fall back to proxy URL
+          }
         }
-      } catch {}
+      } catch {
+        // Avatar optional
+      }
     }
 
     return NextResponse.json({
@@ -93,7 +102,6 @@ export async function GET(request: NextRequest) {
       subscriber_count: countData.ok ? countData.result : 0,
       avatar_url: avatarUrl,
     })
-
   } catch {
     return NextResponse.json({ error: 'Ошибка подключения' }, { status: 500 })
   }

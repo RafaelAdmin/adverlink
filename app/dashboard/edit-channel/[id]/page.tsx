@@ -9,6 +9,7 @@ import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
 
 export default function EditChannelPage() {
   const [channel, setChannel] = useState<any>(null)
+  const [ownerId, setOwnerId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -30,6 +31,7 @@ export default function EditChannelPage() {
         .single()
 
       if (!data) { router.push('/dashboard'); return }
+      setOwnerId(user.id)
       setChannel(data)
       setLoading(false)
     }
@@ -41,18 +43,24 @@ export default function EditChannelPage() {
     setError(null)
     setSuccess(false)
 
+    const name = (channel.name || '').trim().slice(0, 100)
+    const description = (channel.description || '').trim().slice(0, 1000)
+    const adPrice = Math.max(0, Number(channel.ad_price) || 0)
+    const avgViews = Math.max(0, Number(channel.avg_views) || 0)
+
     const { error } = await supabase
       .from('channels')
       .update({
-        name: channel.name,
-        description: channel.description,
-        avg_views: Number(channel.avg_views),
-        ad_price: Number(channel.ad_price),
-        contact_telegram: channel.contact_telegram,
+        name,
+        description,
+        avg_views: avgViews,
+        ad_price: adPrice,
+        contact_telegram: (channel.contact_telegram || '').trim().slice(0, 64),
         language: channel.language,
         country: channel.country,
       })
       .eq('id', channel.id)
+      .eq('owner_id', ownerId!)
 
     setSaving(false)
     if (error) setError(error.message)

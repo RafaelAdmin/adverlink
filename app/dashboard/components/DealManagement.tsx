@@ -815,7 +815,11 @@ export function AdvertiserDealActions({
 
   const patch = async (data: Record<string, unknown>) => {
     setSaving(true)
-    const { error } = await supabase.from('ad_requests').update(data).eq('id', request.id)
+    const { error } = await supabase
+      .from('ad_requests')
+      .update(data)
+      .eq('id', request.id)
+      .eq('advertiser_id', userId)
     setSaving(false)
     if (error) return false
     onUpdate(data)

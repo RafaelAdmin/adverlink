@@ -4,6 +4,7 @@ import { Fragment, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { generateVerificationCode } from '@/lib/verification'
 
 const glassCard = {
   background: 'rgba(255,255,255,0.05)',
@@ -60,7 +61,7 @@ export default function VerifyChannelPage() {
     if (!channelId) return
 
     const generateCode = async () => {
-      const code = 'ADVERLINK-' + Math.random().toString(36).substring(2, 8).toUpperCase()
+      const code = generateVerificationCode()
       setVerificationCode(code)
 
       await supabase.from('channels').update({ verification_code: code }).eq('id', channelId)
@@ -77,20 +78,14 @@ export default function VerifyChannelPage() {
     setVerificationResult(null)
 
     try {
-      const username = encodeURIComponent(channel.telegram_username.replace('@', ''))
-      const code = encodeURIComponent(verificationCode)
-      const response = await fetch(`/api/telegram/verify?username=${username}&code=${code}`)
+      const response = await fetch('/api/telegram/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channelId: channel.id, code: verificationCode }),
+      })
       const data = await response.json()
 
       if (data.verified) {
-        await supabase
-          .from('channels')
-          .update({
-            verification_status: 'verified',
-            is_verified: true,
-          })
-          .eq('id', channel.id)
-
         setVerificationResult('success')
       } else {
         setVerificationResult('fail')

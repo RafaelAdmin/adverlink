@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { CurrencyCode, formatPrice, getExchangeRates } from '@/lib/currency'
+import { CurrencyCode, formatPrice, getExchangeRates, formatConvertedPrice } from '@/lib/currency'
 import { getChannelHandle, getChannelLink, getPlatformLabel } from '@/lib/channel-helpers'
 import CurrencySelector from '@/app/dashboard/components/CurrencySelector'
 import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
@@ -22,7 +22,7 @@ export default function ChannelProfilePage() {
   const supabase = createClient()
 
   useEffect(() => {
-    getExchangeRates().then(setRates)
+    getExchangeRates().then(setRates).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -89,15 +89,8 @@ export default function ChannelProfilePage() {
   const estimatedEngagement =
     subscribers > 0 ? ((avgViews / subscribers) * 100).toFixed(1) : '0'
 
-  const convertChannelPrice = (price: number, fromCurrency: string = 'USD'): string => {
-    if (!price) return '—'
-    if (!rates[fromCurrency] || !rates[displayCurrency]) {
-      return formatPrice(price, fromCurrency as CurrencyCode)
-    }
-    const inUSD = price / rates[fromCurrency]
-    const converted = Math.round(inUSD * rates[displayCurrency])
-    return formatPrice(converted, displayCurrency)
-  }
+  const convertChannelPrice = (price: number, fromCurrency: string = 'USD'): string =>
+    formatConvertedPrice(price, fromCurrency, displayCurrency, rates)
 
   const metrics = [
     { label: 'Подписчики', value: subscribers.toLocaleString() },

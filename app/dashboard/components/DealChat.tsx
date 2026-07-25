@@ -25,6 +25,8 @@ interface DealChatProps {
   otherUserName?: string
 }
 
+const MAX_MESSAGE_LENGTH = 2000
+
 export default function DealChat({ dealId, currentUserId }: DealChatProps) {
   const [messages, setMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState('')
@@ -101,8 +103,10 @@ export default function DealChat({ dealId, currentUserId }: DealChatProps) {
   const sendMessage = async () => {
     if (!newMessage.trim() || sending) return
 
+    const content = newMessage.trim().slice(0, MAX_MESSAGE_LENGTH)
+    if (!content) return
+
     setSending(true)
-    const content = newMessage.trim()
     setNewMessage('')
 
     await supabase.from('messages').insert({

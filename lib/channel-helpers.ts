@@ -54,3 +54,10 @@ export function getPlatformLabel(platform: string): string {
     default: return 'Telegram'
   }
 }
+
+export function isChannelVerified(channel: {
+  is_verified?: boolean | null
+  verification_status?: string | null
+}): boolean {
+  return Boolean(channel.is_verified) || channel.verification_status === 'verified'
+}

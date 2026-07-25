@@ -86,7 +86,24 @@ export function formatAmdWithUsd(amount: number | string | null | undefined) {
   return `${value.toLocaleString('ru-RU')} AMD ≈ $${usd}`
 }
 
+export function formatConvertedPrice(
+  price: number,
+  fromCurrency: string,
+  toCurrency: CurrencyCode,
+  rates: Record<string, number>,
+  emptyLabel = '—',
+): string {
+  if (!price) return emptyLabel
+  if (!rates[fromCurrency] || !rates[toCurrency]) {
+    return formatPrice(price, fromCurrency as CurrencyCode)
+  }
+  const inUSD = price / rates[fromCurrency]
+  const converted = Math.round(inUSD * rates[toCurrency])
+  return formatPrice(converted, toCurrency)
+}
+
 export function toUsdEstimate(amount: number | string | null | undefined) {
   const value = Number(amount) || 0
   return Math.round(value / USD_RATE)
 }
+

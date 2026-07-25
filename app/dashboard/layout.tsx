@@ -494,7 +494,12 @@ function GlobalSearch() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => alert('Профиль пользователя скоро будет доступен')}
+                  onClick={() => {
+                    if (showUserCard.username) {
+                      router.push(`/u/${showUserCard.username}`)
+                    }
+                    setShowUserCard(null)
+                  }}
                   className="w-full flex items-center justify-center gap-2 border border-white/20 text-white rounded-full px-4 py-2 text-sm"
                 >
                   <i className="ti ti-external-link" style={{ fontSize: '14px' }} />
