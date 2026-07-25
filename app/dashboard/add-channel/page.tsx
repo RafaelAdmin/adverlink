@@ -153,11 +153,7 @@ export default function AddChannelPage() {
       return
     }
 
-    if (selectedPlatform === 'youtube') {
-      router.push(`/dashboard/verify-youtube/${newChannel.id}`)
-    } else {
-      router.push(`/dashboard/verify-channel/${newChannel.id}`)
-    }
+    router.push(`/dashboard/verify-channel/${newChannel.id}`)
   }
 
   if (!user) {

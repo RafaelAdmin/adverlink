@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { generateVerificationCode } from '@/lib/verification'
+import { getChannelHandle } from '@/lib/channel-helpers'
 
 const glassCard = {
   background: 'rgba(255,255,255,0.05)',
@@ -28,7 +29,7 @@ export default function VerifyChannelPage() {
   const [verificationCode, setVerificationCode] = useState('')
   const [verifying, setVerifying] = useState(false)
   const [verificationResult, setVerificationResult] = useState<'success' | 'fail' | null>(null)
-  const [botAdded, setBotAdded] = useState(false)
+  const [step1Confirmed, setStep1Confirmed] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -42,7 +43,7 @@ export default function VerifyChannelPage() {
 
       const { data, error } = await supabase
         .from('channels')
-        .select('*')
+        .select('*, platform')
         .eq('id', channelId)
         .single()
 
@@ -73,12 +74,15 @@ export default function VerifyChannelPage() {
   const handleVerify = async () => {
     if (!channel) return
 
+    const youtube = channel.platform === 'youtube'
+
     setVerifying(true)
     setStep(3)
     setVerificationResult(null)
 
     try {
-      const response = await fetch('/api/telegram/verify', {
+      const endpoint = youtube ? '/api/youtube/verify' : '/api/telegram/verify'
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ channelId: channel.id, code: verificationCode }),
@@ -101,7 +105,20 @@ export default function VerifyChannelPage() {
     return <div className="text-white/50">Загрузка...</div>
   }
 
-  const telegramUsername = channel.telegram_username?.replace(/^@/, '') || ''
+  const isTelegram = channel.platform === 'telegram' || !channel.platform
+  const isYoutube = channel.platform === 'youtube'
+  const channelHandle = getChannelHandle(channel)
+  const stepLabels = isYoutube
+    ? [
+        { num: 1, label: 'Найти канал' },
+        { num: 2, label: 'Добавить код' },
+        { num: 3, label: 'Проверка' },
+      ]
+    : [
+        { num: 1, label: 'Добавить бота' },
+        { num: 2, label: 'Добавить код' },
+        { num: 3, label: 'Проверка' },
+      ]
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -112,17 +129,17 @@ export default function VerifyChannelPage() {
         ← Мои каналы
       </Link>
 
-      <h1 className="text-2xl font-bold text-white mb-2">Верификация канала</h1>
+      <h1 className="text-2xl font-bold text-white mb-2">
+        {isYoutube ? 'Верификация YouTube канала' : 'Верификация канала'}
+      </h1>
       <p className="text-white/50 mb-8 text-sm">
-        Подтвердите владение каналом @{telegramUsername}
+        {isYoutube
+          ? `Подтвердите владение каналом ${channel.name}`
+          : `Подтвердите владение каналом ${channelHandle}`}
       </p>
 
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '32px' }}>
-        {[
-          { num: 1, label: 'Добавить бота' },
-          { num: 2, label: 'Добавить код' },
-          { num: 3, label: 'Проверка' },
-        ].map((s, i) => (
+        {stepLabels.map((s, i) => (
           <Fragment key={s.num}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
               <div
@@ -172,7 +189,7 @@ export default function VerifyChannelPage() {
         ))}
       </div>
 
-      {step === 1 && (
+      {step === 1 && isTelegram && (
         <div style={glassCard}>
           <h2 className="text-white font-semibold text-lg mb-5">Шаг 1: Добавьте нашего бота в канал</h2>
 
@@ -205,13 +222,13 @@ export default function VerifyChannelPage() {
             <div>
               <div style={{ color: 'white', fontWeight: '600', fontSize: '15px' }}>@adverlink_bot</div>
               <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginTop: '4px' }}>
-                Добавьте этого бота как администратора вашего канала
+                Добавьте @adverlink_bot как администратора канала
               </div>
             </div>
           </div>
 
           <ol style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: '2', marginBottom: '20px', paddingLeft: '20px' }}>
-            <li>Откройте ваш канал @{telegramUsername} в Telegram</li>
+            <li>Откройте ваш канал {channelHandle} в Telegram</li>
             <li>Перейдите в Настройки канала → Администраторы</li>
             <li>Нажмите &quot;Добавить администратора&quot;</li>
             <li>Найдите @adverlink_bot и добавьте его</li>
@@ -252,8 +269,8 @@ export default function VerifyChannelPage() {
           >
             <input
               type="checkbox"
-              checked={botAdded}
-              onChange={(e) => setBotAdded(e.target.checked)}
+              checked={step1Confirmed}
+              onChange={(e) => setStep1Confirmed(e.target.checked)}
               style={{ width: '18px', height: '18px', accentColor: 'var(--accent-primary, #9333ea)' }}
             />
             Я добавил бота как администратора
@@ -262,16 +279,122 @@ export default function VerifyChannelPage() {
           <button
             type="button"
             onClick={() => setStep(2)}
-            disabled={!botAdded}
+            disabled={!step1Confirmed}
             style={{
               marginTop: '20px',
-              backgroundColor: botAdded ? 'var(--accent-primary, #9333ea)' : 'rgba(255,255,255,0.1)',
-              color: botAdded ? 'white' : 'rgba(255,255,255,0.3)',
+              backgroundColor: step1Confirmed ? 'var(--accent-primary, #9333ea)' : 'rgba(255,255,255,0.1)',
+              color: step1Confirmed ? 'white' : 'rgba(255,255,255,0.3)',
               border: 'none',
               borderRadius: '14px',
               padding: '12px 24px',
               fontSize: '14px',
-              cursor: botAdded ? 'pointer' : 'not-allowed',
+              cursor: step1Confirmed ? 'pointer' : 'not-allowed',
+              width: '100%',
+            }}
+          >
+            Далее →
+          </button>
+        </div>
+      )}
+
+      {step === 1 && isYoutube && (
+        <div style={glassCard}>
+          <h2 className="text-white font-semibold text-lg mb-5">Шаг 1: Подтвердите свой YouTube канал</h2>
+
+          <div
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '16px',
+              padding: '20px',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+            }}
+          >
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                background: '#FF0000',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <i className="ti ti-brand-youtube" style={{ fontSize: '24px', color: 'white' }} />
+            </div>
+            <div>
+              <div style={{ color: 'white', fontWeight: '600', fontSize: '15px' }}>{channel.name}</div>
+              <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginTop: '4px' }}>
+                {channelHandle}
+              </div>
+            </div>
+          </div>
+
+          <ol style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: '2', marginBottom: '20px', paddingLeft: '20px' }}>
+            <li>Откройте YouTube Studio (studio.youtube.com)</li>
+            <li>Перейдите в раздел &quot;Настройки&quot; → &quot;Канал&quot;</li>
+            <li>Подтвердите что вы владелец канала в YouTube Studio</li>
+          </ol>
+
+          <a
+            href="https://studio.youtube.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'rgba(220,38,38,0.2)',
+              border: '1px solid rgba(220,38,38,0.4)',
+              color: '#f87171',
+              borderRadius: '12px',
+              padding: '10px 16px',
+              fontSize: '14px',
+              textDecoration: 'none',
+              marginBottom: '20px',
+            }}
+          >
+            <i className="ti ti-brand-youtube" />
+            Открыть YouTube Studio
+          </a>
+
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              cursor: 'pointer',
+              color: 'rgba(255,255,255,0.7)',
+              fontSize: '14px',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={step1Confirmed}
+              onChange={(e) => setStep1Confirmed(e.target.checked)}
+              style={{ width: '18px', height: '18px', accentColor: 'var(--accent-primary, #9333ea)' }}
+            />
+            Я подтверждаю что являюсь владельцем этого канала
+          </label>
+
+          <button
+            type="button"
+            onClick={() => setStep(2)}
+            disabled={!step1Confirmed}
+            style={{
+              marginTop: '20px',
+              backgroundColor: step1Confirmed ? 'var(--accent-primary, #9333ea)' : 'rgba(255,255,255,0.1)',
+              color: step1Confirmed ? 'white' : 'rgba(255,255,255,0.3)',
+              border: 'none',
+              borderRadius: '14px',
+              padding: '12px 24px',
+              fontSize: '14px',
+              cursor: step1Confirmed ? 'pointer' : 'not-allowed',
               width: '100%',
             }}
           >
@@ -283,7 +406,9 @@ export default function VerifyChannelPage() {
       {step === 2 && (
         <div style={glassCard}>
           <h2 className="text-white font-semibold text-lg mb-5">
-            Шаг 2: Добавьте код верификации в описание канала
+            {isYoutube
+              ? 'Шаг 2: Добавьте код в описание YouTube канала'
+              : 'Шаг 2: Добавьте код верификации в описание канала'}
           </h2>
 
           <div
@@ -328,16 +453,29 @@ export default function VerifyChannelPage() {
             </button>
           </div>
 
-          <ol style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: '2', marginBottom: '20px', paddingLeft: '20px' }}>
-            <li>Откройте ваш канал @{telegramUsername} в Telegram</li>
-            <li>Перейдите в Настройки канала → Изменить канал</li>
-            <li>
-              В поле &quot;Описание&quot; добавьте код:{' '}
-              <strong style={{ color: 'white' }}>{verificationCode}</strong>
-            </li>
-            <li>Сохраните изменения</li>
-            <li>Нажмите кнопку &quot;Проверить&quot; ниже</li>
-          </ol>
+          {isTelegram ? (
+            <ol style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: '2', marginBottom: '20px', paddingLeft: '20px' }}>
+              <li>Откройте ваш канал {channelHandle} в Telegram</li>
+              <li>Перейдите в Настройки канала → Изменить канал</li>
+              <li>
+                В поле &quot;Описание&quot; добавьте код:{' '}
+                <strong style={{ color: 'white' }}>{verificationCode}</strong>
+              </li>
+              <li>Сохраните изменения</li>
+              <li>Нажмите кнопку &quot;Проверить&quot; ниже</li>
+            </ol>
+          ) : (
+            <ol style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: '2', marginBottom: '20px', paddingLeft: '20px' }}>
+              <li>Откройте YouTube Studio (studio.youtube.com)</li>
+              <li>Нажмите &quot;Настройки&quot; → &quot;Канал&quot; → &quot;Основная информация&quot;</li>
+              <li>
+                В поле &quot;Описание&quot; добавьте код:{' '}
+                <strong style={{ color: 'white' }}>{verificationCode}</strong>
+              </li>
+              <li>Нажмите &quot;Сохранить&quot;</li>
+              <li>Нажмите кнопку &quot;Проверить&quot; ниже</li>
+            </ol>
+          )}
 
           <div
             style={{
@@ -349,6 +487,7 @@ export default function VerifyChannelPage() {
             }}
           >
             <p style={{ color: '#fbbf24', fontSize: '13px', margin: 0 }}>
+              {isYoutube && <i className="ti ti-alert-triangle" style={{ marginRight: '6px' }} />}
               ⚠️ Код должен присутствовать в описании во время проверки. После верификации его можно удалить.
             </p>
           </div>
@@ -384,7 +523,7 @@ export default function VerifyChannelPage() {
                 cursor: 'pointer',
               }}
             >
-              Проверить
+              {isYoutube ? 'Проверить ▶' : 'Проверить'}
             </button>
           </div>
         </div>
@@ -404,19 +543,25 @@ export default function VerifyChannelPage() {
                 }}
               />
               <p style={{ color: 'rgba(255,255,255,0.5)', marginTop: '16px' }}>
-                Проверяем описание канала...
+                {isYoutube ? 'Проверяем описание YouTube канала...' : 'Проверяем описание канала...'}
               </p>
             </div>
           )}
 
           {!verifying && verificationResult === 'success' && (
             <div style={{ textAlign: 'center', padding: '40px' }}>
-              <div style={{ fontSize: '64px', marginBottom: '16px' }}>✅</div>
+              {isYoutube ? (
+                <i className="ti ti-circle-check" style={{ fontSize: '64px', color: '#22c55e', marginBottom: '16px', display: 'block' }} />
+              ) : (
+                <div style={{ fontSize: '64px', marginBottom: '16px' }}>✅</div>
+              )}
               <h2 style={{ color: 'white', fontSize: '24px', fontWeight: '700', marginBottom: '8px' }}>
-                Канал верифицирован!
+                {isYoutube ? 'YouTube канал верифицирован!' : 'Канал верифицирован!'}
               </h2>
               <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '24px' }}>
-                @{telegramUsername} успешно подтверждён
+                {isYoutube
+                  ? `${channel.name} (${channelHandle}) успешно подтверждён`
+                  : `${channelHandle} успешно подтверждён`}
               </p>
               <button
                 type="button"
@@ -437,7 +582,11 @@ export default function VerifyChannelPage() {
 
           {!verifying && verificationResult === 'fail' && (
             <div style={{ textAlign: 'center', padding: '40px' }}>
-              <div style={{ fontSize: '64px', marginBottom: '16px' }}>❌</div>
+              {isYoutube ? (
+                <i className="ti ti-circle-x" style={{ fontSize: '64px', color: '#f87171', marginBottom: '16px', display: 'block' }} />
+              ) : (
+                <div style={{ fontSize: '64px', marginBottom: '16px' }}>❌</div>
+              )}
               <h2 style={{ color: 'white', fontSize: '24px', fontWeight: '700', marginBottom: '8px' }}>
                 Код не найден
               </h2>
