@@ -1,5 +1,6 @@
 'use client'
 
+import type { AdRequest } from '@/lib/database.types'
 import { CreatorDealCard } from '../DealManagement'
 
 export default function CreatorRequestCard({
@@ -9,7 +10,7 @@ export default function CreatorRequestCard({
   onUpdate,
   linkToDeal,
 }: {
-  request: any
+  request: AdRequest
   channelMap: Record<string, any>
   userId: string
   onUpdate: (id: string, patch: Record<string, unknown>) => void

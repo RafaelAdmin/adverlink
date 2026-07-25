@@ -18,6 +18,7 @@ alter table messages enable row level security;
 
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase'
+import type { Message, Profile } from '@/lib/database.types'
 
 interface DealChatProps {
   dealId: string
@@ -28,11 +29,11 @@ interface DealChatProps {
 const MAX_MESSAGE_LENGTH = 2000
 
 export default function DealChat({ dealId, currentUserId }: DealChatProps) {
-  const [messages, setMessages] = useState<any[]>([])
+  const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [profiles, setProfiles] = useState<Record<string, any>>({})
+  const [profiles, setProfiles] = useState<Record<string, Profile>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
@@ -54,9 +55,9 @@ export default function DealChat({ dealId, currentUserId }: DealChatProps) {
           .select('id, full_name, username, avatar_url')
           .in('id', senderIds)
 
-        const profileMap: Record<string, any> = {}
+        const profileMap: Record<string, Profile> = {}
         ;(profileData || []).forEach((p) => {
-          profileMap[p.id] = p
+          profileMap[p.id] = p as Profile // TODO: strict type
         })
         setProfiles(profileMap)
       }
@@ -75,7 +76,7 @@ export default function DealChat({ dealId, currentUserId }: DealChatProps) {
           filter: `deal_id=eq.${dealId}`,
         },
         async (payload) => {
-          const newMsg = payload.new as any
+          const newMsg = payload.new as Message
           setMessages((prev) => [...prev, newMsg])
 
           const { data: profile } = await supabase
@@ -85,7 +86,7 @@ export default function DealChat({ dealId, currentUserId }: DealChatProps) {
             .single()
 
           if (profile) {
-            setProfiles((prev) => ({ ...prev, [profile.id]: profile }))
+            setProfiles((prev) => ({ ...prev, [profile.id]: profile as Profile })) // TODO: strict type
           }
         },
       )
@@ -186,7 +187,7 @@ export default function DealChat({ dealId, currentUserId }: DealChatProps) {
         ) : (
           messages.map((msg) => {
             const isOwn = msg.sender_id === currentUserId
-            const sender = profiles[msg.sender_id]
+            const sender = msg.sender_id ? profiles[msg.sender_id] : undefined
             const senderName = sender?.full_name || sender?.username || 'Пользователь'
 
             return (

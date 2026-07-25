@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import type { Channel } from '@/lib/database.types'
 import { CurrencyCode, formatConvertedPrice } from '@/lib/currency'
 import { getChannelHandle } from '@/lib/channel-helpers'
 import PlatformBadge from '../PlatformBadge'
@@ -12,7 +13,7 @@ export default function ChannelCard({
   rates,
   myChannelIds,
 }: {
-  channel: any
+  channel: Channel
   displayCurrency: CurrencyCode
   rates: Record<string, number>
   myChannelIds: string[]

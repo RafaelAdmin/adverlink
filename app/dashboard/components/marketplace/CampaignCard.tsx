@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import type { Campaign } from '@/lib/database.types'
 import { createClient } from '@/lib/supabase'
 import { toUsdEstimate } from '@/lib/currency'
 import { FilterLabel, FilterInput, FilterSelect } from './filter-ui'
@@ -12,7 +13,7 @@ export default function CampaignCard({
   expanded,
   onToggle,
 }: {
-  campaign: any
+  campaign: Campaign
   userChannels: any[]
   expanded: boolean
   onToggle: () => void

@@ -8,6 +8,10 @@ alter table ad_requests add column if not exists completed_at timestamp with tim
 alter table ad_requests add column if not exists posts_count integer default 1;
 */
 
+import type { AdRequest } from '@/lib/database.types'
+
+export type { AdRequest }
+
 export type DealStatus =
   | 'new'
   | 'accepted'

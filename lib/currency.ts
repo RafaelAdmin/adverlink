@@ -6,7 +6,9 @@ export const CURRENCIES = [
   { code: 'RUB', symbol: '₽', name: 'Рубль' },
 ]
 
-export type CurrencyCode = 'USD' | 'EUR' | 'AMD' | 'GEL' | 'RUB'
+import type { CurrencyCode } from '@/lib/database.types'
+
+export type { CurrencyCode } from '@/lib/database.types'
 
 // Cache exchange rates
 let ratesCache: Record<string, number> | null = null

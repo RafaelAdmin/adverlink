@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { getChannelHandle } from '@/lib/channel-helpers'
+import { getLevelBadge } from '@/lib/profile'
+import type { Profile, Channel, Review } from '@/lib/database.types'
 import PlatformBadge from './PlatformBadge'
 
 interface UserProfileCardProps {
@@ -11,14 +13,13 @@ interface UserProfileCardProps {
   onClose: () => void
 }
 
-import { getLevelBadge } from '@/lib/profile'
 export default function UserProfileCard({ profileId, onClose }: UserProfileCardProps) {
   const supabase = createClient()
   const router = useRouter()
 
-  const [profile, setProfile] = useState<any>(null)
-  const [channels, setChannels] = useState<any[]>([])
-  const [reviews, setReviews] = useState<any[]>([])
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [channels, setChannels] = useState<Channel[]>([])
+  const [reviews, setReviews] = useState<Review[]>([])
   const [campaigns, setCampaigns] = useState<any[]>([])
   const [friendshipStatus, setFriendshipStatus] = useState<'none' | 'friends' | 'sent' | 'received'>('none')
   const [loading, setLoading] = useState(true)
@@ -51,9 +52,9 @@ export default function UserProfileCard({ profileId, onClose }: UserProfileCardP
           ),
       ])
 
-      setProfile(profileRes.data)
-      setChannels(channelsRes.data || [])
-      setReviews(reviewsRes.data || [])
+      setProfile(profileRes.data as Profile) // TODO: strict type
+      setChannels((channelsRes.data || []) as Channel[]) // TODO: strict type
+      setReviews((reviewsRes.data || []) as Review[]) // TODO: strict type
       setCampaigns(campaignsRes.data || [])
 
       const friendship = friendshipRes.data?.[0]
