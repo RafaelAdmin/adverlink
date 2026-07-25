@@ -1,9 +1,121 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import { CurrencyCode, getCurrencySymbol } from '@/lib/currency'
 import CurrencySelector from '../CurrencySelector'
 import FilterDropdown from '../FilterDropdown'
 import { ADVERTISER_SORT_OPTIONS, COUNTRY_FILTER_OPTIONS, SOCIAL_FILTER_OPTIONS } from './constants'
+
+function CustomSelect({
+  value,
+  onChange,
+  options,
+}: {
+  value: string
+  onChange: (val: string) => void
+  options: { value: string; label: string; flag?: string }[]
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const selected = options.find((o) => o.value === value) || options[0]
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: '10px',
+          padding: '7px 12px',
+          color: 'white',
+          fontSize: '13px',
+          cursor: 'pointer',
+          width: '100%',
+          justifyContent: 'space-between',
+          minWidth: '140px',
+        }}
+      >
+        <span>
+          {selected.flag} {selected.label}
+        </span>
+        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 4px)',
+            left: 0,
+            right: 0,
+            zIndex: 100,
+            background: 'rgba(15,12,41,0.98)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            minWidth: '160px',
+          }}
+        >
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => {
+                onChange(opt.value)
+                setOpen(false)
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                width: '100%',
+                padding: '10px 14px',
+                background: value === opt.value ? 'rgba(147,51,234,0.2)' : 'transparent',
+                border: 'none',
+                color: value === opt.value ? 'white' : 'rgba(255,255,255,0.7)',
+                fontSize: '13px',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                if (value !== opt.value) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+              }}
+              onMouseLeave={(e) => {
+                if (value !== opt.value) e.currentTarget.style.background = 'transparent'
+              }}
+            >
+              {opt.flag && <span>{opt.flag}</span>}
+              <span>{opt.label}</span>
+              {value === opt.value && (
+                <span style={{ marginLeft: 'auto', color: 'var(--accent-primary, #9333ea)' }}>✓</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function ChannelFilters({
   search,
@@ -120,25 +232,27 @@ export default function ChannelFilters({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
             <div>
               <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '8px' }}>Страна</span>
-              <FilterDropdown
+              <CustomSelect
                 value={selectedCountry}
                 onChange={setSelectedCountry}
-                options={COUNTRY_FILTER_OPTIONS}
-                size="sm"
-                minWidth={200}
-                fullWidth
+                options={COUNTRY_FILTER_OPTIONS.map((o) => ({
+                  value: o.value,
+                  label: o.label,
+                  flag: o.icon,
+                }))}
               />
             </div>
 
             <div>
               <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '8px' }}>Соцсеть</span>
-              <FilterDropdown
+              <CustomSelect
                 value={selectedSocialNet}
                 onChange={setSelectedSocialNet}
-                options={SOCIAL_FILTER_OPTIONS}
-                size="sm"
-                minWidth={200}
-                fullWidth
+                options={SOCIAL_FILTER_OPTIONS.map((o) => ({
+                  value: o.value,
+                  label: o.label,
+                  flag: o.icon,
+                }))}
               />
             </div>
 

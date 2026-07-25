@@ -7,6 +7,7 @@ import { getChannelHandle } from '@/lib/channel-helpers'
 import { getLevelBadge } from '@/lib/profile'
 import type { Profile, Channel, Review } from '@/lib/database.types'
 import PlatformBadge from './PlatformBadge'
+import VerifiedBadge from './VerifiedBadge'
 
 interface UserProfileCardProps {
   profileId: string
@@ -132,45 +133,81 @@ export default function UserProfileCard({ profileId, onClose }: UserProfileCardP
           </div>
         ) : (
           <>
-            {profile.is_admin && (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '16px',
-                  left: '16px',
-                  background: 'rgba(220,38,38,0.2)',
-                  border: '1px solid rgba(220,38,38,0.4)',
-                  color: '#f87171',
-                  fontSize: '11px',
-                  fontWeight: 'bold',
-                  padding: '3px 10px',
-                  borderRadius: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
-                🛡️ ADMIN
-              </span>
-            )}
-
-            {profile.subscription_plan === 'pro' && !profile.is_admin && (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '16px',
-                  left: '16px',
-                  backgroundColor: 'var(--accent-primary, #9333ea)',
-                  color: 'white',
-                  fontSize: '11px',
-                  fontWeight: 'bold',
-                  padding: '3px 10px',
-                  borderRadius: '20px',
-                }}
-              >
-                👑 PRO
-              </span>
-            )}
+            <div
+              style={{
+                position: 'absolute',
+                top: '14px',
+                right: '14px',
+                zIndex: 20,
+              }}
+            >
+              {profile.is_admin ? (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    background: 'rgba(220,38,38,0.2)',
+                    border: '1px solid rgba(220,38,38,0.4)',
+                    color: '#f87171',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    padding: '4px 10px',
+                    borderRadius: '20px',
+                    letterSpacing: '0.05em',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                  ADMIN
+                </span>
+              ) : profile.subscription_plan === 'pro' ? (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    background: 'rgba(234,179,8,0.15)',
+                    border: '1px solid rgba(234,179,8,0.4)',
+                    color: '#fbbf24',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    padding: '4px 10px',
+                    borderRadius: '20px',
+                    letterSpacing: '0.05em',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 0 10px rgba(234,179,8,0.2)',
+                  }}
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    <path d="M9 12l2 2 4-4" stroke="#fbbf24" strokeWidth="2.5" />
+                  </svg>
+                  PRO
+                </span>
+              ) : (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    color: 'rgba(255,255,255,0.3)',
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    padding: '4px 10px',
+                    borderRadius: '20px',
+                    letterSpacing: '0.05em',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  FREE
+                </span>
+              )}
+            </div>
 
             {profile.is_founder && (
               <span
@@ -310,18 +347,7 @@ export default function UserProfileCard({ profileId, onClose }: UserProfileCardP
               }}
             >
               {channels.some((c) => c.is_verified) && (
-                <span
-                  style={{
-                    background: 'rgba(34,197,94,0.15)',
-                    border: '1px solid rgba(34,197,94,0.3)',
-                    color: '#4ade80',
-                    fontSize: '11px',
-                    padding: '3px 10px',
-                    borderRadius: '20px',
-                  }}
-                >
-                  ✓ Верифицирован
-                </span>
+                <VerifiedBadge gradId={`verifiedGrad-usercard-${profileId}`} />
               )}
 
               {levelBadge && (
@@ -507,7 +533,7 @@ export default function UserProfileCard({ profileId, onClose }: UserProfileCardP
                         {channel.name}
                         <PlatformBadge platform={channel.platform} />
                         {channel.is_verified && (
-                          <span style={{ color: '#4ade80', fontSize: '10px' }}>✓</span>
+                          <VerifiedBadge gradId={`verifiedGrad-usercard-ch-${channel.id}`} />
                         )}
                       </div>
                       <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>

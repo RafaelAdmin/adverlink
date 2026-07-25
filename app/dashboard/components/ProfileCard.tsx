@@ -150,8 +150,10 @@ export default function ProfileCard({ user, role, onClose }: ProfileCardProps) {
   return (
     <div
       ref={cardRef}
-      className="fixed top-16 right-4 z-50 w-80 p-5"
+      className="p-5"
       style={{
+        position: 'relative',
+        width: '320px',
         background: 'rgba(15, 12, 41, 0.85)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
@@ -165,37 +167,84 @@ export default function ProfileCard({ user, role, onClose }: ProfileCardProps) {
         <div className="text-white/50 text-sm text-center py-8">Загрузка...</div>
       ) : (
         <>
-          {/* Top section */}
-          <div className="pb-4 border-b border-white/10 relative">
+          <div
+            style={{
+              position: 'absolute',
+              top: '14px',
+              right: '14px',
+              zIndex: 20,
+            }}
+          >
             {isAdmin ? (
               <span
-                className="flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full"
                 style={{
-                  position: 'absolute',
-                  top: '8px',
-                  right: '8px',
-                  background: 'rgba(220, 38, 38, 0.2)',
-                  border: '1px solid rgba(220, 38, 38, 0.4)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  background: 'rgba(220,38,38,0.2)',
+                  border: '1px solid rgba(220,38,38,0.4)',
                   color: '#f87171',
-                  boxShadow: '0 0 12px rgba(220, 38, 38, 0.3)',
-                  zIndex: 20,
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  padding: '4px 10px',
+                  borderRadius: '20px',
+                  letterSpacing: '0.05em',
+                  whiteSpace: 'nowrap',
                 }}
               >
-                🛡️ ADMIN
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                ADMIN
               </span>
             ) : subscriptionPlan === 'pro' ? (
               <span
-                className="absolute top-4 right-4 flex items-center gap-1 text-white text-xs font-bold px-3 py-1 rounded-full"
-                style={{ backgroundColor: 'var(--accent-primary)' }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  background: 'rgba(234,179,8,0.15)',
+                  border: '1px solid rgba(234,179,8,0.4)',
+                  color: '#fbbf24',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  padding: '4px 10px',
+                  borderRadius: '20px',
+                  letterSpacing: '0.05em',
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 0 10px rgba(234,179,8,0.2)',
+                }}
               >
-                👑 PRO
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  <path d="M9 12l2 2 4-4" stroke="#fbbf24" strokeWidth="2.5" />
+                </svg>
+                PRO
               </span>
             ) : (
-              <span className="absolute top-4 right-4 text-white/30 text-xs px-3 py-1 rounded-full border border-white/10">
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  color: 'rgba(255,255,255,0.3)',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  padding: '4px 10px',
+                  borderRadius: '20px',
+                  letterSpacing: '0.05em',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 FREE
               </span>
             )}
+          </div>
 
+          {/* Top section */}
+          <div className="pb-4 border-b border-white/10 relative">
             <div className="relative mx-auto w-20 h-20 mt-4 mb-1">
               <div
                 style={

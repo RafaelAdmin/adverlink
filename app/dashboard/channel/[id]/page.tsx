@@ -8,6 +8,7 @@ import { CurrencyCode, formatPrice, getExchangeRates, formatConvertedPrice } fro
 import { getChannelHandle, getChannelLink, getPlatformLabel } from '@/lib/channel-helpers'
 import CurrencySelector from '@/app/dashboard/components/CurrencySelector'
 import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
+import VerifiedBadge from '@/app/dashboard/components/VerifiedBadge'
 
 export default function ChannelProfilePage() {
   const params = useParams()
@@ -158,9 +159,7 @@ export default function ChannelProfilePage() {
               <p className="text-white/50 text-lg mb-4">{getChannelHandle(channel)}</p>
               <div className="flex flex-wrap items-center gap-3">
                 {isVerified ? (
-                  <span className="bg-green-500/20 text-green-400 text-sm px-3 py-1 rounded-full">
-                    ✓ Верифицирован
-                  </span>
+                  <VerifiedBadge size={24} gradId={`verifiedGrad-channel-${channel.id}`} />
                 ) : (
                   <span className="bg-yellow-500/20 text-yellow-400 text-sm px-3 py-1 rounded-full">
                     На проверке

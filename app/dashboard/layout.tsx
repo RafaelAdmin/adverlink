@@ -842,12 +842,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </header>
 
           {showProfileCard && (
-            <ProfileCard
-              user={user}
-              role={role}
-              onClose={() => setShowProfileCard(false)}
-              onAvatarUpdate={refreshAvatar}
-            />
+            <div
+              style={{
+                position: 'fixed',
+                top: '60px',
+                right: '16px',
+                zIndex: 1000,
+              }}
+            >
+              <ProfileCard
+                user={user}
+                role={role}
+                onClose={() => setShowProfileCard(false)}
+                onAvatarUpdate={refreshAvatar}
+              />
+            </div>
           )}
 
           <main className="flex-1 min-h-0 overflow-y-auto p-8">{children}</main>

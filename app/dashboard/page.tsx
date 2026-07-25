@@ -5,9 +5,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from './layout'
-import { formatAmdWithUsd } from '@/lib/currency'
-import { getChannelHandle } from '@/lib/channel-helpers'
-import PlatformBadge from './components/PlatformBadge'
 import { CreatorDealCard, AdvertiserDealCard } from './components/DealManagement'
 
 const glassCardStyle: React.CSSProperties = {
@@ -132,55 +129,176 @@ function CreatorDashboard() {
           </Link>
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col">
           {channels.map((channel) => (
             <Link
               key={channel.id}
               href={`/dashboard/edit-channel/${channel.id}`}
-              className="flex items-center gap-6 hover-border-accent transition cursor-pointer"
-              style={glassCardStyle}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                padding: '14px 20px',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '14px',
+                marginBottom: '8px',
+                textDecoration: 'none',
+                transition: 'all 0.2s',
+                cursor: 'pointer',
+              }}
             >
               {channel.avatar_url ? (
                 <img
                   src={channel.avatar_url}
                   alt={channel.name}
-                  className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                  style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full avatar-accent-fallback flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                <div
+                  style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--accent-primary, #9333ea)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '18px',
+                    fontWeight: '700',
+                    flexShrink: 0,
+                  }}
+                >
                   {channel.name[0]}
                 </div>
               )}
-              <div className="flex-1">
-                <div className="text-white font-semibold flex items-center gap-2 flex-wrap">
-                  {channel.name}
-                  <PlatformBadge platform={channel.platform} />
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span
+                    style={{
+                      color: 'white',
+                      fontWeight: '600',
+                      fontSize: '14px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {channel.name}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      padding: '1px 6px',
+                      borderRadius: '20px',
+                      background: channel.platform === 'youtube' ? 'rgba(255,0,0,0.15)' : 'rgba(37,99,235,0.15)',
+                      color: channel.platform === 'youtube' ? '#ff6b6b' : '#60a5fa',
+                      border: channel.platform === 'youtube' ? '1px solid rgba(255,0,0,0.2)' : '1px solid rgba(37,99,235,0.2)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {channel.platform === 'youtube' ? 'YouTube' : 'Telegram'}
+                  </span>
                 </div>
-                <div className="text-white/40 text-sm">{getChannelHandle(channel)}</div>
+                <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px' }}>
+                  @
+                  {channel.telegram_username?.length > 20
+                    ? channel.telegram_username.substring(0, 20) + '...'
+                    : channel.telegram_username}
+                </span>
               </div>
-              <div className="flex gap-6 text-center">
-                <div>
-                  <div className="text-white font-semibold">{channel.subscriber_count?.toLocaleString()}</div>
-                  <div className="text-white/40 text-xs">подписчиков</div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0',
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{ width: '110px', textAlign: 'center' }}>
+                  <div style={{ color: 'white', fontSize: '14px', fontWeight: '600' }}>
+                    {channel.subscriber_count >= 1000
+                      ? `${(channel.subscriber_count / 1000).toFixed(1)}K`
+                      : channel.subscriber_count || 0}
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>подписчиков</div>
                 </div>
-                <div>
-                  <div className="text-white font-semibold">{channel.avg_views?.toLocaleString()}</div>
-                  <div className="text-white/40 text-xs">охваты</div>
+
+                <div style={{ width: '90px', textAlign: 'center' }}>
+                  <div style={{ color: 'white', fontSize: '14px', fontWeight: '600' }}>
+                    {channel.avg_views >= 1000
+                      ? `${(channel.avg_views / 1000).toFixed(1)}K`
+                      : channel.avg_views || 0}
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>охваты</div>
                 </div>
-                <div>
-                  <div className="text-price-accent">{formatAmdWithUsd(channel.ad_price)}</div>
-                  <div className="text-white/40 text-xs">цена</div>
+
+                <div style={{ width: '160px', textAlign: 'center' }}>
+                  <div
+                    style={{
+                      color: 'var(--accent-primary, #9333ea)',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {channel.ad_price
+                      ? `${channel.ad_price.toLocaleString()} ${channel.ad_price_currency || 'USD'}`
+                      : '—'}
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>цена</div>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className={`px-3 py-1 rounded-full text-xs ${
-                  channel.verification_status === 'verified'
-                    ? 'bg-green-500/20 text-green-400'
-                    : 'bg-yellow-500/20 text-yellow-400'
-                }`}>
-                  {channel.verification_status === 'verified' ? '✓ Верифицирован' : '⏳ На проверке'}
+
+                <div style={{ width: '130px', display: 'flex', justifyContent: 'center' }}>
+                  {channel.is_verified ? (
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        background: 'rgba(34,197,94,0.15)',
+                        border: '1px solid rgba(34,197,94,0.3)',
+                        borderRadius: '20px',
+                        padding: '3px 10px',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="11" fill="#22c55e" />
+                        <path
+                          d="M7.5 12.5L10.5 15.5L16.5 9"
+                          stroke="white"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <span style={{ color: '#4ade80', fontSize: '11px', fontWeight: '600' }}>Верифицирован</span>
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        background: 'rgba(234,179,8,0.15)',
+                        border: '1px solid rgba(234,179,8,0.3)',
+                        borderRadius: '20px',
+                        padding: '3px 10px',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <span style={{ color: '#fbbf24', fontSize: '11px', fontWeight: '600' }}>На проверке</span>
+                    </div>
+                  )}
                 </div>
-                <span className="text-white/30 text-sm">→</span>
+
+                <i
+                  className="ti ti-chevron-right"
+                  style={{ fontSize: '16px', color: 'rgba(255,255,255,0.2)', width: '20px' }}
+                />
               </div>
             </Link>
           ))}

@@ -53,11 +53,19 @@ function buildMonthlyChart(items: { created_at: string; [key: string]: unknown }
   return result
 }
 
-function SubMetric({ label, value, className = 'text-white' }: { label: string; value: string | number; className?: string }) {
+function SubMetric({
+  label,
+  value,
+  valueColor = 'white',
+}: {
+  label: string
+  value: string | number
+  valueColor?: string
+}) {
   return (
     <div>
-      <div className="text-xs text-white/40 mb-1">{label}</div>
-      <div className={`text-xl font-bold ${className}`}>{value}</div>
+      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginBottom: '4px' }}>{label}</div>
+      <div style={{ color: valueColor, fontSize: '20px', fontWeight: '700' }}>{value}</div>
     </div>
   )
 }
@@ -92,7 +100,7 @@ function BigMetricCard({
           color: 'white',
         }}
       />
-      <div className="text-white/50 text-sm font-medium mb-4">{title}</div>
+      <div style={{ color: 'white', fontWeight: '700', fontSize: '14px', marginBottom: '16px' }}>{title}</div>
       <div className={`grid gap-4 ${cols === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>{children}</div>
     </div>
   )
@@ -443,13 +451,13 @@ export default function StatisticsPage() {
 
         <div className="grid grid-cols-2 gap-4 mb-8">
           <BigMetricCard title="Доход" iconClass="ti-currency-dollar" borderClass="border-green-500/30">
-            <SubMetric label="За месяц" value={`${d.monthRevenue.toLocaleString()} AMD`} className="text-green-400" />
-            <SubMetric label="За всё время" value={`${d.totalRevenue.toLocaleString()} AMD`} className="text-green-400" />
+            <SubMetric label="За месяц" value={`${d.monthRevenue.toLocaleString()} AMD`} />
+            <SubMetric label="За всё время" value={`${d.totalRevenue.toLocaleString()} AMD`} />
           </BigMetricCard>
 
           <BigMetricCard title="Сделки" iconClass="ti-handshake" cols={3}>
-            <SubMetric label="Завершённые" value={d.completedDeals} className="text-green-400" />
-            <SubMetric label="В процессе" value={d.inProgressDeals} className="text-yellow-400" />
+            <SubMetric label="Завершённые" value={d.completedDeals} />
+            <SubMetric label="В процессе" value={d.inProgressDeals} />
             <SubMetric label="Все" value={d.allDeals} />
           </BigMetricCard>
 
@@ -460,7 +468,7 @@ export default function StatisticsPage() {
           </BigMetricCard>
 
           <BigMetricCard title="Репутация" iconClass="ti-star">
-            <SubMetric label="Рейтинг" value={`${d.avgRating.toFixed(1)} ★`} className="text-yellow-400" />
+            <SubMetric label="Рейтинг" value={`${d.avgRating.toFixed(1)} ★`} valueColor="#eab308" />
             <SubMetric label="Отзывов" value={d.reviewsCount} />
           </BigMetricCard>
         </div>
@@ -507,14 +515,19 @@ export default function StatisticsPage() {
 
         <div className="grid grid-cols-2 gap-4 mb-8">
           <BigMetricCard title="Расходы" iconClass="ti-cash" borderClass="border-red-500/30">
-            <SubMetric label="За месяц" value={`${d.monthSpent.toLocaleString()} AMD`} className="text-red-400" />
-            <SubMetric label="За всё время" value={`${d.totalSpent.toLocaleString()} AMD`} className="text-red-400" />
-            <div className="col-span-2 text-white/40 text-xs mt-1">≈ ${Math.round(d.totalSpent / 385)}</div>
+            <SubMetric label="За месяц" value={`${d.monthSpent.toLocaleString()} AMD`} />
+            <SubMetric label="За всё время" value={`${d.totalSpent.toLocaleString()} AMD`} />
+            <div
+              className="col-span-2"
+              style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', marginTop: '4px' }}
+            >
+              ≈ ${Math.round(d.totalSpent / 385)}
+            </div>
           </BigMetricCard>
 
           <BigMetricCard title="Кампании" iconClass="ti-clipboard-list" cols={3}>
-            <SubMetric label="Активные" value={d.activeCampaigns} className="text-green-400" />
-            <SubMetric label="Завершённые" value={d.completedCampaigns} className="text-blue-400" />
+            <SubMetric label="Активные" value={d.activeCampaigns} />
+            <SubMetric label="Завершённые" value={d.completedCampaigns} />
             <SubMetric label="Все" value={d.allCampaigns} />
           </BigMetricCard>
 
@@ -524,7 +537,7 @@ export default function StatisticsPage() {
           </BigMetricCard>
 
           <BigMetricCard title="Репутация" iconClass="ti-star">
-            <SubMetric label="Рейтинг" value={`${d.avgRating.toFixed(1)} ★`} className="text-yellow-400" />
+            <SubMetric label="Рейтинг" value={`${d.avgRating.toFixed(1)} ★`} valueColor="#eab308" />
             <SubMetric label="Отзывов" value={d.reviewsCount} />
           </BigMetricCard>
         </div>
