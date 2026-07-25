@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase'
 import { useRouter, useParams } from 'next/navigation'
 import { getChannelHandle } from '@/lib/channel-helpers'
 import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
+import ProReportGenerator from '@/app/dashboard/components/ProReportGenerator'
 
 export default function EditChannelPage() {
   const [channel, setChannel] = useState<any>(null)
@@ -14,6 +15,7 @@ export default function EditChannelPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [isPro, setIsPro] = useState(false)
   const router = useRouter()
   const params = useParams()
   const supabase = createClient()
@@ -22,6 +24,13 @@ export default function EditChannelPage() {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/auth/login'); return }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_plan')
+        .eq('id', user.id)
+        .single()
+      setIsPro(profile?.subscription_plan === 'pro')
 
       const { data } = await supabase
         .from('channels')
@@ -200,6 +209,10 @@ export default function EditChannelPage() {
         >
           {saving ? 'Сохранение...' : 'Сохранить изменения'}
         </button>
+      </div>
+
+      <div style={{ marginTop: '24px' }}>
+        <ProReportGenerator channel={channel} isPro={isPro} />
       </div>
     </div>
   )
