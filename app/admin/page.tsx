@@ -49,6 +49,14 @@ using (
 import { useEffect, useState, useCallback, Fragment } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import AdminOverview from './components/AdminOverview'
+import AdminUsers from './components/AdminUsers'
+import AdminChannels from './components/AdminChannels'
+import AdminRequests from './components/AdminRequests'
+import AdminReviews from './components/AdminReviews'
+import AdminModeration from './components/AdminModeration'
+import AdminPlatform from './components/AdminPlatform'
+import { statusBadge } from './components/admin-utils'
 
 type Section =
   | 'overview'
@@ -81,30 +89,6 @@ const SIDEBAR_ITEMS: { icon: string; label: string; section: Section }[] = [
   { icon: '🛡️', label: 'Модерация', section: 'moderation' },
   { icon: '⚙️', label: 'Настройки платформы', section: 'platform' },
 ]
-
-function statusBadge(status: string) {
-  const map: Record<string, string> = {
-    verified: 'bg-green-500/20 text-green-400',
-    pending: 'bg-yellow-500/20 text-yellow-400',
-    rejected: 'bg-red-500/20 text-red-400',
-    active: 'bg-blue-500/20 text-blue-400',
-    completed: 'bg-purple-500/20 text-purple-400',
-    new: 'bg-orange-500/20 text-orange-400',
-    replied: 'bg-green-500/20 text-green-400',
-    paused: 'bg-yellow-500/20 text-yellow-400',
-    cancelled: 'bg-red-500/20 text-red-400',
-  }
-  return `px-2 py-0.5 rounded-full text-xs font-medium ${map[status] || 'bg-white/10 text-white/50'}`
-}
-
-function Stars({ rating }: { rating: number }) {
-  return (
-    <span className="text-yellow-400 text-sm">
-      {'★'.repeat(Math.round(rating))}
-      {'☆'.repeat(5 - Math.round(rating))}
-    </span>
-  )
-}
 
 export default function AdminPanel() {
   const router = useRouter()
@@ -496,21 +480,6 @@ export default function AdminPanel() {
     )
   }
 
-  const statCards = [
-    { label: 'Пользователи', value: stats.users, icon: '👥', color: 'text-blue-400' },
-    { label: 'Каналов', value: stats.channels, icon: '📺', color: 'text-purple-400' },
-    {
-      label: 'На верификации',
-      value: stats.pendingChannels,
-      icon: '⏳',
-      color: 'text-yellow-400',
-      onClick: () => setSection('channels'),
-    },
-    { label: 'Кампаний', value: stats.campaigns, icon: '📋', color: 'text-green-400' },
-    { label: 'Запросов', value: stats.requests, icon: '📨', color: 'text-orange-400' },
-    { label: 'Отзывов', value: stats.reviews, icon: '⭐', color: 'text-pink-400' },
-  ]
-
   return (
     <div className="bg-[#0a0a0f] min-h-screen">
       {/* Navbar */}
@@ -563,330 +532,48 @@ export default function AdminPanel() {
 
       {/* Main content */}
       <main className="ml-56 pt-20 p-8">
-        {/* OVERVIEW */}
         {section === 'overview' && (
-          <>
-            <h1 className="text-2xl font-bold text-white mb-6">Обзор платформы</h1>
-            <div className="grid grid-cols-3 gap-4 mb-8">
-              {statCards.map((card) => (
-                <button
-                  key={card.label}
-                  type="button"
-                  onClick={card.onClick}
-                  className={`bg-white/5 border border-white/10 rounded-2xl p-6 relative text-left transition hover:border-white/20 ${
-                    card.onClick ? 'cursor-pointer' : 'cursor-default'
-                  }`}
-                >
-                  <span className={`text-4xl opacity-20 absolute right-4 top-4 ${card.color}`}>
-                    {card.icon}
-                  </span>
-                  <div className="text-3xl font-bold text-white mb-1">{card.value}</div>
-                  <div className="text-white/50 text-sm">{card.label}</div>
-                </button>
-              ))}
-            </div>
-
-            <h2 className="text-white font-semibold mb-4">Последняя активность</h2>
-            <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-white/5 border-b border-white/10">
-                    <th className="text-white/40 text-xs font-medium uppercase tracking-wider px-4 py-3 text-left">
-                      Рекламодатель
-                    </th>
-                    <th className="text-white/40 text-xs font-medium uppercase tracking-wider px-4 py-3 text-left">
-                      Бюджет
-                    </th>
-                    <th className="text-white/40 text-xs font-medium uppercase tracking-wider px-4 py-3 text-left">
-                      Статус
-                    </th>
-                    <th className="text-white/40 text-xs font-medium uppercase tracking-wider px-4 py-3 text-left">
-                      Дата
-                    </th>
-                    <th className="text-white/40 text-xs font-medium uppercase tracking-wider px-4 py-3 text-left">
-                      Действия
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentRequests.map((r) => (
-                    <tr key={r.id} className="border-b border-white/5 hover:bg-white/[0.03] transition">
-                      <td className="px-4 py-3 text-white text-sm">{r.advertiser_name || '—'}</td>
-                      <td className="px-4 py-3 text-white text-sm">${r.budget}</td>
-                      <td className="px-4 py-3">
-                        <span className={statusBadge(r.status)}>{r.status}</span>
-                      </td>
-                      <td className="px-4 py-3 text-white/50 text-sm">
-                        {new Date(r.created_at).toLocaleDateString('ru-RU')}
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          onClick={() => deleteRequest(r.id, true)}
-                          className="bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg px-2 py-1 text-xs"
-                        >
-                          🗑️
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
+          <AdminOverview
+            stats={stats}
+            recentRequests={recentRequests}
+            onNavigateToChannels={() => setSection('channels')}
+            onDeleteRequest={(id) => deleteRequest(id, true)}
+          />
         )}
 
-        {/* USERS */}
         {section === 'users' && (
-          <>
-            <h1 className="text-2xl font-bold text-white mb-6">Пользователи</h1>
-            <input
-              type="text"
-              placeholder="Поиск по имени или ID..."
-              value={userSearch}
-              onChange={(e) => {
-                setUserSearch(e.target.value)
-                setUserPage(0)
-              }}
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none focus:border-red-500/50 transition text-sm w-full max-w-md mb-6"
-            />
-            <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden mb-4">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px]">
-                  <thead>
-                    <tr className="bg-white/5 border-b border-white/10">
-                      {['', 'ID', 'Имя', 'Email / ID', 'Дата', 'План', 'Уровень', 'Админ', 'Действия'].map(
-                        (h) => (
-                          <th
-                            key={h}
-                            className="text-white/40 text-xs font-medium uppercase tracking-wider px-4 py-3 text-left"
-                          >
-                            {h}
-                          </th>
-                        ),
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedProfiles.map((p) => (
-                      <tr key={p.id} className="border-b border-white/5 hover:bg-white/[0.03] transition">
-                        <td className="px-4 py-3">
-                          <div className="w-8 h-8 rounded-full bg-red-500/30 flex items-center justify-center text-white text-sm font-bold">
-                            {(p.full_name || p.id)?.[0]?.toUpperCase()}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <button
-                            type="button"
-                            onClick={() => copyId(p.id)}
-                            className="text-white/50 text-xs font-mono hover:text-white transition"
-                            title="Копировать ID"
-                          >
-                            {p.id.slice(0, 8)}...
-                          </button>
-                        </td>
-                        <td className="px-4 py-3 text-white text-sm">{p.full_name || '—'}</td>
-                        <td className="px-4 py-3 text-white/50 text-xs font-mono">{p.id.slice(0, 12)}...</td>
-                        <td className="px-4 py-3 text-white/50 text-sm">
-                          {new Date(p.created_at).toLocaleDateString('ru-RU')}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="bg-white/10 text-white/60 px-2 py-0.5 rounded-full text-xs">
-                            {(p.subscription_plan || 'free').toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full text-xs">
-                            Lv.{p.level || 1}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <button
-                            type="button"
-                            onClick={() => toggleAdmin(p)}
-                            className="relative w-10 h-5 rounded-full transition-colors"
-                            style={{
-                              background: p.is_admin ? '#ef4444' : 'rgba(255,255,255,0.15)',
-                            }}
-                          >
-                            <span
-                              className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"
-                              style={{ transform: p.is_admin ? 'translateX(20px)' : 'translateX(0)' }}
-                            />
-                          </button>
-                        </td>
-                        <td className="px-4 py-3">
-                          <button
-                            type="button"
-                            onClick={() => deleteUser(p)}
-                            className="bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg px-2 py-1 text-xs"
-                          >
-                            🗑️
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <button
-                type="button"
-                disabled={userPage === 0}
-                onClick={() => setUserPage((p) => p - 1)}
-                className="border border-white/20 text-white/70 disabled:opacity-30 rounded-lg px-4 py-2 text-sm"
-              >
-                ← Назад
-              </button>
-              <span className="text-white/50 text-sm">
-                Стр. {userPage + 1} из {Math.max(1, totalUserPages)}
-              </span>
-              <button
-                type="button"
-                disabled={userPage >= totalUserPages - 1}
-                onClick={() => setUserPage((p) => p + 1)}
-                className="border border-white/20 text-white/70 disabled:opacity-30 rounded-lg px-4 py-2 text-sm"
-              >
-                Вперёд →
-              </button>
-            </div>
-          </>
+          <AdminUsers
+            profiles={paginatedProfiles}
+            userSearch={userSearch}
+            userPage={userPage}
+            totalUserPages={totalUserPages}
+            onSearchChange={(value) => {
+              setUserSearch(value)
+              setUserPage(0)
+            }}
+            onPageChange={setUserPage}
+            onToggleAdmin={toggleAdmin}
+            onDelete={deleteUser}
+            onCopyId={copyId}
+          />
         )}
 
-        {/* CHANNELS */}
         {section === 'channels' && (
-          <>
-            <h1 className="text-2xl font-bold text-white mb-6">Каналы</h1>
-            <div className="flex flex-wrap gap-3 mb-6">
-              <input
-                type="text"
-                placeholder="Поиск по названию или username..."
-                value={channelSearch}
-                onChange={(e) => setChannelSearch(e.target.value)}
-                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none text-sm flex-1 min-w-[200px]"
-              />
-              <select
-                value={channelVerificationFilter}
-                onChange={(e) => setChannelVerificationFilter(e.target.value)}
-                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm"
-              >
-                <option value="all">Все статусы</option>
-                <option value="pending">Pending</option>
-                <option value="verified">Verified</option>
-                <option value="rejected">Rejected</option>
-              </select>
-              <select
-                value={channelActiveFilter}
-                onChange={(e) => setChannelActiveFilter(e.target.value)}
-                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm"
-              >
-                <option value="all">Все</option>
-                <option value="active">Активные</option>
-                <option value="inactive">Неактивные</option>
-              </select>
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[1000px]">
-                  <thead>
-                    <tr className="bg-white/5 border-b border-white/10">
-                      {[
-                        '',
-                        'Канал',
-                        'Владелец',
-                        'Подписчиков',
-                        'Цена',
-                        'Верификация',
-                        'Активен',
-                        'Действия',
-                      ].map((h) => (
-                        <th
-                          key={h}
-                          className="text-white/40 text-xs font-medium uppercase tracking-wider px-4 py-3 text-left"
-                        >
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredChannels.map((ch) => (
-                      <tr key={ch.id} className="border-b border-white/5 hover:bg-white/[0.03] transition">
-                        <td className="px-4 py-3">
-                          {ch.avatar_url ? (
-                            <img src={ch.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white text-xs font-bold">
-                              {ch.name?.[0]}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="text-white text-sm font-medium">{ch.name}</div>
-                          <div className="text-white/40 text-xs">@{ch.telegram_username}</div>
-                        </td>
-                        <td className="px-4 py-3 text-white/50 text-xs font-mono">
-                          {ch.owner_id?.slice(0, 8)}...
-                        </td>
-                        <td className="px-4 py-3 text-white text-sm">
-                          {ch.subscriber_count?.toLocaleString() || 0}
-                        </td>
-                        <td className="px-4 py-3 text-white text-sm">${ch.ad_price || '—'}</td>
-                        <td className="px-4 py-3">
-                          <span className={statusBadge(ch.verification_status || 'pending')}>
-                            {ch.verification_status || 'pending'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`w-2.5 h-2.5 rounded-full inline-block ${
-                              ch.is_active !== false ? 'bg-green-400' : 'bg-gray-500'
-                            }`}
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-2 flex-wrap">
-                            <button
-                              type="button"
-                              onClick={() => verifyChannel(ch.id)}
-                              className="bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/20 rounded-lg px-2 py-1 text-xs"
-                            >
-                              ✓
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => rejectChannel(ch.id)}
-                              className="bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/20 rounded-lg px-2 py-1 text-xs"
-                            >
-                              ✗
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => toggleChannelActive(ch)}
-                              className="bg-white/5 text-white/50 hover:bg-white/10 border border-white/10 rounded-lg px-2 py-1 text-xs"
-                            >
-                              👁
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => deleteChannel(ch.id)}
-                              className="bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg px-2 py-1 text-xs"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </>
+          <AdminChannels
+            channels={filteredChannels}
+            channelSearch={channelSearch}
+            channelVerificationFilter={channelVerificationFilter}
+            channelActiveFilter={channelActiveFilter}
+            onSearchChange={setChannelSearch}
+            onVerificationFilterChange={setChannelVerificationFilter}
+            onActiveFilterChange={setChannelActiveFilter}
+            onVerify={verifyChannel}
+            onReject={rejectChannel}
+            onToggleActive={toggleChannelActive}
+            onDelete={deleteChannel}
+          />
         )}
 
-        {/* CAMPAIGNS */}
         {section === 'campaigns' && (
           <>
             <h1 className="text-2xl font-bold text-white mb-6">Кампании</h1>
@@ -1010,397 +697,49 @@ export default function AdminPanel() {
           </>
         )}
 
-        {/* REQUESTS */}
         {section === 'requests' && (
-          <>
-            <h1 className="text-2xl font-bold text-white mb-6">Запросы на рекламу</h1>
-            <div className="flex flex-wrap gap-3 mb-6">
-              <input
-                type="text"
-                placeholder="Поиск по рекламодателю..."
-                value={requestSearch}
-                onChange={(e) => setRequestSearch(e.target.value)}
-                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/30 outline-none text-sm flex-1 min-w-[200px]"
-              />
-              <select
-                value={requestStatusFilter}
-                onChange={(e) => setRequestStatusFilter(e.target.value)}
-                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm"
-              >
-                <option value="all">Все</option>
-                <option value="new">New</option>
-                <option value="replied">Replied</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-white/5 border-b border-white/10">
-                    {[
-                      'Рекламодатель',
-                      'Контакт',
-                      'Бюджет',
-                      'Сообщение',
-                      'Статус',
-                      'Дата',
-                      'Действия',
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="text-white/40 text-xs font-medium uppercase tracking-wider px-4 py-3 text-left"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredRequests.map((r) => (
-                    <Fragment key={r.id}>
-                      <tr className="border-b border-white/5 hover:bg-white/[0.03] transition">
-                        <td className="px-4 py-3 text-white text-sm">{r.advertiser_name || '—'}</td>
-                        <td className="px-4 py-3 text-white/50 text-sm truncate max-w-[100px]">
-                          {r.advertiser_contact}
-                        </td>
-                        <td className="px-4 py-3 text-white text-sm">${r.budget}</td>
-                        <td className="px-4 py-3 text-white/50 text-sm">
-                          {(r.message || '').slice(0, 50)}
-                          {(r.message || '').length > 50 ? '...' : ''}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={statusBadge(r.status)}>{r.status}</span>
-                        </td>
-                        <td className="px-4 py-3 text-white/50 text-sm">
-                          {new Date(r.created_at).toLocaleDateString('ru-RU')}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setExpandedRequest(expandedRequest === r.id ? null : r.id)
-                              }
-                              className="bg-white/5 text-white/50 hover:bg-white/10 border border-white/10 rounded-lg px-2 py-1 text-xs"
-                            >
-                              👁
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => approveRequest(r.id)}
-                              className="bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/20 rounded-lg px-2 py-1 text-xs"
-                            >
-                              ✓
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => deleteRequest(r.id)}
-                              className="bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg px-2 py-1 text-xs"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      {expandedRequest === r.id && (
-                        <tr key={`${r.id}-detail`} className="bg-white/[0.02]">
-                          <td colSpan={7} className="px-4 py-4 text-white/70 text-sm whitespace-pre-wrap">
-                            {r.message || 'Нет сообщения'}
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
+          <AdminRequests
+            requests={filteredRequests}
+            requestSearch={requestSearch}
+            requestStatusFilter={requestStatusFilter}
+            expandedRequest={expandedRequest}
+            onSearchChange={setRequestSearch}
+            onStatusFilterChange={setRequestStatusFilter}
+            onExpandRequest={setExpandedRequest}
+            onApprove={approveRequest}
+            onDelete={(id) => deleteRequest(id)}
+          />
         )}
 
-        {/* REVIEWS */}
         {section === 'reviews' && (
-          <>
-            <h1 className="text-2xl font-bold text-white mb-6">Отзывы</h1>
-            <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-white/5 border-b border-white/10">
-                    {['Автор', 'Рейтинг', 'Комментарий', 'Дата', 'Действия'].map((h) => (
-                      <th
-                        key={h}
-                        className="text-white/40 text-xs font-medium uppercase tracking-wider px-4 py-3 text-left"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {reviews.map((r) => (
-                    <Fragment key={r.id}>
-                      <tr className="border-b border-white/5 hover:bg-white/[0.03] transition">
-                        <td className="px-4 py-3 text-white/50 text-xs font-mono">
-                          {r.reviewer_id?.slice(0, 8)}...
-                        </td>
-                        <td className="px-4 py-3">
-                          <Stars rating={r.rating} />
-                        </td>
-                        <td className="px-4 py-3 text-white/70 text-sm">
-                          {(r.comment || '').slice(0, 60)}
-                          {(r.comment || '').length > 60 ? '...' : ''}
-                        </td>
-                        <td className="px-4 py-3 text-white/50 text-sm">
-                          {new Date(r.created_at).toLocaleDateString('ru-RU')}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setExpandedReview(expandedReview === r.id ? null : r.id)
-                              }
-                              className="bg-white/5 text-white/50 hover:bg-white/10 border border-white/10 rounded-lg px-2 py-1 text-xs"
-                            >
-                              👁
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => deleteReview(r.id)}
-                              className="bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg px-2 py-1 text-xs"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      {expandedReview === r.id && (
-                        <tr key={`${r.id}-detail`} className="bg-white/[0.02]">
-                          <td colSpan={5} className="px-4 py-4 text-white/70 text-sm">
-                            {r.comment || 'Нет комментария'}
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
+          <AdminReviews
+            reviews={reviews}
+            expandedReview={expandedReview}
+            onExpandReview={setExpandedReview}
+            onDelete={deleteReview}
+          />
         )}
 
-        {/* MODERATION */}
         {section === 'moderation' && (
-          <>
-            <div className="flex items-center gap-3 mb-6">
-              <h1 className="text-2xl font-bold text-white">Каналы на верификации</h1>
-              <span className="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-sm font-medium">
-                {pendingChannels.length}
-              </span>
-            </div>
-            {pendingChannels.length === 0 ? (
-              <div className="text-green-400 text-center py-12 text-lg">✓ Все каналы проверены</div>
-            ) : (
-              pendingChannels.map((ch) => (
-                <div
-                  key={ch.id}
-                  className="bg-white/5 border border-yellow-500/20 rounded-2xl p-6 mb-4"
-                >
-                  <div className="flex items-start gap-4 mb-4">
-                    {ch.avatar_url ? (
-                      <img src={ch.avatar_url} alt="" className="w-14 h-14 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-14 h-14 rounded-full bg-purple-600 flex items-center justify-center text-white text-xl font-bold">
-                        {ch.name?.[0]}
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <div className="text-white font-bold text-lg">{ch.name}</div>
-                      <div className="text-white/40 text-sm">@{ch.telegram_username}</div>
-                      <div className="text-white/50 text-sm mt-1">
-                        {ch.subscriber_count?.toLocaleString()} подписчиков
-                      </div>
-                    </div>
-                  </div>
-                  {ch.description && (
-                    <p className="text-white/60 text-sm mb-3">{ch.description}</p>
-                  )}
-                  <div className="text-white/40 text-xs mb-2">
-                    Владелец: {ch.owner_id?.slice(0, 8)}... · Добавлен:{' '}
-                    {new Date(ch.created_at).toLocaleDateString('ru-RU')}
-                  </div>
-                  {ch.telegram_username && (
-                    <a
-                      href={`https://t.me/${ch.telegram_username}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 text-sm hover:underline mb-4 inline-block"
-                    >
-                      Открыть в Telegram →
-                    </a>
-                  )}
-                  <div className="flex gap-3 mt-4">
-                    <button
-                      type="button"
-                      onClick={() => verifyChannel(ch.id)}
-                      className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl text-sm transition"
-                    >
-                      ✓ ВЕРИФИЦИРОВАТЬ
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => rejectChannel(ch.id)}
-                      className="flex-1 border-2 border-red-500/50 text-red-400 hover:bg-red-500/10 font-bold py-3 rounded-xl text-sm transition"
-                    >
-                      ✗ ОТКЛОНИТЬ
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </>
+          <AdminModeration
+            channels={pendingChannels}
+            onVerify={verifyChannel}
+            onReject={rejectChannel}
+          />
         )}
 
-        {/* PLATFORM */}
         {section === 'platform' && (
-          <>
-            <h1 className="text-2xl font-bold text-white mb-6">Настройки платформы</h1>
-
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
-              <h2 className="text-white font-semibold mb-4">Категории каналов</h2>
-              {categories.map((cat) => (
-                <div
-                  key={cat.id}
-                  className="flex items-center justify-between py-2 border-b border-white/5"
-                >
-                  <span className="text-white text-sm">
-                    {cat.icon} {cat.name} ({cat.slug})
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => deleteCategory(cat.id)}
-                    className="bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg px-2 py-1 text-xs"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              ))}
-              <div className="flex flex-wrap gap-2 mt-4">
-                <input
-                  type="text"
-                  placeholder="Название"
-                  value={newCategory.name}
-                  onChange={(e) => setNewCategory((p) => ({ ...p, name: e.target.value }))}
-                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm flex-1 min-w-[120px]"
-                />
-                <input
-                  type="text"
-                  placeholder="slug"
-                  value={newCategory.slug}
-                  onChange={(e) => setNewCategory((p) => ({ ...p, slug: e.target.value }))}
-                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm w-28"
-                />
-                <input
-                  type="text"
-                  placeholder="📁"
-                  value={newCategory.icon}
-                  onChange={(e) => setNewCategory((p) => ({ ...p, icon: e.target.value }))}
-                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm w-16"
-                />
-                <button
-                  type="button"
-                  onClick={addCategory}
-                  className="bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/20 rounded-xl px-4 py-2 text-sm"
-                >
-                  Добавить
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
-              <h2 className="text-white font-semibold mb-4">Статистика платформы</h2>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="text-white/50">
-                  Всего пользователей:{' '}
-                  <span className="text-white font-bold">{platformStats.users}</span>
-                </div>
-                <div className="text-white/50">
-                  Верифицированных каналов:{' '}
-                  <span className="text-white font-bold">{platformStats.verifiedChannels}</span>
-                </div>
-                <div className="text-white/50">
-                  Активных кампаний:{' '}
-                  <span className="text-white font-bold">{platformStats.activeCampaigns}</span>
-                </div>
-                <div className="text-white/50">
-                  Завершённых сделок:{' '}
-                  <span className="text-white font-bold">{platformStats.completedDeals}</span>
-                </div>
-                <div className="text-white/50 col-span-2">
-                  Общий оборот:{' '}
-                  <span className="text-green-400 font-bold text-lg">
-                    ${platformStats.totalRevenue.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-              <h2 className="text-white font-semibold mb-4">Системные настройки</h2>
-              {[
-                {
-                  key: 'registrationOpen' as const,
-                  label: 'Регистрация открыта',
-                  storage: 'adverlink_reg_open',
-                },
-                {
-                  key: 'channelVerification' as const,
-                  label: 'Верификация каналов',
-                  storage: 'adverlink_verify_channels',
-                },
-                {
-                  key: 'campaignCreation' as const,
-                  label: 'Создание кампаний',
-                  storage: 'adverlink_create_campaigns',
-                },
-              ].map((item) => (
-                <div
-                  key={item.key}
-                  className="flex justify-between items-center py-3 border-b border-white/5"
-                >
-                  <span className="text-white text-sm">{item.label}</span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setPlatformSettings((p) => ({ ...p, [item.key]: !p[item.key] }))
-                    }
-                    className="relative w-11 h-6 rounded-full transition-colors"
-                    style={{
-                      background: platformSettings[item.key]
-                        ? '#ef4444'
-                        : 'rgba(255,255,255,0.15)',
-                    }}
-                  >
-                    <span
-                      className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
-                      style={{
-                        transform: platformSettings[item.key]
-                          ? 'translateX(20px)'
-                          : 'translateX(0)',
-                      }}
-                    />
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={savePlatformSettings}
-                className="mt-4 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/20 rounded-xl px-6 py-2.5 text-sm font-medium"
-              >
-                Сохранить настройки
-              </button>
-            </div>
-          </>
+          <AdminPlatform
+            categories={categories}
+            newCategory={newCategory}
+            onNewCategoryChange={setNewCategory}
+            onAddCategory={addCategory}
+            onDeleteCategory={deleteCategory}
+            platformStats={platformStats}
+            platformSettings={platformSettings}
+            onPlatformSettingsChange={setPlatformSettings}
+            onSavePlatformSettings={savePlatformSettings}
+          />
         )}
       </main>
 
