@@ -389,7 +389,9 @@ function AdvertiserDashboard() {
       .eq('advertiser_id', user.id)
       .eq('status', 'completed')
 
-    const activeCampaigns = campaignList.filter((c) => c.status === 'active').length
+    const activeCampaigns = campaignList.filter((c) =>
+      ['active', 'collecting', 'in_progress'].includes(c.status),
+    ).length
     const completedDeals = orderList.filter((o) => o.status === 'completed').length
     const spent = (completedRequests || []).reduce((sum, r) => sum + (Number(r.budget) || 0), 0)
 
@@ -446,8 +448,14 @@ function AdvertiserDashboard() {
   }
 
   const getCampaignStatus = (status: string) => {
-    if (status === 'active') return { label: 'Активна', className: 'bg-green-500/20 text-green-400' }
+    if (status === 'active' || status === 'collecting') {
+      return { label: 'Сбор заявок', className: 'bg-green-500/20 text-green-400' }
+    }
+    if (status === 'in_progress') {
+      return { label: 'В работе', className: 'bg-blue-500/20 text-blue-400' }
+    }
     if (status === 'completed') return { label: 'Завершена', className: 'bg-blue-500/20 text-blue-400' }
+    if (status === 'cancelled') return { label: 'Отменена', className: 'bg-red-500/20 text-red-400' }
     return { label: 'На модерации', className: 'bg-yellow-500/20 text-yellow-400' }
   }
 
@@ -560,6 +568,11 @@ function AdvertiserDashboard() {
                         </span>
                         <span>{new Date(campaign.created_at).toLocaleDateString('ru-RU')}</span>
                         <span>{responses} откликов</span>
+                        {(campaign.slots_total ?? 1) > 0 && (
+                          <span>
+                            {campaign.slots_filled ?? 0}/{campaign.slots_total ?? 1} каналов
+                          </span>
+                        )}
                       </div>
                     </div>
                     <span className="text-white/40 text-lg">→</span>
@@ -619,7 +632,7 @@ function AdvertiserDashboard() {
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-3">
-                        {campaign.status === 'active' && (
+                        {(campaign.status === 'active' || campaign.status === 'collecting' || campaign.status === 'in_progress') && (
                           <button
                             type="button"
                             onClick={() => handleCompleteCampaign(campaign.id)}

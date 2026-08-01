@@ -10,7 +10,6 @@ with check (auth.uid() = id);
 */
 
 import { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from '../layout'
@@ -154,12 +153,13 @@ export default function ProfileCard({ user, role, onClose }: ProfileCardProps) {
       style={{
         position: 'relative',
         width: '320px',
-        background: 'rgba(15, 12, 41, 0.85)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255,255,255,0.12)',
-        borderRadius: '20px',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+        background: 'rgba(10, 8, 30, 0.75)',
+        backdropFilter: 'blur(32px)',
+        WebkitBackdropFilter: 'blur(32px)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: '24px',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)',
+        overflow: 'hidden',
         animation: 'slideDown 0.2s ease-out',
       }}
     >
@@ -441,48 +441,34 @@ export default function ProfileCard({ user, role, onClose }: ProfileCardProps) {
             </p>
           </div>
 
-          {/* Bottom button */}
           <button
-            type="button"
             onClick={() => {
               router.push('/dashboard/profile')
               onClose()
             }}
-            className="w-full py-3 rounded-xl font-medium text-white text-sm mt-2 transition hover:opacity-90"
-            style={{ backgroundColor: 'var(--accent-primary)' }}
+            style={{
+              width: '100%',
+              marginTop: '16px',
+              padding: '12px',
+              backgroundColor: 'var(--accent-primary, #9333ea)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '14px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'opacity 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85' }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
           >
-            Редактировать профиль
+            <i className="ti ti-user" style={{ fontSize: '16px' }} />
+            Мой профиль
           </button>
-
-          {username ? (
-            <Link
-              href={`/u/${username}`}
-              target="_blank"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                width: '100%',
-                padding: '10px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '14px',
-                color: 'rgba(255,255,255,0.5)',
-                fontSize: '13px',
-                textDecoration: 'none',
-                marginTop: '8px',
-                transition: 'all 0.2s',
-              }}
-            >
-              <i className="ti ti-external-link" style={{ fontSize: '14px' }} />
-              Публичный профиль
-            </Link>
-          ) : (
-            <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', textAlign: 'center', marginTop: '8px' }}>
-              Добавьте username для публичного профиля
-            </p>
-          )}
         </>
       )}
     </div>

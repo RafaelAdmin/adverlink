@@ -14,6 +14,8 @@ import {
 } from '@/lib/deals'
 import { formatAmdWithUsd, toUsdEstimate } from '@/lib/currency'
 import DealChat from './DealChat'
+import { AutoCompleteCountdown, PaymentReservedBadge, RefundSummary, SplitPaymentSummary } from './DealExtras'
+import { incrementCampaignSlots } from '@/lib/campaigns'
 
 export function DealStatusPill({ status, large }: { status: string; large?: boolean }) {
   const badge = getDealStatusBadge(status)
@@ -154,8 +156,22 @@ export function CreatorDealActions({
   const [showReview, setShowReview] = useState(false)
   const [reviewDone, setReviewDone] = useState(false)
   const [reviewError, setReviewError] = useState('')
+  const [campaignBrief, setCampaignBrief] = useState<string | null>(null)
 
   const status = normalizeDealStatus(request.status)
+
+  useEffect(() => {
+    if (!request.campaign_id) return
+    const loadBrief = async () => {
+      const { data } = await supabase
+        .from('campaigns')
+        .select('brief')
+        .eq('id', request.campaign_id)
+        .single()
+      setCampaignBrief(data?.brief || null)
+    }
+    loadBrief()
+  }, [request.campaign_id])
 
   useEffect(() => {
     setPostsCount(request.posts_count || 1)
@@ -165,10 +181,11 @@ export function CreatorDealActions({
 
   const patch = async (data: Record<string, unknown>) => {
     setSaving(true)
-    const { error } = await supabase.from('ad_requests').update(data).eq('id', request.id)
+    const payload = { ...data, updated_at: new Date().toISOString() }
+    const { error } = await supabase.from('ad_requests').update(payload).eq('id', request.id)
     setSaving(false)
     if (error) return false
-    onUpdate(data)
+    onUpdate(payload)
     return true
   }
 
@@ -223,14 +240,37 @@ export function CreatorDealActions({
 
       <ProgressTracker steps={getCreatorSteps(request.status)} />
 
-      {status === 'new' && (
+      {status === 'payment_pending' && (
+        <div style={{ marginBottom: '12px' }}>
+          <PaymentReservedBadge />
+        </div>
+      )}
+
+      {(status === 'payment_pending') && !request.campaign_id && (
         <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
           <button
             type="button"
             disabled={saving}
             style={{ ...dealBtn.accept, opacity: saving ? 0.6 : 1 }}
             onClick={async () => {
-              await patch({ status: 'accepted', accepted_at: new Date().toISOString() })
+              const ok = await patch({ status: 'accepted', accepted_at: new Date().toISOString() })
+              if (ok) {
+                try {
+                  await fetch('/api/notify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      type: 'deal_accepted',
+                      channelId: request.channel_id,
+                      advertiserName: request.advertiser_name,
+                      advertiserContact: request.advertiser_contact,
+                      budget: request.budget,
+                    }),
+                  })
+                } catch {
+                  console.log('Notification failed silently')
+                }
+              }
             }}
           >
             ✓ Принять заказ
@@ -240,7 +280,7 @@ export function CreatorDealActions({
             disabled={saving}
             style={{ ...dealBtn.reject, opacity: saving ? 0.6 : 1 }}
             onClick={async () => {
-              await patch({ status: 'rejected' })
+              await patch({ status: 'cancelled', payment_status: 'refunded' })
             }}
           >
             ✗ Отклонить
@@ -248,11 +288,21 @@ export function CreatorDealActions({
         </div>
       )}
 
+      {status === 'new' && request.campaign_id && (
+        <p className="text-white/50 text-sm mt-2">Ожидает решения рекламодателя по кампании</p>
+      )}
+
       {status === 'accepted' && (
         <div>
           <span style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80', padding: '6px 12px', borderRadius: '20px', fontSize: '13px' }}>
             Заказ принят ✓
           </span>
+          {campaignBrief && (
+            <div className="mt-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+              <div className="text-blue-400 text-xs mb-1">Бриф от рекламодателя</div>
+              <p className="text-white/80 text-sm whitespace-pre-wrap">{campaignBrief}</p>
+            </div>
+          )}
           <label className="block mt-4">
             <span className="text-white/50 text-xs mb-2 block">Количество постов</span>
             <input
@@ -281,6 +331,12 @@ export function CreatorDealActions({
           <span style={{ background: 'rgba(234,179,8,0.15)', color: '#fbbf24', padding: '6px 12px', borderRadius: '20px', fontSize: '13px' }}>
             В работе 🔄
           </span>
+          {campaignBrief && (
+            <div className="mt-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+              <div className="text-blue-400 text-xs mb-1">Бриф от рекламодателя</div>
+              <p className="text-white/80 text-sm whitespace-pre-wrap">{campaignBrief}</p>
+            </div>
+          )}
           {request.advertiser_note && (
             <div className="mt-3 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
               <div className="text-yellow-400 text-xs mb-1">Замечания рекламодателя</div>
@@ -337,7 +393,35 @@ export function CreatorDealActions({
               {request.creator_note}
             </p>
           )}
+          <AutoCompleteCountdown updatedAt={request.updated_at || request.created_at} />
           <p className="text-white/40 text-sm mt-4">Ожидаем подтверждения от рекламодателя</p>
+        </div>
+      )}
+
+      {status === 'disputed' && (
+        <div>
+          <DealStatusPill status="disputed" large />
+          <p className="text-white/50 text-sm mt-3">Спор открыт. Ожидаем решения администратора.</p>
+          {request.dispute_reason && (
+            <div className="mt-3 p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
+              <div className="text-orange-400 text-xs mb-1">Причина спора</div>
+              <p className="text-white/70 text-sm">{request.dispute_reason}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {status === 'resolved_creator' && (
+        <div>
+          <DealStatusPill status="resolved_creator" large />
+          <SplitPaymentSummary budget={request.budget} commissionPercent={request.platform_commission || 10} />
+        </div>
+      )}
+
+      {status === 'resolved_advertiser' && (
+        <div>
+          <DealStatusPill status="resolved_advertiser" large />
+          <RefundSummary budget={request.budget} />
         </div>
       )}
 
@@ -346,11 +430,15 @@ export function CreatorDealActions({
           <span style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80', padding: '6px 12px', borderRadius: '20px', fontSize: '13px' }}>
             Завершено ✅
           </span>
+          {request.auto_completed && (
+            <span className="text-white/40 text-xs ml-2">(автоподтверждение)</span>
+          )}
           {request.completed_at && (
             <p className="text-white/40 text-xs mt-2">
               {new Date(request.completed_at).toLocaleString('ru-RU')}
             </p>
           )}
+          <SplitPaymentSummary budget={request.budget} commissionPercent={request.platform_commission || 10} />
           <ProofLinksList links={request.proof_links} />
           {!reviewDone && !showReview && (
             <button
@@ -365,6 +453,13 @@ export function CreatorDealActions({
           {showReview && (
             <DealReviewForm onSubmit={submitReview} onCancel={() => setShowReview(false)} error={reviewError} />
           )}
+        </div>
+      )}
+
+      {status === 'cancelled' && (
+        <div>
+          <DealStatusPill status="cancelled" large />
+          <RefundSummary budget={request.budget} />
         </div>
       )}
 
@@ -394,7 +489,7 @@ function formatExpiry(value: string) {
   return `${digits.slice(0, 2)}/${digits.slice(2)}`
 }
 
-function DealPaymentModal({
+export function DealPaymentModal({
   open,
   onClose,
   onConfirm,
@@ -403,7 +498,7 @@ function DealPaymentModal({
 }: {
   open: boolean
   onClose: () => void
-  onConfirm: () => void | Promise<void>
+  onConfirm: () => void | Promise<void | boolean>
   budget: number | string | null | undefined
   channel?: any
   saving?: boolean
@@ -444,7 +539,13 @@ function DealPaymentModal({
   useEffect(() => {
     if (step !== 'success' || confirmStarted.current) return
     confirmStarted.current = true
-    void onConfirmRef.current()
+    void (async () => {
+      const result = await onConfirmRef.current()
+      if (result === false) {
+        confirmStarted.current = false
+        setStep('form')
+      }
+    })()
   }, [step])
 
   if (!open) return null
@@ -805,6 +906,8 @@ export function AdvertiserDealActions({
   const supabase = createClient()
   const [saving, setSaving] = useState(false)
   const [showDispute, setShowDispute] = useState(false)
+  const [showDisputeForm, setShowDisputeForm] = useState(false)
+  const [disputeReason, setDisputeReason] = useState('')
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [advertiserNote, setAdvertiserNote] = useState(request.advertiser_note || '')
   const [showReview, setShowReview] = useState(false)
@@ -815,14 +918,15 @@ export function AdvertiserDealActions({
 
   const patch = async (data: Record<string, unknown>) => {
     setSaving(true)
+    const payload = { ...data, updated_at: new Date().toISOString() }
     const { error } = await supabase
       .from('ad_requests')
-      .update(data)
+      .update(payload)
       .eq('id', request.id)
       .eq('advertiser_id', userId)
     setSaving(false)
     if (error) return false
-    onUpdate(data)
+    onUpdate(payload)
     return true
   }
 
@@ -849,7 +953,24 @@ export function AdvertiserDealActions({
   }
 
   const confirmPayment = async () => {
-    return patch({ status: 'completed', completed_at: new Date().toISOString() })
+    const ok = await patch({ status: 'completed', completed_at: new Date().toISOString() })
+    if (ok) {
+      try {
+        await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'deal_completed',
+            channelId: request.channel_id,
+            advertiserName: request.advertiser_name,
+            budget: request.budget,
+          }),
+        })
+      } catch {
+        console.log('Notification failed silently')
+      }
+    }
+    return ok
   }
 
   return (
@@ -888,20 +1009,67 @@ export function AdvertiserDealActions({
 
       <ProgressTracker steps={getAdvertiserSteps(request.status)} />
 
-      {status === 'new' && (
-        <div>
-          <span style={{ background: 'rgba(234,179,8,0.15)', color: '#fbbf24', padding: '6px 12px', borderRadius: '20px', fontSize: '13px' }}>
-            Ожидает ответа ⏳
-          </span>
+      {status === 'new' && !request.campaign_id && (
+        <p className="text-white/50 text-sm mt-2">Ожидает подтверждения оплаты</p>
+      )}
+
+      {status === 'payment_pending' && !request.campaign_id && (
+        <div style={{ marginTop: '12px' }}>
+          <PaymentReservedBadge />
+          <p className="text-white/50 text-sm mt-2">Ожидаем ответа создателя канала</p>
           <button
             type="button"
             disabled={saving}
             style={{ ...dealBtn.reject, marginTop: '16px', width: '100%' }}
             onClick={async () => {
-              await patch({ status: 'rejected' })
+              await patch({ status: 'cancelled', payment_status: 'refunded' })
             }}
           >
             Отменить запрос
+          </button>
+        </div>
+      )}
+
+      {(status === 'new' || status === 'payment_pending') && request.campaign_id && (
+        <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+          <button
+            type="button"
+            disabled={saving}
+            style={{ ...dealBtn.accept, opacity: saving ? 0.6 : 1 }}
+            onClick={async () => {
+              const ok = await patch({ status: 'accepted', accepted_at: new Date().toISOString() })
+              if (ok && request.campaign_id) {
+                await incrementCampaignSlots(supabase, request.campaign_id)
+              }
+            }}
+          >
+            ✓ Принять отклик
+          </button>
+          <button
+            type="button"
+            disabled={saving}
+            style={{ ...dealBtn.reject, opacity: saving ? 0.6 : 1 }}
+            onClick={async () => {
+              const ok = await patch({ status: 'rejected' })
+              if (ok && request.channel_id) {
+                try {
+                  await fetch('/api/notify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      type: 'application_rejected',
+                      channelId: request.channel_id,
+                      advertiserName: request.advertiser_name,
+                      budget: request.budget,
+                    }),
+                  })
+                } catch {
+                  console.log('Notification failed silently')
+                }
+              }
+            }}
+          >
+            ✗ Отклонить
           </button>
         </div>
       )}
@@ -936,19 +1104,49 @@ export function AdvertiserDealActions({
               {request.creator_note}
             </p>
           )}
-          {!showDispute ? (
-            <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+          <AutoCompleteCountdown updatedAt={request.updated_at || request.created_at} />
+          {!showDispute && !showDisputeForm ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '16px' }}>
               <button
                 type="button"
                 disabled={saving}
                 style={{ ...dealBtn.confirm, opacity: saving ? 0.6 : 1 }}
                 onClick={() => setShowPaymentModal(true)}
               >
-                Оплатить и завершить
+                Подтвердить выполнение
               </button>
               <button type="button" style={dealBtn.dispute} onClick={() => setShowDispute(true)}>
                 Есть замечания
               </button>
+              <button type="button" style={dealBtn.dispute} onClick={() => setShowDisputeForm(true)}>
+                Открыть спор
+              </button>
+            </div>
+          ) : showDisputeForm ? (
+            <div className="mt-4">
+              <textarea
+                value={disputeReason}
+                onChange={(e) => setDisputeReason(e.target.value)}
+                placeholder="Опишите причину спора..."
+                rows={3}
+                className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm w-full outline-none focus-accent resize-none mb-3"
+              />
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  type="button"
+                  disabled={saving || !disputeReason.trim()}
+                  style={{ ...dealBtn.dispute, flex: 1, opacity: saving || !disputeReason.trim() ? 0.5 : 1 }}
+                  onClick={async () => {
+                    await patch({ status: 'disputed', dispute_reason: disputeReason.trim() })
+                    setShowDisputeForm(false)
+                  }}
+                >
+                  Открыть спор
+                </button>
+                <button type="button" style={dealBtn.dispute} onClick={() => setShowDisputeForm(false)}>
+                  Отмена
+                </button>
+              </div>
             </div>
           ) : (
             <div className="mt-4">
@@ -992,11 +1190,15 @@ export function AdvertiserDealActions({
           <span style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80', padding: '6px 12px', borderRadius: '20px', fontSize: '13px' }}>
             Завершено ✅
           </span>
+          {request.auto_completed && (
+            <span className="text-white/40 text-xs ml-2">(автоподтверждение)</span>
+          )}
           {request.completed_at && (
             <p className="text-white/40 text-xs mt-2">
               {new Date(request.completed_at).toLocaleString('ru-RU')}
             </p>
           )}
+          <SplitPaymentSummary budget={request.budget} commissionPercent={request.platform_commission || 10} />
           <ProofLinksList links={request.proof_links} />
           {!reviewDone && !showReview && (
             <button
@@ -1011,6 +1213,40 @@ export function AdvertiserDealActions({
           {showReview && (
             <DealReviewForm onSubmit={submitReview} onCancel={() => setShowReview(false)} error={reviewError} />
           )}
+        </div>
+      )}
+
+      {status === 'disputed' && (
+        <div>
+          <DealStatusPill status="disputed" large />
+          <p className="text-white/50 text-sm mt-3">Спор открыт. Ожидаем решения администратора.</p>
+          {request.dispute_reason && (
+            <div className="mt-3 p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
+              <div className="text-orange-400 text-xs mb-1">Причина спора</div>
+              <p className="text-white/70 text-sm">{request.dispute_reason}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {status === 'resolved_creator' && (
+        <div>
+          <DealStatusPill status="resolved_creator" large />
+          <SplitPaymentSummary budget={request.budget} commissionPercent={request.platform_commission || 10} />
+        </div>
+      )}
+
+      {status === 'resolved_advertiser' && (
+        <div>
+          <DealStatusPill status="resolved_advertiser" large />
+          <RefundSummary budget={request.budget} />
+        </div>
+      )}
+
+      {status === 'cancelled' && (
+        <div>
+          <DealStatusPill status="cancelled" large />
+          <RefundSummary budget={request.budget} />
         </div>
       )}
 

@@ -44,8 +44,6 @@ export default function CreatorView({
   setDateTo,
   filteredCampaigns,
   userChannels,
-  expandedCampaignId,
-  setExpandedCampaignId,
 }: {
   toast: string | null
   creatorTab: 'mine' | 'campaigns'
@@ -82,8 +80,6 @@ export default function CreatorView({
   setDateTo: (v: string) => void
   filteredCampaigns: any[]
   userChannels: any[]
-  expandedCampaignId: string | null
-  setExpandedCampaignId: (v: string | null) => void
 }) {
   return (
     <div>
@@ -334,15 +330,9 @@ export default function CreatorView({
               <div className="text-white/40 text-sm">Попробуй изменить фильтры</div>
             </div>
           ) : (
-            <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCampaigns.map((campaign) => (
-                <CampaignCard
-                  key={campaign.id}
-                  campaign={campaign}
-                  userChannels={userChannels}
-                  expanded={expandedCampaignId === campaign.id}
-                  onToggle={() => setExpandedCampaignId(expandedCampaignId === campaign.id ? null : campaign.id)}
-                />
+                <CampaignCard key={campaign.id} campaign={campaign} />
               ))}
             </div>
           )}

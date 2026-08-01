@@ -1,142 +1,181 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import type { Campaign } from '@/lib/database.types'
-import { createClient } from '@/lib/supabase'
 import { toUsdEstimate } from '@/lib/currency'
-import { FilterLabel, FilterInput, FilterSelect } from './filter-ui'
+import { getSlotsLabel, isCampaignCollecting, SOCIAL_NETWORK_OPTIONS } from '@/lib/campaigns'
+
+const CARD_HEIGHT = 260
 
 export default function CampaignCard({
   campaign,
-  userChannels,
-  expanded,
-  onToggle,
 }: {
   campaign: Campaign
-  userChannels: any[]
-  expanded: boolean
-  onToggle: () => void
 }) {
-  const [channelId, setChannelId] = useState('')
-  const [message, setMessage] = useState('')
-  const [price, setPrice] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [applied, setApplied] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
   const budgetUsd = toUsdEstimate(campaign.budget)
-
-  const handleApply = async () => {
-    if (!channelId) { setError('Выберите канал'); return }
-    if (!message.trim()) { setError('Напишите сообщение'); return }
-    setSubmitting(true)
-    setError(null)
-    const { error: insertError } = await supabase.from('ad_requests').insert({
-      channel_id: channelId,
-      advertiser_id: campaign.advertiser_id || null,
-      advertiser_name: campaign.name,
-      advertiser_contact: campaign.advertiser_email,
-      advertiser_email: campaign.advertiser_email,
-      message: message.trim(),
-      budget: Number(price) || 0,
-      status: 'new',
-      campaign_id: campaign.id,
-    })
-    setSubmitting(false)
-    if (insertError) { setError(insertError.message); return }
-    setApplied(true)
-  }
-
-  const ApplyForm = () => (
-    <div className="panel-accent-soft rounded-xl p-4 mt-4">
-      {applied ? (
-        <p className="text-green-400 text-sm">✓ Отклик отправлен! Рекламодатель свяжется с тобой.</p>
-      ) : userChannels.length === 0 ? (
-        <p className="text-white/50 text-sm">
-          У вас нет каналов. <Link href="/dashboard/add-channel" className="text-accent hover:underline">Добавить канал</Link>
-        </p>
-      ) : (
-        <>
-          <label className="block mb-3">
-            <FilterLabel>Выберите канал</FilterLabel>
-            <FilterSelect value={channelId} onChange={(e) => setChannelId(e.target.value)}>
-              <option value="" className="bg-[#1a1560]">— Выберите канал —</option>
-              {userChannels.map((ch) => (
-                <option key={ch.id} value={ch.id} className="bg-[#1a1560]">
-                  {ch.name} ({ch.subscriber_count?.toLocaleString()} подп.)
-                </option>
-              ))}
-            </FilterSelect>
-          </label>
-          <label className="block mb-3">
-            <FilterLabel>Почему твой канал подходит для этой кампании?</FilterLabel>
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={3}
-              className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-sm w-full outline-none focus-accent resize-none placeholder-white/30"
-            />
-          </label>
-          <label className="block mb-4">
-            <FilterLabel>Ваша цена (AMD)</FilterLabel>
-            <FilterInput type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)} />
-          </label>
-          {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
-          <button type="button" onClick={handleApply} disabled={submitting} className="btn-accent disabled:opacity-50 text-white rounded-full px-4 py-2 text-sm">
-            {submitting ? 'Отправка...' : 'Отправить отклик'}
-          </button>
-        </>
-      )}
-    </div>
-  )
+  const advertiser = campaign.advertiser_profile
+  const advertiserName =
+    advertiser?.full_name || campaign.advertiser_email?.split('@')[0] || 'Рекламодатель'
+  const collecting = isCampaignCollecting(campaign)
+  const networks = campaign.preferred_social_networks || []
 
   return (
-    <div className={`bg-white/5 border rounded-2xl overflow-hidden transition ${expanded ? 'border-accent-expanded shadow-accent-expanded' : 'border-white/10'}`}>
-      <button type="button" onClick={onToggle} className="w-full p-6 text-left hover:bg-white/5 transition">
-        <div className="flex items-start justify-between gap-3 mb-2">
-          <div className="flex-1 min-w-0">
-            <div className="text-white font-bold">{campaign.name}</div>
-            <div className="text-white/40 text-sm mt-1">{campaign.advertiser_email}</div>
+    <Link
+      href={`/dashboard/campaign/${campaign.id}`}
+      className="hover-border-accent transition cursor-pointer"
+      style={{ height: '100%', display: 'block' }}
+    >
+      <div
+        className="channel-card-inner"
+        style={{
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '16px',
+          padding: '20px',
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          minHeight: `${CARD_HEIGHT}px`,
+          maxHeight: `${CARD_HEIGHT}px`,
+        }}
+      >
+        {/* Top: advertiser avatar + name + badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', flexShrink: 0 }}>
+          {advertiser?.avatar_url ? (
+            <img
+              src={advertiser.avatar_url}
+              alt={advertiserName}
+              style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+            />
+          ) : (
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--accent-primary, #9333ea)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '16px',
+                fontWeight: '700',
+                flexShrink: 0,
+              }}
+            >
+              {advertiserName[0]?.toUpperCase()}
+            </div>
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '2px' }}>Рекламодатель</div>
+            <div style={{ color: 'white', fontWeight: '600', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {advertiserName}
+            </div>
           </div>
+          {advertiser?.is_admin ? (
+            <span style={{ background: 'rgba(220,38,38,0.2)', border: '1px solid rgba(220,38,38,0.4)', color: '#f87171', fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '20px', flexShrink: 0 }}>
+              ADMIN
+            </span>
+          ) : advertiser?.subscription_plan === 'pro' ? (
+            <span style={{ background: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.35)', color: '#fbbf24', fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '20px', flexShrink: 0 }}>
+              PRO
+            </span>
+          ) : null}
+        </div>
+
+        {/* Middle: campaign name + description */}
+        <div style={{ flexShrink: 0, marginBottom: '12px' }}>
+          <div style={{ color: 'white', fontWeight: '700', fontSize: '15px', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {campaign.name}
+          </div>
+          <p
+            style={{
+              color: 'rgba(255,255,255,0.5)',
+              fontSize: '13px',
+              margin: 0,
+              height: '40px',
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              lineHeight: '1.5',
+            }}
+          >
+            {campaign.description || 'Без описания'}
+          </p>
+        </div>
+
+        {/* Bottom badges row */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px', flexShrink: 0 }}>
+          <span style={{ background: 'rgba(147,51,234,0.15)', color: '#c4b5fd', fontSize: '11px', padding: '3px 8px', borderRadius: '20px', border: '1px solid rgba(147,51,234,0.25)' }}>
+            {Number(campaign.budget).toLocaleString()} AMD
+          </span>
           {campaign.category && (
-            <span className="badge-accent text-xs px-3 py-1 rounded-full flex-shrink-0">{campaign.category}</span>
+            <span style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)', fontSize: '11px', padding: '3px 8px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              {campaign.category}
+            </span>
+          )}
+          <span style={{ background: 'rgba(59,130,246,0.12)', color: '#93c5fd', fontSize: '11px', padding: '3px 8px', borderRadius: '20px', border: '1px solid rgba(59,130,246,0.2)' }}>
+            {getSlotsLabel(campaign)}
+          </span>
+          {campaign.min_subscribers > 0 && (
+            <span style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.45)', fontSize: '11px', padding: '3px 8px', borderRadius: '20px' }}>
+              от {campaign.min_subscribers.toLocaleString()} подп.
+            </span>
           )}
         </div>
-        <div className="text-price-accent mb-2">
-          {Number(campaign.budget).toLocaleString()} AMD <span className="text-white/50 font-normal text-sm">≈ ${budgetUsd}</span>
-        </div>
-        {campaign.min_subscribers > 0 && (
-          <div className="text-white/50 text-xs mb-2">Мин. подписчиков: {campaign.min_subscribers.toLocaleString()}</div>
-        )}
-        {campaign.description && <p className="text-white/70 text-sm line-clamp-3 mb-2">{campaign.description}</p>}
-        <div className="text-white/40 text-xs">{new Date(campaign.created_at).toLocaleDateString('ru-RU')}</div>
-        {!expanded && (
-          <span className="inline-block mt-3 text-white rounded-full px-4 py-1.5 text-sm" style={{ backgroundColor: 'var(--accent-primary)' }}>Откликнуться</span>
-        )}
-      </button>
 
-      {expanded && (
-        <div className="bg-white/[0.03] border-t border-white/20 p-5">
-          <div className="space-y-3 text-sm mb-4">
-            <div className="flex items-center gap-2">
-              <span className="text-white font-bold text-base">{campaign.name}</span>
-              {campaign.category && <span className="badge-accent text-xs px-2 py-0.5 rounded-full">{campaign.category}</span>}
-            </div>
-            {campaign.description && <p className="text-white/80">{campaign.description}</p>}
-            <p className="text-price-accent">{Number(campaign.budget).toLocaleString()} AMD (≈ ${budgetUsd})</p>
-            {campaign.product_link && (
-              <a href={campaign.product_link} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline break-all block">{campaign.product_link}</a>
-            )}
-            {campaign.target_audience && <p className="text-white/70"><span className="text-white/50">Аудитория: </span>{campaign.target_audience}</p>}
-            {campaign.preferred_date && <p className="text-white/70"><span className="text-white/50">Дата: </span>{new Date(campaign.preferred_date).toLocaleDateString('ru-RU')}</p>}
-            {campaign.min_subscribers > 0 && <p className="text-white/70"><span className="text-white/50">Мин. подписчиков: </span>{campaign.min_subscribers.toLocaleString()}</p>}
-            {campaign.requirements && <p className="text-white/70"><span className="text-white/50">Требования: </span>{campaign.requirements}</p>}
-            {campaign.advertiser_email && <p className="text-white/70"><span className="text-white/50">Контакт: </span>{campaign.advertiser_email}</p>}
+        {/* Social icons + deadline */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, marginBottom: '12px' }}>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            {(networks.length > 0 ? networks : ['telegram']).map((net) => {
+              const opt = SOCIAL_NETWORK_OPTIONS.find((o) => o.value === net)
+              return (
+                <span
+                  key={net}
+                  style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '8px',
+                    background: 'rgba(255,255,255,0.06)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <i className={`ti ${opt?.icon || 'ti-share'}`} style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }} />
+                </span>
+              )
+            })}
           </div>
-          <ApplyForm />
+          {campaign.collection_deadline && (
+            <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>
+              до {new Date(campaign.collection_deadline).toLocaleDateString('ru-RU')}
+            </span>
+          )}
         </div>
-      )}
-    </div>
+
+        <div style={{ flex: 1 }} />
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px' }}>
+            ≈ ${budgetUsd}
+          </span>
+          <span
+            className="btn-accent"
+            style={{
+              color: 'white',
+              padding: '6px 16px',
+              borderRadius: '20px',
+              fontSize: '13px',
+              fontWeight: '600',
+              opacity: collecting ? 1 : 0.5,
+            }}
+          >
+            {collecting ? 'Откликнуться' : 'Закрыта'}
+          </span>
+        </div>
+      </div>
+    </Link>
   )
 }

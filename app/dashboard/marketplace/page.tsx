@@ -25,7 +25,6 @@ export default function DashboardMarketplacePage() {
   const [myAdRequests, setMyAdRequests] = useState<any[]>([])
   const [activeCampaigns, setActiveCampaigns] = useState<any[]>([])
   const [userChannels, setUserChannels] = useState<any[]>([])
-  const [expandedCampaignId, setExpandedCampaignId] = useState<string | null>(null)
   const [minBudget, setMinBudget] = useState(0)
   const [maxBudget, setMaxBudget] = useState(10000000)
   const [minRequiredSubs, setMinRequiredSubs] = useState(0)
@@ -84,9 +83,9 @@ export default function DashboardMarketplacePage() {
           .from('campaigns')
           .select(`
             *,
-            advertiser_profile:profiles!advertiser_id(subscription_plan, is_admin)
+            advertiser_profile:profiles!advertiser_id(full_name, avatar_url, subscription_plan, is_admin)
           `)
-          .eq('status', 'active')
+          .in('status', ['active', 'collecting', 'in_progress'])
         setActiveCampaigns(camps || [])
       } else {
         const { data: ch } = await supabase
@@ -159,7 +158,6 @@ export default function DashboardMarketplacePage() {
       maxRequiredSubs={maxRequiredSubs} setMaxRequiredSubs={setMaxRequiredSubs}
       dateFrom={dateFrom} setDateFrom={setDateFrom} dateTo={dateTo} setDateTo={setDateTo}
       filteredCampaigns={filteredCampaigns} userChannels={userChannels}
-      expandedCampaignId={expandedCampaignId} setExpandedCampaignId={setExpandedCampaignId}
     />
   )
 }

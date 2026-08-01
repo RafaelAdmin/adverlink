@@ -4,12 +4,22 @@ Run in Supabase SQL Editor:
 alter table campaigns add column if not exists category text default 'Другое';
 alter table campaigns add column if not exists min_subscribers integer default 0;
 alter table campaigns add column if not exists advertiser_email text;
+alter table campaigns add column if not exists slots_total integer default 1;
+alter table campaigns add column if not exists slots_filled integer default 0;
+alter table campaigns add column if not exists preferred_social_networks text[];
+alter table campaigns add column if not exists collection_deadline timestamp with time zone;
+alter table campaigns add column if not exists brief text;
 
 alter table ad_requests add column if not exists campaign_id uuid references campaigns(id);
+alter table ad_requests add column if not exists payment_status text default 'pending';
+alter table ad_requests add column if not exists dispute_reason text;
+alter table ad_requests add column if not exists auto_completed boolean default false;
+alter table ad_requests add column if not exists platform_commission decimal(5,2) default 10.00;
+alter table ad_requests add column if not exists updated_at timestamp with time zone default now();
 
 create policy "Anyone can view active campaigns"
 on campaigns for select
-using (status = 'active');
+using (status in ('active', 'collecting', 'in_progress'));
 
 create policy "Advertisers can insert campaigns"
 on campaigns for insert
@@ -26,6 +36,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { SOCIAL_NETWORK_OPTIONS } from '@/lib/campaigns'
 
 const CATEGORIES = ['Новости', 'Технологии', 'Бизнес', 'Спорт', 'Lifestyle', 'Юмор', 'Другое']
 
@@ -43,6 +54,10 @@ export default function CreateCampaignPage() {
   const [category, setCategory] = useState('Другое')
   const [minSubscribers, setMinSubscribers] = useState('')
   const [requirements, setRequirements] = useState('')
+  const [slotsTotal, setSlotsTotal] = useState('1')
+  const [preferredNetworks, setPreferredNetworks] = useState<string[]>(['telegram'])
+  const [collectionDeadline, setCollectionDeadline] = useState('')
+  const [brief, setBrief] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -75,6 +90,10 @@ export default function CreateCampaignPage() {
           setCategory(campaign.category || 'Другое')
           setMinSubscribers(campaign.min_subscribers ? String(campaign.min_subscribers) : '')
           setRequirements(campaign.requirements || '')
+          setSlotsTotal(String(campaign.slots_total || 1))
+          setPreferredNetworks(campaign.preferred_social_networks || ['telegram'])
+          setCollectionDeadline(campaign.collection_deadline ? campaign.collection_deadline.split('T')[0] : '')
+          setBrief(campaign.brief || '')
         }
       }
     }
@@ -113,7 +132,12 @@ export default function CreateCampaignPage() {
       category,
       min_subscribers: minSubscribers ? Number(minSubscribers) : 0,
       requirements: requirements.trim() || null,
-      status: 'active',
+      slots_total: Math.min(20, Math.max(1, Number(slotsTotal) || 1)),
+      slots_filled: 0,
+      preferred_social_networks: preferredNetworks.length > 0 ? preferredNetworks : ['telegram'],
+      collection_deadline: collectionDeadline ? new Date(collectionDeadline).toISOString() : null,
+      brief: brief.trim() || null,
+      status: 'collecting',
     }
 
     const { error: saveError } = editId
@@ -258,6 +282,71 @@ export default function CreateCampaignPage() {
             value={requirements}
             onChange={(e) => setRequirements(e.target.value)}
             rows={2}
+            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition resize-none"
+          />
+        </label>
+
+        <label className="flex flex-col gap-2">
+          <span className="text-white/70 text-sm">Количество каналов</span>
+          <span className="text-white/40 text-xs -mt-1">Сколько каналов вам нужно для этой кампании?</span>
+          <input
+            type="number"
+            min={1}
+            max={20}
+            value={slotsTotal}
+            onChange={(e) => setSlotsTotal(e.target.value)}
+            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white outline-none focus-accent transition"
+          />
+        </label>
+
+        <div className="flex flex-col gap-2">
+          <span className="text-white/70 text-sm">Социальные сети</span>
+          <span className="text-white/40 text-xs -mt-1">В каких соцсетях планируется реклама?</span>
+          <div className="flex flex-wrap gap-2">
+            {SOCIAL_NETWORK_OPTIONS.map((opt) => {
+              const selected = preferredNetworks.includes(opt.value)
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    setPreferredNetworks((prev) =>
+                      selected ? prev.filter((v) => v !== opt.value) : [...prev, opt.value],
+                    )
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition border ${
+                    selected
+                      ? 'border-accent bg-accent/20 text-white'
+                      : 'border-white/20 text-white/50 hover:border-white/40'
+                  }`}
+                >
+                  <i className={`ti ${opt.icon}`} style={{ fontSize: '16px' }} />
+                  {opt.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <label className="flex flex-col gap-2">
+          <span className="text-white/70 text-sm">Дедлайн сбора заявок</span>
+          <span className="text-white/40 text-xs -mt-1">До когда принимать заявки от каналов?</span>
+          <input
+            type="date"
+            value={collectionDeadline}
+            onChange={(e) => setCollectionDeadline(e.target.value)}
+            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white outline-none focus-accent transition"
+          />
+        </label>
+
+        <label className="flex flex-col gap-2">
+          <span className="text-white/70 text-sm">Бриф для исполнителя</span>
+          <span className="text-white/40 text-xs -mt-1">Что именно нужно опубликовать? Детали для создателя.</span>
+          <textarea
+            value={brief}
+            onChange={(e) => setBrief(e.target.value)}
+            rows={4}
+            placeholder="Опишите формат поста, ключевые сообщения, ссылки, хештеги..."
             className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition resize-none"
           />
         </label>

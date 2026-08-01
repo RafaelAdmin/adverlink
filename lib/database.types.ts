@@ -55,6 +55,11 @@ export type AdRequest = {
   accepted_at: string | null
   completed_at: string | null
   posts_count: number
+  payment_status: string | null
+  dispute_reason: string | null
+  auto_completed: boolean | null
+  platform_commission: number | null
+  updated_at: string | null
   created_at: string
 }
 
@@ -72,7 +77,18 @@ export type Campaign = {
   min_subscribers: number
   requirements: string | null
   status: string
+  slots_total: number
+  slots_filled: number
+  preferred_social_networks: string[] | null
+  collection_deadline: string | null
+  brief: string | null
   created_at: string
+  advertiser_profile?: {
+    full_name?: string | null
+    avatar_url?: string | null
+    subscription_plan?: string
+    is_admin?: boolean
+  } | null
 }
 
 export type Review = {
@@ -103,12 +119,16 @@ export type Friendship = {
 
 export type DealStatus =
   | 'new'
+  | 'payment_pending'
   | 'accepted'
   | 'in_progress'
   | 'submitted'
   | 'completed'
   | 'rejected'
   | 'cancelled'
+  | 'disputed'
+  | 'resolved_creator'
+  | 'resolved_advertiser'
 
 export type CurrencyCode = 'USD' | 'EUR' | 'AMD' | 'GEL' | 'RUB'
 

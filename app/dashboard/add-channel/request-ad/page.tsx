@@ -4,12 +4,15 @@
 Run in Supabase SQL Editor if columns don't exist:
 alter table ad_requests add column if not exists advertiser_id uuid references profiles(id);
 alter table ad_requests add column if not exists advertiser_email text;
+alter table ad_requests add column if not exists payment_status text default 'pending';
+alter table ad_requests add column if not exists updated_at timestamp with time zone default now();
 */
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { DealPaymentModal } from '@/app/dashboard/components/DealManagement'
 
 export default function RequestAdPage() {
   const searchParams = useSearchParams()
@@ -27,6 +30,7 @@ export default function RequestAdPage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
 
   const router = useRouter()
   const supabase = createClient()
@@ -84,9 +88,15 @@ export default function RequestAdPage() {
     load()
   }, [channelId])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!channelId || success) return
+    setSubmitError(null)
+    setShowPaymentModal(true)
+  }
+
+  const confirmPaymentAndSend = async () => {
+    if (!channelId) return false
 
     setSubmitting(true)
     setSubmitError(null)
@@ -96,6 +106,7 @@ export default function RequestAdPage() {
     } = await supabase.auth.getUser()
 
     const advertiserContact = contact.trim() || authUser?.email || ''
+    const now = new Date().toISOString()
 
     const { error } = await supabase.from('ad_requests').insert({
       channel_id: channelId,
@@ -103,19 +114,39 @@ export default function RequestAdPage() {
       advertiser_contact: advertiserContact,
       message: message.trim(),
       budget: Number(budget),
-      status: 'new',
+      status: 'payment_pending',
+      payment_status: 'reserved',
       advertiser_id: authUser?.id || null,
       advertiser_email: authUser?.email || advertiserContact,
+      updated_at: now,
     })
 
     setSubmitting(false)
 
     if (error) {
       setSubmitError(error.message)
-      return
+      return false
+    }
+
+    try {
+      await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'new_ad_request',
+          channelId: channelId,
+          advertiserName: advertiserName.trim(),
+          advertiserContact: advertiserContact,
+          message: message.trim(),
+          budget: Number(budget),
+        }),
+      })
+    } catch {
+      console.log('Notification failed silently')
     }
 
     setSuccess(true)
+    return true
   }
 
   if (!user || loading) {
@@ -124,6 +155,19 @@ export default function RequestAdPage() {
 
   return (
     <div className="max-w-xl mx-auto">
+      <DealPaymentModal
+        open={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onConfirm={async () => {
+          const ok = await confirmPaymentAndSend()
+          if (ok) setShowPaymentModal(false)
+          return ok
+        }}
+        budget={budget}
+        channel={channel}
+        saving={submitting}
+      />
+
       <Link
         href="/dashboard/marketplace"
         className="text-white/50 hover:text-white transition text-sm mb-8 inline-flex items-center gap-2"
@@ -138,8 +182,11 @@ export default function RequestAdPage() {
       ) : success ? (
         <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
           <div className="text-4xl mb-4">✓</div>
-          <p className="text-white font-medium">
-            Запрос отправлен! Владелец канала свяжется с тобой в Telegram.
+          <p className="text-white font-medium mb-2">
+            Запрос отправлен! Оплата зарезервирована.
+          </p>
+          <p className="text-white/50 text-sm">
+            Владелец канала увидит ваш запрос и сможет принять заказ.
           </p>
         </div>
       ) : (
@@ -211,7 +258,7 @@ export default function RequestAdPage() {
               disabled={submitting}
               className="btn-accent disabled:opacity-50 transition text-white rounded-full px-6 py-2.5 text-sm font-medium mt-2"
             >
-              {submitting ? 'Отправка...' : 'Отправить запрос'}
+              {submitting ? 'Отправка...' : 'Оплатить и отправить запрос'}
             </button>
           </form>
         </>

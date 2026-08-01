@@ -56,6 +56,7 @@ import AdminRequests from './components/AdminRequests'
 import AdminReviews from './components/AdminReviews'
 import AdminModeration from './components/AdminModeration'
 import AdminPlatform from './components/AdminPlatform'
+import AdminDisputes from './components/AdminDisputes'
 import { statusBadge } from './components/admin-utils'
 
 type Section =
@@ -64,6 +65,7 @@ type Section =
   | 'channels'
   | 'campaigns'
   | 'requests'
+  | 'disputes'
   | 'reviews'
   | 'moderation'
   | 'platform'
@@ -85,6 +87,7 @@ const SIDEBAR_ITEMS: { icon: string; label: string; section: Section }[] = [
   { icon: '📺', label: 'Каналы', section: 'channels' },
   { icon: '📋', label: 'Кампании', section: 'campaigns' },
   { icon: '📨', label: 'Запросы', section: 'requests' },
+  { icon: '⚖️', label: 'Споры', section: 'disputes' },
   { icon: '⭐', label: 'Отзывы', section: 'reviews' },
   { icon: '🛡️', label: 'Модерация', section: 'moderation' },
   { icon: '⚙️', label: 'Настройки платформы', section: 'platform' },
@@ -708,6 +711,13 @@ export default function AdminPanel() {
             onExpandRequest={setExpandedRequest}
             onApprove={approveRequest}
             onDelete={(id) => deleteRequest(id)}
+          />
+        )}
+
+        {section === 'disputes' && (
+          <AdminDisputes
+            onToast={(message, type) => showToast(message, type)}
+            onRefresh={loadData}
           />
         )}
 

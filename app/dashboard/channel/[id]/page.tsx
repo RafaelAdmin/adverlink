@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { CurrencyCode, formatPrice, getExchangeRates, formatConvertedPrice } from '@/lib/currency'
+import { CurrencyCode, getExchangeRates, formatConvertedPrice } from '@/lib/currency'
 import { getChannelHandle, getChannelLink, getPlatformLabel } from '@/lib/channel-helpers'
 import CurrencySelector from '@/app/dashboard/components/CurrencySelector'
 import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
@@ -59,25 +59,23 @@ export default function ChannelProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#1a1560] to-[#24243e] flex items-center justify-center">
-        <div className="text-white/50">Загрузка...</div>
+      <div style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.3)' }}>
+        Загрузка...
       </div>
     )
   }
 
   if (error || !channel) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#1a1560] to-[#24243e] p-8">
-        <div className="max-w-3xl mx-auto">
-          <Link
-            href="/dashboard/marketplace"
-            className="text-white/50 hover:text-white transition text-sm mb-8 inline-flex items-center gap-2"
-          >
-            ← Назад
-          </Link>
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center text-white/70">
-            {error || 'Канал не найден'}
-          </div>
+      <div style={{ maxWidth: '680px' }}>
+        <Link
+          href="/dashboard/marketplace"
+          className="text-white/50 hover:text-white transition text-sm mb-8 inline-flex items-center gap-2"
+        >
+          ← Назад в маркетплейс
+        </Link>
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center text-white/70">
+          {error || 'Канал не найден'}
         </div>
       </div>
     )
@@ -109,74 +107,94 @@ export default function ChannelProfilePage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#1a1560] to-[#24243e] p-8">
-      <div className="max-w-4xl mx-auto">
-        <Link
-          href="/dashboard/marketplace"
-          className="text-white/50 hover:text-white transition text-sm mb-8 inline-flex items-center gap-2"
-        >
-          ← Назад
-        </Link>
+    <div style={{ maxWidth: '680px' }}>
+      <Link
+        href="/dashboard/marketplace"
+        className="text-white/50 hover:text-white transition text-sm mb-6 inline-flex items-center gap-2"
+      >
+        ← Назад в маркетплейс
+      </Link>
 
-        {/* Header */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 mb-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-            {channel.avatar_url ? (
-              <img
-                src={channel.avatar_url}
-                alt={channel.name}
-                className="rounded-full object-cover"
-                style={{
-                  width: '80px',
-                  height: '80px',
-                  border: '3px solid rgba(255,255,255,0.15)',
-                  flexShrink: 0,
-                }}
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none'
-                  e.currentTarget.nextElementSibling?.removeAttribute('style')
-                }}
-              />
-            ) : null}
-
-            <div
-              className="rounded-full flex items-center justify-center text-white font-bold text-3xl flex-shrink-0"
+      <div
+        style={{
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '20px',
+          padding: '28px',
+          marginBottom: '16px',
+        }}
+      >
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'flex-start' }}>
+          {channel.avatar_url ? (
+            <img
+              src={channel.avatar_url}
+              alt={channel.name}
               style={{
-                width: '80px',
-                height: '80px',
-                backgroundColor: 'var(--accent-primary, #9333ea)',
+                width: '96px',
+                height: '96px',
+                borderRadius: '50%',
+                objectFit: 'cover',
                 border: '3px solid rgba(255,255,255,0.15)',
-                display: channel.avatar_url ? 'none' : 'flex',
+                flexShrink: 0,
               }}
-            >
-              {channel.name?.[0]}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none'
+                e.currentTarget.nextElementSibling?.removeAttribute('style')
+              }}
+            />
+          ) : null}
+
+          <div
+            style={{
+              width: '96px',
+              height: '96px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--accent-primary, #9333ea)',
+              border: '3px solid rgba(255,255,255,0.15)',
+              display: channel.avatar_url ? 'none' : 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '38px',
+              fontWeight: '700',
+              flexShrink: 0,
+            }}
+          >
+            {channel.name?.[0]}
+          </div>
+
+          <div style={{ flex: 1, minWidth: '200px' }}>
+            <h1 style={{ color: 'white', fontSize: '22px', fontWeight: '700', margin: '0 0 8px' }}>
+              {channel.name}
+            </h1>
+            <div style={{ marginBottom: '8px' }}>
+              <PlatformBadge platform={channel.platform} />
             </div>
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold text-white mb-2">{channel.name}</h1>
-              <div className="mb-3">
-                <PlatformBadge platform={channel.platform} />
-              </div>
-              <p className="text-white/50 text-lg mb-4">{getChannelHandle(channel)}</p>
-              <div className="flex flex-wrap items-center gap-3">
-                {isVerified ? (
-                  <VerifiedBadge size={24} gradId={`verifiedGrad-channel-${channel.id}`} />
-                ) : (
-                  <span className="bg-yellow-500/20 text-yellow-400 text-sm px-3 py-1 rounded-full">
-                    На проверке
-                  </span>
-                )}
-                <button
-                  onClick={openChannel}
-                  className="border border-white/20 text-white/80 hover-border-accent hover:text-white transition text-sm px-4 py-1.5 rounded-full"
-                >
-                  Открыть в {getPlatformLabel(channel.platform || 'telegram')}
-                </button>
-              </div>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', margin: '0 0 12px' }}>
+              {getChannelHandle(channel)}
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
+              {isVerified ? (
+                <VerifiedBadge size={24} gradId={`verifiedGrad-channel-${channel.id}`} />
+              ) : (
+                <span className="bg-yellow-500/20 text-yellow-400 text-sm px-3 py-1 rounded-full">
+                  На проверке
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={openChannel}
+                className="border border-white/20 text-white/80 hover-border-accent hover:text-white transition text-sm px-4 py-1.5 rounded-full"
+              >
+                Открыть в {getPlatformLabel(channel.platform || 'telegram')}
+              </button>
             </div>
           </div>
         </div>
+      </div>
 
-        <div style={{
+      <div
+        style={{
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
@@ -185,84 +203,124 @@ export default function ChannelProfilePage() {
           background: 'rgba(255,255,255,0.04)',
           border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: '14px',
-        }}>
-          <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>
-            Показывать цены в:
-          </span>
-          <CurrencySelector
-            value={displayCurrency}
-            onChange={setDisplayCurrency}
-            size="sm"
-          />
-        </div>
+        }}
+      >
+        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>
+          Показывать цены в:
+        </span>
+        <CurrencySelector value={displayCurrency} onChange={setDisplayCurrency} size="sm" />
+      </div>
 
-        {/* Metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-          {metrics.map((item) => (
-            <div key={item.label} className="bg-white/5 border border-white/10 rounded-2xl p-5">
-              <div className={`text-2xl font-bold mb-1 ${'accent' in item && item.accent ? 'text-price-accent' : 'text-white'}`}>
-                {item.value}
-              </div>
-              <div className="text-white/50 text-sm">{item.label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Description */}
-        {channel.description && (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-8 mb-6">
-            <h2 className="text-white font-semibold text-lg mb-3">О канале</h2>
-            <p className="text-white/70 leading-relaxed">{channel.description}</p>
-          </div>
-        )}
-
-        {/* Analytics placeholder */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 mb-8">
-          <h2 className="text-white font-semibold text-lg mb-4">Аналитика</h2>
-          <p className="text-white/50 text-sm mb-6">Расширенная аналитика скоро появится</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-white/5 rounded-xl p-4">
-              <div className="text-white font-semibold mb-1">{estimatedReach.toLocaleString()}</div>
-              <div className="text-white/40 text-sm">Примерный охват поста</div>
-            </div>
-            <div className="bg-white/5 rounded-xl p-4">
-              <div className="text-white font-semibold mb-1">{estimatedEngagement}%</div>
-              <div className="text-white/40 text-sm">Вовлечённость %</div>
-            </div>
-          </div>
-        </div>
-
-        {/* CTA */}
-        <div className="text-center">
-          {isMyChannel ? (
+      <div
+        className="stats-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+          gap: '12px',
+          marginBottom: '16px',
+        }}
+      >
+        {metrics.map((item) => (
+          <div
+            key={item.label}
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '14px',
+              padding: '20px',
+            }}
+          >
             <div
-              style={{
-                textAlign: 'center',
-                padding: '16px',
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '16px',
-                color: 'rgba(255,255,255,0.3)',
-                fontSize: '13px',
-              }}
+              className={item.accent ? 'text-price-accent' : 'text-white'}
+              style={{ fontSize: '20px', fontWeight: '700', marginBottom: '4px' }}
             >
-              <i
-                className="ti ti-user"
-                style={{ fontSize: '20px', display: 'block', marginBottom: '6px' }}
-              />
-              Это ваш канал
+              {item.value}
             </div>
-          ) : (
-            <Link
-              href={`/dashboard/add-channel/request-ad?channelId=${channel.id}`}
-              className="btn-accent block w-full py-3.5 rounded-xl text-center font-medium text-white text-[15px] no-underline"
-            >
-              <i className="ti ti-speakerphone" style={{ marginRight: '8px' }} />
-              Запросить рекламу
-            </Link>
-          )}
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>{item.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {channel.description && (
+        <div
+          style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '16px',
+            padding: '24px',
+            marginBottom: '16px',
+          }}
+        >
+          <h2 style={{ color: 'white', fontWeight: '600', fontSize: '16px', margin: '0 0 12px' }}>
+            О канале
+          </h2>
+          <p style={{ color: 'rgba(255,255,255,0.65)', lineHeight: '1.6', margin: 0, fontSize: '14px' }}>
+            {channel.description}
+          </p>
+        </div>
+      )}
+
+      <div
+        style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '16px',
+          padding: '24px',
+          marginBottom: '16px',
+        }}
+      >
+        <h2 style={{ color: 'white', fontWeight: '600', fontSize: '16px', margin: '0 0 8px' }}>
+          Аналитика
+        </h2>
+        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', margin: '0 0 16px' }}>
+          Расширенная аналитика скоро появится
+        </p>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+            gap: '12px',
+          }}
+        >
+          <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '16px' }}>
+            <div style={{ color: 'white', fontWeight: '600', marginBottom: '4px' }}>
+              {estimatedReach.toLocaleString()}
+            </div>
+            <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px' }}>Примерный охват поста</div>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '16px' }}>
+            <div style={{ color: 'white', fontWeight: '600', marginBottom: '4px' }}>
+              {estimatedEngagement}%
+            </div>
+            <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px' }}>Вовлечённость %</div>
+          </div>
         </div>
       </div>
+
+      {isMyChannel ? (
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '16px',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '16px',
+            color: 'rgba(255,255,255,0.3)',
+            fontSize: '13px',
+          }}
+        >
+          <i className="ti ti-user" style={{ fontSize: '20px', display: 'block', marginBottom: '6px' }} />
+          Это ваш канал
+        </div>
+      ) : (
+        <Link
+          href={`/dashboard/add-channel/request-ad?channelId=${channel.id}`}
+          className="btn-accent block w-full py-3.5 rounded-xl text-center font-medium text-white text-[15px] no-underline"
+        >
+          <i className="ti ti-speakerphone" style={{ marginRight: '8px' }} />
+          Запросить рекламу
+        </Link>
+      )}
     </div>
   )
 }

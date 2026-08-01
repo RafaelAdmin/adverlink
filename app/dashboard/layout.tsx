@@ -775,17 +775,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const isActive = (path: string) => pathname === path
-  const isStandalonePage = pathname?.startsWith('/dashboard/channel/')
-
-  if (isStandalonePage) {
-    return (
-      <DashboardContext.Provider value={{ role, toggleRole, user, search, avatarUrl }}>
-        <BreathingBackground gradient={currentGradient}>
-          {children}
-        </BreathingBackground>
-      </DashboardContext.Provider>
-    )
-  }
 
   return (
     <DashboardContext.Provider value={{ role, toggleRole, user, search, avatarUrl }}>
