@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { applyAccentColor, getAccentColor } from '@/lib/theme'
+import { fetchNotificationFlags } from '@/lib/notifications'
 import ProfileCard from './components/ProfileCard'
 import BreathingBackground from './components/BreathingBackground'
 
@@ -16,6 +17,8 @@ type DashboardContextValue = {
   user: any
   search: string
   avatarUrl: string | null
+  isPro: boolean
+  refreshPlan: () => void
 }
 
 const DashboardContext = createContext<DashboardContextValue | null>(null)
@@ -32,6 +35,7 @@ function SidebarItem({
   href,
   active,
   badge,
+  notifyDot,
   onNavigate,
 }: {
   icon: string
@@ -39,6 +43,7 @@ function SidebarItem({
   href: string
   active?: boolean
   badge?: number
+  notifyDot?: boolean
   onNavigate?: () => void
 }) {
   return (
@@ -72,7 +77,19 @@ function SidebarItem({
         }}
       />
       <span style={{ flex: 1, fontWeight: active ? '500' : '400' }}>{label}</span>
-      {badge && badge > 0 ? (
+      {notifyDot ? (
+        <span
+          style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            backgroundColor: '#dc2626',
+            flexShrink: 0,
+            boxShadow: '0 0 6px rgba(220,38,38,0.6)',
+          }}
+          aria-label="Есть новые уведомления"
+        />
+      ) : badge && badge > 0 ? (
         <span
           style={{
             backgroundColor: '#dc2626',
@@ -654,9 +671,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   )
   const [showProfileCard, setShowProfileCard] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [newRequestsCount, setNewRequestsCount] = useState(0)
-  const [pendingReviewCount, setPendingReviewCount] = useState(0)
-  const [unreadMessages, setUnreadMessages] = useState(0)
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false)
+  const [hasCreatorRequests, setHasCreatorRequests] = useState(false)
+  const [hasAdvertiserRequests, setHasAdvertiserRequests] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const closeSidebar = () => setSidebarOpen(false)
@@ -697,6 +714,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => window.removeEventListener('adverlink-avatar-updated', onAvatarUpdate)
   }, [user, refreshAvatar])
 
+  const refreshNotifications = useCallback(async () => {
+    if (!user) return
+    const flags = await fetchNotificationFlags(supabase, user.id)
+    setHasUnreadMessages(flags.hasUnreadMessages)
+    setHasCreatorRequests(flags.hasCreatorRequests)
+    setHasAdvertiserRequests(flags.hasAdvertiserRequests)
+  }, [user, supabase])
+
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -720,39 +745,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setIsPro(profile?.subscription_plan === 'pro' || profile?.is_admin === true)
       if (profile?.avatar_url) setAvatarUrl(profile.avatar_url)
 
-      const { data: userChannels } = await supabase
-        .from('channels')
-        .select('id')
-        .eq('owner_id', user.id)
-      const channelIds = (userChannels || []).map((c) => c.id)
-
-      if (channelIds.length > 0) {
-        const { count: newCount } = await supabase
-          .from('ad_requests')
-          .select('*', { count: 'exact', head: true })
-          .in('channel_id', channelIds)
-          .eq('status', 'new')
-        setNewRequestsCount(newCount || 0)
-      } else {
-        setNewRequestsCount(0)
-      }
-
-      const { count: pendingCount } = await supabase
-        .from('ad_requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('advertiser_id', user.id)
-        .eq('status', 'submitted')
-      setPendingReviewCount(pendingCount || 0)
-
-      const { count: unreadCount } = await supabase
-        .from('messages')
-        .select('*', { count: 'exact', head: true })
-        .neq('sender_id', user.id)
-        .gt('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-      setUnreadMessages(unreadCount || 0)
+      await refreshNotificationsForUser(user.id)
     }
+
+    const refreshNotificationsForUser = async (userId: string) => {
+      const flags = await fetchNotificationFlags(supabase, userId)
+      setHasUnreadMessages(flags.hasUnreadMessages)
+      setHasCreatorRequests(flags.hasCreatorRequests)
+      setHasAdvertiserRequests(flags.hasAdvertiserRequests)
+    }
+
     getUser()
   }, [])
+
+  useEffect(() => {
+    if (!user) return
+    refreshNotifications()
+  }, [user, pathname, refreshNotifications])
+
+  useEffect(() => {
+    if (!user) return
+    const onChange = () => refreshNotifications()
+    window.addEventListener('adverlink-notifications-changed', onChange)
+    window.addEventListener('focus', onChange)
+
+    const channel = supabase
+      .channel('dashboard-notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, onChange)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ad_requests' }, onChange)
+      .subscribe()
+
+    return () => {
+      window.removeEventListener('adverlink-notifications-changed', onChange)
+      window.removeEventListener('focus', onChange)
+      supabase.removeChannel(channel)
+    }
+  }, [user, supabase, refreshNotifications])
 
   const toggleRole = () => {
     const newRole = role === 'creator' ? 'advertiser' : 'creator'
@@ -762,6 +790,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     applyAccentColor(color)
     setCurrentGradient(color.gradientRaw)
   }
+
+  const refreshPlan = useCallback(async () => {
+    if (!user) return
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_plan, is_admin')
+      .eq('id', user.id)
+      .single()
+    setIsPro(profile?.subscription_plan === 'pro' || profile?.is_admin === true)
+  }, [user, supabase])
 
   if (!user) {
     return (
@@ -777,7 +815,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isActive = (path: string) => pathname === path
 
   return (
-    <DashboardContext.Provider value={{ role, toggleRole, user, search, avatarUrl }}>
+    <DashboardContext.Provider value={{ role, toggleRole, user, search, avatarUrl, isPro, refreshPlan }}>
       <BreathingBackground gradient={currentGradient} lockViewport className="min-h-screen flex h-full">
         {sidebarOpen && (
           <div
@@ -833,8 +871,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {role === 'creator' ? (
             <>
-              <SidebarItem icon="ti-brand-telegram" label="Мои каналы" href="/dashboard" active={isActive('/dashboard')} onNavigate={closeSidebar} />
-              <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} badge={newRequestsCount + unreadMessages} onNavigate={closeSidebar} />
+              <SidebarItem icon="ti-brand-telegram" label="Мои каналы" href="/dashboard" active={isActive('/dashboard')} notifyDot={hasCreatorRequests || hasUnreadMessages} onNavigate={closeSidebar} />
+              <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} onNavigate={closeSidebar} />
               <SidebarItem icon="ti-chart-line" label="Статистика" href="/dashboard/statistics" active={isActive('/dashboard/statistics')} onNavigate={closeSidebar} />
               {isPro && (
                 <SidebarItem icon="ti-report-analytics" label="Аналитика" href="/dashboard/analytics" active={isActive('/dashboard/analytics')} onNavigate={closeSidebar} />
@@ -846,8 +884,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </>
           ) : (
             <>
-              <SidebarItem icon="ti-layout-dashboard" label="Мои кампании" href="/dashboard" active={isActive('/dashboard')} onNavigate={closeSidebar} />
-              <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} badge={pendingReviewCount + unreadMessages} onNavigate={closeSidebar} />
+              <SidebarItem icon="ti-layout-dashboard" label="Мои кампании" href="/dashboard" active={isActive('/dashboard')} notifyDot={hasAdvertiserRequests || hasUnreadMessages} onNavigate={closeSidebar} />
+              <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} onNavigate={closeSidebar} />
               <SidebarItem icon="ti-chart-line" label="Статистика" href="/dashboard/statistics" active={isActive('/dashboard/statistics')} onNavigate={closeSidebar} />
               {isPro && (
                 <SidebarItem icon="ti-report-analytics" label="Аналитика" href="/dashboard/analytics" active={isActive('/dashboard/analytics')} onNavigate={closeSidebar} />

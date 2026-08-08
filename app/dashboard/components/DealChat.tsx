@@ -12,11 +12,26 @@ create table if not exists messages (
   created_at timestamp with time zone default now()
 );
 alter table messages enable row level security;
+
+create table if not exists deal_chat_reads (
+  user_id uuid references profiles(id) on delete cascade,
+  deal_id uuid references ad_requests(id) on delete cascade,
+  last_read_at timestamp with time zone not null default now(),
+  primary key (user_id, deal_id)
+);
+alter table deal_chat_reads enable row level security;
+
+alter table ad_requests add column if not exists creator_viewed_at timestamp with time zone;
+alter table ad_requests add column if not exists advertiser_viewed_at timestamp with time zone;
+
+create policy "Users manage own chat reads"
+on deal_chat_reads for all
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
 */
 
-'use client'
-
 import { useEffect, useRef, useState } from 'react'
+import { markChatRead } from '@/lib/notifications'
 import { createClient } from '@/lib/supabase'
 import type { Message, Profile } from '@/lib/database.types'
 
@@ -65,6 +80,8 @@ export default function DealChat({ dealId, currentUserId }: DealChatProps) {
 
     loadMessages()
 
+    markChatRead(supabase, dealId, currentUserId)
+
     const channel = supabase
       .channel(`deal-chat-${dealId}`)
       .on(
@@ -95,7 +112,7 @@ export default function DealChat({ dealId, currentUserId }: DealChatProps) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [dealId, supabase])
+  }, [dealId, currentUserId, supabase])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })

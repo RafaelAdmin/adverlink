@@ -4,6 +4,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from '../layout'
 import type { Channel } from '@/lib/database.types'
+import DateRangePicker from '../components/DateRangePicker'
+import {
+  defaultReportRange,
+  filterByDateRange,
+  formatPeriodLabel,
+  parseReportRange,
+} from '@/lib/subscriptions'
 
 async function generateExcel(data: any) {
   const XLSX = await import('xlsx')
@@ -12,13 +19,13 @@ async function generateExcel(data: any) {
   const stats = data.stats
   const tg = data.telegramStats
   const requests = data.requests
+  const periodLabel = data.periodLabel || 'Выбранный период'
 
   const now = new Date()
-  const monthName = now.toLocaleString('ru-RU', { month: 'long', year: 'numeric' })
 
   const overviewData = [
     ['ОТЧЁТ ПО КАНАЛУ', ''],
-    ['Период', monthName],
+    ['Период', periodLabel],
     ['', ''],
     ['ИНФОРМАЦИЯ О КАНАЛЕ', ''],
     ['Название', channelData.name],
@@ -34,7 +41,7 @@ async function generateExcel(data: any) {
     ['Цена рекламы', (channelData.ad_price || 0) + ' ' + (channelData.ad_price_currency || 'USD')],
     ['Статус верификации', channelData.is_verified ? 'Верифицирован ✓' : 'На проверке'],
     ['', ''],
-    ['РЕКЛАМНАЯ АКТИВНОСТЬ (30 дней)', ''],
+    ['РЕКЛАМНАЯ АКТИВНОСТЬ', ''],
     ['Всего запросов', stats.totalRequests],
     ['Завершённых сделок', stats.completedDeals],
     ['Ожидают ответа', stats.pendingDeals],
@@ -82,8 +89,8 @@ async function generatePDF(data: any) {
   const channelData = data.channel
   const stats = data.stats
   const tg = data.telegramStats
+  const periodLabel = data.periodLabel || 'Выбранный период'
   const now = new Date()
-  const monthName = now.toLocaleString('ru-RU', { month: 'long', year: 'numeric' })
   const generatedDate = now.toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'long',
@@ -177,7 +184,7 @@ async function generatePDF(data: any) {
             ${channelData.is_verified ? '<span class="verified-badge">✓ Верифицирован</span>' : ''}
           </div>
           <div class="meta-row">
-            <div>Период: <strong>последние 30 дней (${monthName})</strong></div>
+            <div>Период: <strong>${periodLabel}</strong></div>
             <div>Сгенерирован: <strong>${generatedDate}</strong></div>
           </div>
         </header>
@@ -188,7 +195,7 @@ async function generatePDF(data: any) {
           <div class="card"><div class="card-label">Вовлечённость</div><div class="card-value">${channelData.engagement_rate || 0}%</div></div>
           <div class="card"><div class="card-label">Цена рекламы</div><div class="card-value small">${(channelData.ad_price || 0).toLocaleString('ru-RU')} ${channelData.ad_price_currency || 'USD'}</div></div>
         </div>
-        <h2>Рекламная активность (последние 30 дней)</h2>
+        <h2>Рекламная активность</h2>
         <div class="grid">
           <div class="card"><div class="card-label">Всего запросов</div><div class="card-value">${stats.totalRequests}</div></div>
           <div class="card"><div class="card-label">Завершённых сделок</div><div class="card-value">${stats.completedDeals}</div></div>
@@ -220,12 +227,12 @@ async function generatePDF(data: any) {
 async function generateAdvertiserExcel(data: any) {
   const XLSX = await import('xlsx')
   const now = new Date()
-  const monthName = now.toLocaleString('ru-RU', { month: 'long', year: 'numeric' })
+  const periodLabel = data.periodLabel || 'Выбранный период'
   const stats = data.stats
 
   const overviewData = [
     ['ОТЧЁТ ПО РЕКЛАМНЫМ КАМПАНИЯМ', ''],
-    ['Период', monthName],
+    ['Период', periodLabel],
     ['', ''],
     ['СВОДКА', ''],
     ['Всего кампаний', stats.totalCampaigns],
@@ -265,7 +272,7 @@ async function generateAdvertiserExcel(data: any) {
 async function generateAdvertiserPDF(data: any) {
   const now = new Date()
   const generatedDate = now.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
-  const monthName = now.toLocaleString('ru-RU', { month: 'long', year: 'numeric' })
+  const periodLabel = data.periodLabel || 'Выбранный период'
   const stats = data.stats
 
   const campaignRows =
@@ -303,7 +310,7 @@ async function generateAdvertiserPDF(data: any) {
       @media print { body { padding: 20px; } }
     </style></head><body>
       <h1>AdverLink — Отчёт по рекламным кампаниям</h1>
-      <div class="meta">Период: последние 30 дней (${monthName}) • Сгенерирован: ${generatedDate}</div>
+      <div class="meta">Период: ${periodLabel} • Сгенерирован: ${generatedDate}</div>
       <h2>Сводка</h2>
       <div class="grid">
         <div class="card"><div class="card-label">Всего кампаний</div><div class="card-value">${stats.totalCampaigns}</div></div>
@@ -374,12 +381,18 @@ function DownloadSection({
   includes,
   generating,
   onDownload,
+  dateFrom,
+  dateTo,
+  onDateChange,
 }: {
   title: string
   description: string
   includes: string[]
   generating: boolean
   onDownload: (format: 'excel' | 'pdf') => void
+  dateFrom: string
+  dateTo: string
+  onDateChange: (from: string, to: string) => void
 }) {
   return (
     <div
@@ -395,6 +408,10 @@ function DownloadSection({
       <i className="ti ti-chart-dots" style={{ fontSize: '48px', color: 'var(--accent-primary, #9333ea)', display: 'block', marginBottom: '16px' }} />
       <h2 style={{ color: 'white', fontSize: '22px', fontWeight: '700', marginBottom: '8px' }}>{title}</h2>
       <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', margin: 0 }}>{description}</p>
+
+      <div style={{ maxWidth: '480px', margin: '0 auto', textAlign: 'left' }}>
+        <DateRangePicker from={dateFrom} to={dateTo} onChange={onDateChange} disabled={generating} />
+      </div>
 
       <div
         style={{
@@ -476,14 +493,19 @@ function DownloadSection({
 export default function AnalyticsPage() {
   const { role } = useDashboard()
   const supabase = createClient()
+  const defaults = defaultReportRange()
 
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
+  const [dateFrom, setDateFrom] = useState(defaults.from)
+  const [dateTo, setDateTo] = useState(defaults.to)
   const [channels, setChannels] = useState<Channel[]>([])
   const [selectedChannelId, setSelectedChannelId] = useState('')
   const [recentDeals, setRecentDeals] = useState<any[]>([])
   const [campaigns, setCampaigns] = useState<any[]>([])
   const [advertiserRequests, setAdvertiserRequests] = useState<any[]>([])
+  const [allCampaigns, setAllCampaigns] = useState<any[]>([])
+  const [allAdvertiserRequests, setAllAdvertiserRequests] = useState<any[]>([])
   const [advertiserStats, setAdvertiserStats] = useState({
     totalCampaigns: 0,
     completedDeals: 0,
@@ -494,8 +516,43 @@ export default function AnalyticsPage() {
 
   const selectedChannel = useMemo(
     () => channels.find((c) => c.id === selectedChannelId) || null,
-    [channels, selectedChannelId]
+    [channels, selectedChannelId],
   )
+
+  const { from: rangeFrom, to: rangeTo } = useMemo(
+    () => parseReportRange(dateFrom, dateTo),
+    [dateFrom, dateTo],
+  )
+
+  const periodLabel = useMemo(
+    () => formatPeriodLabel(rangeFrom, rangeTo),
+    [rangeFrom, rangeTo],
+  )
+
+  const filteredAdvertiserRequests = useMemo(
+    () => filterByDateRange(allAdvertiserRequests, rangeFrom, rangeTo),
+    [allAdvertiserRequests, rangeFrom, rangeTo],
+  )
+
+  const filteredCampaigns = useMemo(
+    () => filterByDateRange(allCampaigns, rangeFrom, rangeTo),
+    [allCampaigns, rangeFrom, rangeTo],
+  )
+
+  const computedAdvertiserStats = useMemo(() => {
+    const completed = filteredAdvertiserRequests.filter((r) => r.status === 'completed')
+    const totalSpent = completed.reduce((s, r) => s + (Number(r.budget) || 0), 0)
+    const totalReach = completed.reduce((s, r) => s + (r.reach || 0), 0)
+    const avgReach = completed.length > 0 ? Math.round(totalReach / completed.length) : 0
+    const costPerView = totalReach > 0 ? `$${(totalSpent / totalReach).toFixed(4)}` : '—'
+    return {
+      totalCampaigns: filteredCampaigns.length,
+      completedDeals: completed.length,
+      totalSpent,
+      avgReach,
+      costPerView,
+    }
+  }, [filteredAdvertiserRequests, filteredCampaigns])
 
   useEffect(() => {
     const load = async () => {
@@ -505,9 +562,6 @@ export default function AnalyticsPage() {
         setLoading(false)
         return
       }
-
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
       if (role === 'creator') {
         const { data: ch } = await supabase
@@ -525,7 +579,6 @@ export default function AnalyticsPage() {
             .from('ad_requests')
             .select('*, channels(name, avg_views)')
             .eq('advertiser_id', user.id)
-            .gte('created_at', thirtyDaysAgo.toISOString())
             .order('created_at', { ascending: false }),
         ])
 
@@ -536,14 +589,17 @@ export default function AnalyticsPage() {
           reach: r.channels?.avg_views || 0,
         }))
 
+        setAllCampaigns(camps)
+        setAllAdvertiserRequests(requests)
+        setCampaigns(camps)
+        setAdvertiserRequests(requests)
+
         const completed = requests.filter((r) => r.status === 'completed')
         const totalSpent = completed.reduce((s, r) => s + (Number(r.budget) || 0), 0)
         const totalReach = completed.reduce((s, r) => s + (r.reach || 0), 0)
         const avgReach = completed.length > 0 ? Math.round(totalReach / completed.length) : 0
         const costPerView = totalReach > 0 ? `$${(totalSpent / totalReach).toFixed(4)}` : '—'
 
-        setCampaigns(camps)
-        setAdvertiserRequests(requests)
         setAdvertiserStats({
           totalCampaigns: camps.length,
           completedDeals: completed.length,
@@ -564,17 +620,21 @@ export default function AnalyticsPage() {
   }, [channels])
 
   useEffect(() => {
+    setAdvertiserRequests(filteredAdvertiserRequests)
+    setCampaigns(filteredCampaigns)
+    setAdvertiserStats(computedAdvertiserStats)
+  }, [filteredAdvertiserRequests, filteredCampaigns, computedAdvertiserStats])
+
+  useEffect(() => {
     if (!selectedChannelId || role !== 'creator') return
 
     const loadDeals = async () => {
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-
       const { data } = await supabase
         .from('ad_requests')
         .select('*')
         .eq('channel_id', selectedChannelId)
-        .gte('created_at', thirtyDaysAgo.toISOString())
+        .gte('created_at', rangeFrom.toISOString())
+        .lte('created_at', rangeTo.toISOString())
         .order('created_at', { ascending: false })
         .limit(5)
 
@@ -582,7 +642,7 @@ export default function AnalyticsPage() {
     }
 
     loadDeals()
-  }, [selectedChannelId, role])
+  }, [selectedChannelId, role, dateFrom, dateTo, rangeFrom, rangeTo])
 
   const handleDownload = async (format: 'excel' | 'pdf') => {
     setGenerating(true)
@@ -592,16 +652,19 @@ export default function AnalyticsPage() {
           alert('Выберите канал')
           return
         }
-        const res = await fetch(`/api/channel-stats?channelId=${selectedChannelId}`)
+        const res = await fetch(
+          `/api/channel-stats?channelId=${selectedChannelId}&from=${dateFrom}&to=${dateTo}`,
+        )
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Failed')
         if (format === 'excel') await generateExcel(data)
         else await generatePDF(data)
       } else {
         const reportData = {
-          campaigns,
-          requests: advertiserRequests,
-          stats: advertiserStats,
+          campaigns: filteredCampaigns,
+          requests: filteredAdvertiserRequests,
+          stats: computedAdvertiserStats,
+          periodLabel,
         }
         if (format === 'excel') await generateAdvertiserExcel(reportData)
         else await generateAdvertiserPDF(reportData)
@@ -686,10 +749,16 @@ export default function AnalyticsPage() {
 
         <DownloadSection
           title="Скачать аналитический отчёт"
-          description="Полная статистика канала и история сделок за последние 30 дней"
+          description="Полная статистика канала и история сделок за выбранный период"
           includes={CREATOR_INCLUDES}
           generating={generating}
           onDownload={handleDownload}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          onDateChange={(from, to) => {
+            setDateFrom(from)
+            setDateTo(to)
+          }}
         />
 
         <div style={{ marginTop: '32px' }}>
@@ -759,12 +828,70 @@ export default function AnalyticsPage() {
       </div>
 
       <DownloadSection
-        title="Отчёт по рекламным кампаниям"
-        description="История расходов и результаты за 30 дней"
+        title="Отчёт по расходам на рекламу"
+        description="История расходов, кампаний и сделок за выбранный период"
         includes={ADVERTISER_INCLUDES}
         generating={generating}
         onDownload={handleDownload}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        onDateChange={(from, to) => {
+          setDateFrom(from)
+          setDateTo(to)
+        }}
       />
+
+      <div style={{ marginTop: '32px' }}>
+        <h2 style={{ color: 'white', fontSize: '18px', fontWeight: '700', marginBottom: '16px' }}>
+          Сделки за период ({periodLabel})
+        </h2>
+        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                {['Дата', 'Канал', 'Бюджет', 'Статус'].map((col) => (
+                  <th
+                    key={col}
+                    style={{
+                      textAlign: 'left',
+                      padding: '12px 16px',
+                      color: 'rgba(255,255,255,0.4)',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAdvertiserRequests.length === 0 ? (
+                <tr>
+                  <td colSpan={4} style={{ padding: '24px', textAlign: 'center', color: 'rgba(255,255,255,0.35)' }}>
+                    За выбранный период сделок не было
+                  </td>
+                </tr>
+              ) : (
+                filteredAdvertiserRequests.slice(0, 10).map((deal) => {
+                  const status = dealStatusLabel(deal.status)
+                  return (
+                    <tr key={deal.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      <td style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.7)' }}>
+                        {new Date(deal.created_at).toLocaleDateString('ru-RU')}
+                      </td>
+                      <td style={{ padding: '12px 16px', color: 'white' }}>{deal.channel_name || '—'}</td>
+                      <td style={{ padding: '12px 16px', color: 'white' }}>{(deal.budget || 0).toLocaleString()} AMD</td>
+                      <td style={{ padding: '12px 16px', color: status.color, fontWeight: '600' }}>{status.label}</td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   )
 }

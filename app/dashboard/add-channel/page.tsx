@@ -11,6 +11,9 @@ import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import CurrencySelector from '@/app/dashboard/components/CurrencySelector'
 import { CurrencyCode } from '@/lib/currency'
+import { ChannelLimitBanner } from '@/app/dashboard/components/LimitCounter'
+import { canAddChannel, isProPlan } from '@/lib/subscriptions'
+import { useDashboard } from '../layout'
 
 export default function AddChannelPage() {
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null)
@@ -27,8 +30,12 @@ export default function AddChannelPage() {
   const [fetching, setFetching] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fetchSuccess, setFetchSuccess] = useState(false)
+  const [channelCount, setChannelCount] = useState(0)
+  const [userIsPro, setUserIsPro] = useState(false)
+  const [limitsLoading, setLimitsLoading] = useState(true)
   const router = useRouter()
   const supabase = createClient()
+  const { isPro } = useDashboard()
 
   useEffect(() => {
     const getUser = async () => {
@@ -38,9 +45,18 @@ export default function AddChannelPage() {
         return
       }
       setUser(user)
+
+      const [{ count }, { data: profile }] = await Promise.all([
+        supabase.from('channels').select('*', { count: 'exact', head: true }).eq('owner_id', user.id),
+        supabase.from('profiles').select('subscription_plan, is_admin').eq('id', user.id).single(),
+      ])
+
+      setChannelCount(count || 0)
+      setUserIsPro(isProPlan(profile?.subscription_plan, profile?.is_admin) || isPro)
+      setLimitsLoading(false)
     }
     getUser()
-  }, [])
+  }, [isPro])
 
   const resetForm = () => {
     setName('')
@@ -122,6 +138,11 @@ export default function AddChannelPage() {
     e.preventDefault()
     if (!user) return
 
+    if (!canAddChannel(userIsPro, channelCount)) {
+      setError('Достигнут лимит Free: максимум 3 канала. Перейдите на Pro для добавления новых.')
+      return
+    }
+
     setSubmitting(true)
     setError(null)
 
@@ -156,9 +177,11 @@ export default function AddChannelPage() {
     router.push(`/dashboard/verify-channel/${newChannel.id}`)
   }
 
-  if (!user) {
+  if (!user || limitsLoading) {
     return <div className="text-white/50">Загрузка...</div>
   }
+
+  const atChannelLimit = !canAddChannel(userIsPro, channelCount)
 
   if (selectedPlatform === null) {
     return (
@@ -171,6 +194,8 @@ export default function AddChannelPage() {
           ← Назад
         </button>
 
+        <ChannelLimitBanner used={channelCount} isPro={userIsPro} />
+
         <h1 style={{ color: 'white', fontSize: '26px', fontWeight: '700', marginBottom: '8px' }}>
           Добавить канал
         </h1>
@@ -181,7 +206,8 @@ export default function AddChannelPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
           <button
             type="button"
-            onClick={() => setSelectedPlatform('telegram')}
+            disabled={atChannelLimit}
+            onClick={() => !atChannelLimit && setSelectedPlatform('telegram')}
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -191,7 +217,8 @@ export default function AddChannelPage() {
               background: 'rgba(255,255,255,0.05)',
               border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: '20px',
-              cursor: 'pointer',
+              cursor: atChannelLimit ? 'not-allowed' : 'pointer',
+              opacity: atChannelLimit ? 0.45 : 1,
               transition: 'all 0.2s',
               position: 'relative',
             }}
@@ -227,7 +254,8 @@ export default function AddChannelPage() {
 
           <button
             type="button"
-            onClick={() => setSelectedPlatform('youtube')}
+            disabled={atChannelLimit}
+            onClick={() => !atChannelLimit && setSelectedPlatform('youtube')}
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -237,7 +265,8 @@ export default function AddChannelPage() {
               background: 'rgba(255,255,255,0.05)',
               border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: '20px',
-              cursor: 'pointer',
+              cursor: atChannelLimit ? 'not-allowed' : 'pointer',
+              opacity: atChannelLimit ? 0.45 : 1,
               transition: 'all 0.2s',
               position: 'relative',
             }}

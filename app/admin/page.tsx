@@ -279,6 +279,27 @@ export default function AdminPanel() {
     showToast(newVal ? 'Пользователь назначен админом' : 'Права админа сняты')
   }
 
+  const toggleSubscription = async (profile: any) => {
+    const newPlan = profile.subscription_plan === 'pro' ? 'free' : 'pro'
+    const msg =
+      newPlan === 'pro'
+        ? `Выдать Pro подписку пользователю ${profile.full_name || profile.id.slice(0, 8)}?`
+        : `Отключить Pro подписку у ${profile.full_name || profile.id.slice(0, 8)}?`
+    if (!window.confirm(msg)) return
+    const { error } = await supabase
+      .from('profiles')
+      .update({ subscription_plan: newPlan })
+      .eq('id', profile.id)
+    if (error) {
+      showToast(error.message, 'error')
+      return
+    }
+    setProfiles((prev) =>
+      prev.map((p) => (p.id === profile.id ? { ...p, subscription_plan: newPlan } : p)),
+    )
+    showToast(newPlan === 'pro' ? 'Pro подписка активирована' : 'Pro подписка отключена')
+  }
+
   const deleteUser = async (profile: any) => {
     if (!window.confirm('Удалить пользователя? Все его данные будут удалены.')) return
 
@@ -556,6 +577,7 @@ export default function AdminPanel() {
             }}
             onPageChange={setUserPage}
             onToggleAdmin={toggleAdmin}
+            onToggleSubscription={toggleSubscription}
             onDelete={deleteUser}
             onCopyId={copyId}
           />

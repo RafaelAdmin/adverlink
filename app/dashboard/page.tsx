@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from './layout'
 import { CreatorDealCard, AdvertiserDealCard } from './components/DealManagement'
+import { DashboardLimitCard } from './components/LimitCounter'
+import { getMonthStart, isProPlan } from '@/lib/subscriptions'
 
 const glassCardStyle: React.CSSProperties = {
   background: 'rgba(255,255,255,0.06)',
@@ -22,11 +24,13 @@ export default function DashboardPage() {
 }
 
 function CreatorDashboard() {
+  const { isPro } = useDashboard()
   const [channels, setChannels] = useState<any[]>([])
   const [adRequests, setAdRequests] = useState<any[]>([])
   const [metrics, setMetrics] = useState({ postsThisMonth: 0, totalSubscribers: 0, adPosts: 0 })
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState('')
+  const [userIsPro, setUserIsPro] = useState(false)
   const supabase = createClient()
 
   const channelMap = Object.fromEntries(channels.map((c) => [c.id, c]))
@@ -35,6 +39,13 @@ function CreatorDashboard() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     setUserId(user.id)
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_plan, is_admin')
+      .eq('id', user.id)
+      .single()
+    setUserIsPro(isProPlan(profile?.subscription_plan, profile?.is_admin) || isPro)
 
     const { data } = await supabase
       .from('channels')
@@ -109,6 +120,7 @@ function CreatorDashboard() {
         className="stats-grid mb-8"
         style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}
       >
+        <DashboardLimitCard type="channels" used={channels.length} isPro={userIsPro} />
         {metricCards.map((item) => (
           <div key={item.label} style={glassCardStyle}>
             <div className="text-3xl font-bold text-white mb-1">{item.value}</div>
@@ -339,6 +351,7 @@ function CreatorDashboard() {
 }
 
 function AdvertiserDashboard() {
+  const { isPro } = useDashboard()
   const router = useRouter()
   const [campaigns, setCampaigns] = useState<any[]>([])
   const [adOrders, setAdOrders] = useState<any[]>([])
@@ -348,12 +361,29 @@ function AdvertiserDashboard() {
   const [metrics, setMetrics] = useState({ activeCampaigns: 0, completedDeals: 0, spent: 0 })
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [campaignsThisMonth, setCampaignsThisMonth] = useState(0)
+  const [userIsPro, setUserIsPro] = useState(false)
   const supabase = createClient()
 
   const loadCampaigns = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     setUserId(user.id)
+
+    const monthStart = getMonthStart().toISOString()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_plan, is_admin')
+      .eq('id', user.id)
+      .single()
+    setUserIsPro(isProPlan(profile?.subscription_plan, profile?.is_admin) || isPro)
+
+    const { count: monthCount } = await supabase
+      .from('campaigns')
+      .select('*', { count: 'exact', head: true })
+      .eq('advertiser_id', user.id)
+      .gte('created_at', monthStart)
+    setCampaignsThisMonth(monthCount || 0)
 
     const { data: campaignData } = await supabase
       .from('campaigns')
@@ -474,6 +504,7 @@ function AdvertiserDashboard() {
         className="stats-grid mb-8"
         style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}
       >
+        <DashboardLimitCard type="campaigns" used={campaignsThisMonth} isPro={userIsPro} />
         {metricCards.map((item) => (
           <div key={item.label} style={glassCardStyle}>
             <div className="text-3xl font-bold text-white mb-1">{item.value}</div>

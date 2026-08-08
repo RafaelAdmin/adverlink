@@ -37,6 +37,9 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { SOCIAL_NETWORK_OPTIONS } from '@/lib/campaigns'
+import { CampaignLimitBanner } from '@/app/dashboard/components/LimitCounter'
+import { canCreateCampaign, getMonthStart, isProPlan } from '@/lib/subscriptions'
+import { useDashboard } from '../layout'
 
 const CATEGORIES = ['Новости', 'Технологии', 'Бизнес', 'Спорт', 'Lifestyle', 'Юмор', 'Другое']
 
@@ -60,8 +63,12 @@ export default function CreateCampaignPage() {
   const [brief, setBrief] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [campaignsThisMonth, setCampaignsThisMonth] = useState(0)
+  const [userIsPro, setUserIsPro] = useState(false)
+  const [limitsLoading, setLimitsLoading] = useState(true)
   const router = useRouter()
   const supabase = createClient()
+  const { isPro } = useDashboard()
 
   useEffect(() => {
     const load = async () => {
@@ -71,6 +78,19 @@ export default function CreateCampaignPage() {
         return
       }
       setUser(user)
+
+      const monthStart = getMonthStart().toISOString()
+      const [{ count }, { data: profile }] = await Promise.all([
+        supabase
+          .from('campaigns')
+          .select('*', { count: 'exact', head: true })
+          .eq('advertiser_id', user.id)
+          .gte('created_at', monthStart),
+        supabase.from('profiles').select('subscription_plan, is_admin').eq('id', user.id).single(),
+      ])
+      setCampaignsThisMonth(count || 0)
+      setUserIsPro(isProPlan(profile?.subscription_plan, profile?.is_admin) || isPro)
+      setLimitsLoading(false)
 
       if (editId) {
         const { data: campaign } = await supabase
@@ -106,6 +126,11 @@ export default function CreateCampaignPage() {
 
   const handleSubmit = async () => {
     if (!user) return
+
+    if (!editId && !canCreateCampaign(userIsPro, campaignsThisMonth)) {
+      setError('Достигнут лимит Free: 3 кампании в месяц. Перейдите на Pro или дождитесь сброса лимита.')
+      return
+    }
 
     if (!name.trim()) {
       setError('Укажите название кампании')
@@ -154,9 +179,11 @@ export default function CreateCampaignPage() {
     router.push('/dashboard')
   }
 
-  if (!user) {
+  if (!user || limitsLoading) {
     return <div className="text-white/50">Загрузка...</div>
   }
+
+  const atCampaignLimit = !editId && !canCreateCampaign(userIsPro, campaignsThisMonth)
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -166,6 +193,8 @@ export default function CreateCampaignPage() {
       >
         ← Назад
       </Link>
+
+      {!editId && <CampaignLimitBanner used={campaignsThisMonth} isPro={userIsPro} />}
 
       <h1 className="text-2xl font-bold text-white mb-2">
         {editId ? 'Редактировать кампанию' : 'Создать рекламную кампанию'}
@@ -357,7 +386,7 @@ export default function CreateCampaignPage() {
       <button
         type="button"
         onClick={handleSubmit}
-        disabled={submitting}
+        disabled={submitting || atCampaignLimit}
         className="btn-accent disabled:opacity-50 text-white rounded-full px-6 py-2.5 text-sm font-medium w-full transition"
       >
         {submitting ? 'Сохранение...' : editId ? 'Сохранить изменения' : 'Опубликовать кампанию'}

@@ -13,6 +13,7 @@ import {
 import { formatAmdWithUsd } from '@/lib/currency'
 import { glassDealCard } from '@/lib/deals'
 import DealChat from '@/app/dashboard/components/DealChat'
+import { markDealViewed } from '@/lib/notifications'
 
 export default function DealDetailPage() {
   const params = useParams()
@@ -64,7 +65,9 @@ export default function DealDetailPage() {
 
       setRequest(deal)
       setChannel(ch)
-      setRole(isCreator ? 'creator' : 'advertiser')
+      const userRole = isCreator ? 'creator' : 'advertiser'
+      setRole(userRole)
+      await markDealViewed(supabase, dealId, userRole)
       setLoading(false)
     }
     load()

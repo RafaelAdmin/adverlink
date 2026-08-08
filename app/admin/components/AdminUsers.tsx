@@ -6,6 +6,7 @@ type AdminUsersProps = {
   onSearchChange: (value: string) => void
   onPageChange: (page: number) => void
   onToggleAdmin: (profile: any) => void
+  onToggleSubscription: (profile: any) => void
   onDelete: (profile: any) => void
   onCopyId: (id: string) => void
 }
@@ -18,6 +19,7 @@ export default function AdminUsers({
   onSearchChange,
   onPageChange,
   onToggleAdmin,
+  onToggleSubscription,
   onDelete,
   onCopyId,
 }: AdminUsersProps) {
@@ -72,9 +74,18 @@ export default function AdminUsers({
                     {new Date(p.created_at).toLocaleDateString('ru-RU')}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="bg-white/10 text-white/60 px-2 py-0.5 rounded-full text-xs">
+                    <button
+                      type="button"
+                      onClick={() => onToggleSubscription(p)}
+                      className={`px-2.5 py-1 rounded-full text-xs font-semibold transition ${
+                        p.subscription_plan === 'pro'
+                          ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
+                          : 'bg-white/10 text-white/50 hover:bg-white/15'
+                      }`}
+                      title={p.subscription_plan === 'pro' ? 'Отключить Pro' : 'Выдать Pro'}
+                    >
                       {(p.subscription_plan || 'free').toUpperCase()}
-                    </span>
+                    </button>
                   </td>
                   <td className="px-4 py-3">
                     <span className="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full text-xs">

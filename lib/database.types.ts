@@ -60,6 +60,8 @@ export type AdRequest = {
   auto_completed: boolean | null
   platform_commission: number | null
   updated_at: string | null
+  creator_viewed_at: string | null
+  advertiser_viewed_at: string | null
   created_at: string
 }
 

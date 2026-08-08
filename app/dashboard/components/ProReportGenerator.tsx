@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase'
 import type { Channel } from '@/lib/database.types'
+import DateRangePicker from './DateRangePicker'
+import { defaultReportRange } from '@/lib/subscriptions'
 
 interface ProReportGeneratorProps {
   channel: Channel
@@ -12,14 +13,22 @@ interface ProReportGeneratorProps {
 export default function ProReportGenerator({ channel, isPro }: ProReportGeneratorProps) {
   const [generating, setGenerating] = useState(false)
   const [format, setFormat] = useState<'excel' | 'pdf'>('excel')
-  const supabase = createClient()
+  const defaults = defaultReportRange()
+  const [dateFrom, setDateFrom] = useState(defaults.from)
+  const [dateTo, setDateTo] = useState(defaults.to)
 
   const generateReport = async () => {
     if (!isPro) return
+    if (!dateFrom || !dateTo) {
+      alert('Выберите период отчёта')
+      return
+    }
     setGenerating(true)
 
     try {
-      const res = await fetch(`/api/channel-stats?channelId=${channel.id}`)
+      const res = await fetch(
+        `/api/channel-stats?channelId=${channel.id}&from=${dateFrom}&to=${dateTo}`,
+      )
       const data = await res.json()
 
       if (format === 'excel') {
@@ -42,13 +51,13 @@ export default function ProReportGenerator({ channel, isPro }: ProReportGenerato
     const stats = data.stats
     const tg = data.telegramStats
     const requests = data.requests
+    const periodLabel = data.periodLabel || 'Выбранный период'
 
     const now = new Date()
-    const monthName = now.toLocaleString('ru-RU', { month: 'long', year: 'numeric' })
 
     const overviewData = [
       ['ОТЧЁТ ПО КАНАЛУ', ''],
-      ['Период', monthName],
+      ['Период', periodLabel],
       ['', ''],
       ['ИНФОРМАЦИЯ О КАНАЛЕ', ''],
       ['Название', channelData.name],
@@ -64,7 +73,7 @@ export default function ProReportGenerator({ channel, isPro }: ProReportGenerato
       ['Цена рекламы', (channelData.ad_price || 0) + ' ' + (channelData.ad_price_currency || 'USD')],
       ['Статус верификации', channelData.is_verified ? 'Верифицирован ✓' : 'На проверке'],
       ['', ''],
-      ['РЕКЛАМНАЯ АКТИВНОСТЬ (30 дней)', ''],
+      ['РЕКЛАМНАЯ АКТИВНОСТЬ', ''],
       ['Всего запросов', stats.totalRequests],
       ['Завершённых сделок', stats.completedDeals],
       ['Ожидают ответа', stats.pendingDeals],
@@ -112,8 +121,8 @@ export default function ProReportGenerator({ channel, isPro }: ProReportGenerato
     const channelData = data.channel
     const stats = data.stats
     const tg = data.telegramStats
+    const periodLabel = data.periodLabel || 'Выбранный период'
     const now = new Date()
-    const monthName = now.toLocaleString('ru-RU', { month: 'long', year: 'numeric' })
     const generatedDate = now.toLocaleDateString('ru-RU', {
       day: 'numeric',
       month: 'long',
@@ -342,7 +351,7 @@ export default function ProReportGenerator({ channel, isPro }: ProReportGenerato
               }
             </div>
             <div class="meta-row">
-              <div>Период: <strong>последние 30 дней (${monthName})</strong></div>
+              <div>Период: <strong>${periodLabel}</strong></div>
               <div>Сгенерирован: <strong>${generatedDate}</strong></div>
             </div>
           </header>
@@ -367,7 +376,7 @@ export default function ProReportGenerator({ channel, isPro }: ProReportGenerato
             </div>
           </div>
 
-          <h2>Рекламная активность (последние 30 дней)</h2>
+          <h2>Рекламная активность</h2>
           <div class="grid">
             <div class="card">
               <div class="card-label">Всего запросов</div>
@@ -495,11 +504,11 @@ export default function ProReportGenerator({ channel, isPro }: ProReportGenerato
             Аналитический отчёт Pro
           </p>
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: 0 }}>
-            Статистика канала и история сделок за 30 дней
+            Статистика канала и история сделок за выбранный период
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <div
             style={{
               display: 'flex',
@@ -553,6 +562,16 @@ export default function ProReportGenerator({ channel, isPro }: ProReportGenerato
           </button>
         </div>
       </div>
+
+      <DateRangePicker
+        from={dateFrom}
+        to={dateTo}
+        onChange={(from, to) => {
+          setDateFrom(from)
+          setDateTo(to)
+        }}
+        disabled={generating}
+      />
     </div>
   )
 }

@@ -16,6 +16,7 @@ import { formatAmdWithUsd, toUsdEstimate } from '@/lib/currency'
 import DealChat from './DealChat'
 import { AutoCompleteCountdown, PaymentReservedBadge, RefundSummary, SplitPaymentSummary } from './DealExtras'
 import { incrementCampaignSlots } from '@/lib/campaigns'
+import { markDealViewed } from '@/lib/notifications'
 
 export function DealStatusPill({ status, large }: { status: string; large?: boolean }) {
   const badge = getDealStatusBadge(status)
@@ -1272,9 +1273,15 @@ export function CreatorDealCard({
   onUpdate: (id: string, patch: Record<string, unknown>) => void
   linkToDeal?: boolean
 }) {
+  const supabase = createClient()
   const [expanded, setExpanded] = useState(false)
   const channel = channelMap[request.channel_id]
   const status = normalizeDealStatus(request.status)
+
+  useEffect(() => {
+    if (!expanded || !userId) return
+    markDealViewed(supabase, request.id, 'creator')
+  }, [expanded, request.id, userId, supabase])
 
   return (
     <div
@@ -1350,9 +1357,15 @@ export function AdvertiserDealCard({
   onUpdate: (id: string, patch: Record<string, unknown>) => void
   linkToDeal?: boolean
 }) {
+  const supabase = createClient()
   const [expanded, setExpanded] = useState(false)
   const channel = channelMap[request.channel_id]
   const status = normalizeDealStatus(request.status)
+
+  useEffect(() => {
+    if (!expanded || !userId) return
+    markDealViewed(supabase, request.id, 'advertiser')
+  }, [expanded, request.id, userId, supabase])
 
   return (
     <div style={{ ...glassDealCard, overflow: 'hidden', marginBottom: '16px' }}>
