@@ -1,8 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireAuth } from '@/lib/api-auth'
+
+const RATE_LIMIT_MAX = 5
+const RATE_LIMIT_WINDOW_MS = 60_000
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>()
+
+function escapeHtml(value: unknown): string {
+  const str = value == null ? '' : String(value)
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function checkRateLimit(key: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitStore.get(key)
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitStore.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
+    return true
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return false
+  }
+
+  entry.count += 1
+  return true
+}
+
+function canSendNotification(
+  type: string,
+  userId: string,
+  ownerId: string,
+  isAdmin: boolean,
+): boolean {
+  if (isAdmin) return true
+
+  switch (type) {
+    case 'new_ad_request':
+      return userId !== ownerId
+    case 'deal_accepted':
+      return userId === ownerId
+    case 'deal_completed':
+    case 'application_rejected':
+      return userId !== ownerId
+    default:
+      return false
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await requireAuth()
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
     const { type, channelId, advertiserName, advertiserContact, message, budget } = body
 
@@ -10,12 +68,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const supabase = createClient(
+    const rateLimitKey = `${session.user.id}:${channelId}`
+    if (!checkRateLimit(rateLimitKey)) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+
+    const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
     )
 
-    const { data: channel } = await supabase
+    const { data: channel } = await supabaseAdmin
       .from('channels')
       .select('name, telegram_username, owner_id')
       .eq('id', channelId)
@@ -25,16 +88,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Channel not found' }, { status: 404 })
     }
 
-    const { data: ownerProfile } = await supabase
+    const { data: callerProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', session.user.id)
+      .single()
+
+    const isAdmin = callerProfile?.is_admin === true
+
+    if (!canSendNotification(type, session.user.id, channel.owner_id, isAdmin)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const { data: ownerProfile } = await supabaseAdmin
       .from('profiles')
       .select('id, full_name')
       .eq('id', channel.owner_id)
       .single()
-
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    )
 
     const { data: userData } = await supabaseAdmin.auth.admin.getUserById(channel.owner_id)
 
@@ -90,6 +160,13 @@ export async function POST(request: NextRequest) {
 }
 
 function getEmailContent(type: string, data: Record<string, unknown>) {
+  const channelName = escapeHtml(data.channelName)
+  const channelUsername = escapeHtml(data.channelUsername)
+  const advertiserName = escapeHtml(data.advertiserName) || '—'
+  const advertiserContact = escapeHtml(data.advertiserContact) || '—'
+  const messageText = escapeHtml(data.message) || '—'
+  const budget = escapeHtml(data.budget) || '—'
+
   const baseStyle = `
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
       background: #f8f9fa; margin: 0; padding: 0; }
@@ -117,7 +194,7 @@ function getEmailContent(type: string, data: Record<string, unknown>) {
 
   if (type === 'new_ad_request') {
     return {
-      subject: `💬 Новый запрос на рекламу — ${data.channelName}`,
+      subject: `💬 Новый запрос на рекламу — ${channelName}`,
       html: `
         <!DOCTYPE html><html><head><style>${baseStyle}</style></head>
         <body><div class="container">
@@ -131,23 +208,23 @@ function getEmailContent(type: string, data: Record<string, unknown>) {
             <div class="card">
               <div class="card-row">
                 <span class="card-label">Канал</span>
-                <span class="card-value"><strong>${data.channelName}</strong> (@${data.channelUsername})</span>
+                <span class="card-value"><strong>${channelName}</strong> (@${channelUsername})</span>
               </div>
               <div class="card-row">
                 <span class="card-label">Рекламодатель</span>
-                <span class="card-value">${data.advertiserName || '—'}</span>
+                <span class="card-value">${advertiserName}</span>
               </div>
               <div class="card-row">
                 <span class="card-label">Контакт</span>
-                <span class="card-value">${data.advertiserContact || '—'}</span>
+                <span class="card-value">${advertiserContact}</span>
               </div>
               <div class="card-row">
                 <span class="card-label">Бюджет</span>
-                <span class="card-value"><strong>$${data.budget || '—'}</strong></span>
+                <span class="card-value"><strong>$${budget}</strong></span>
               </div>
               <div class="card-row">
                 <span class="card-label">Сообщение</span>
-                <span class="card-value">${data.message || '—'}</span>
+                <span class="card-value">${messageText}</span>
               </div>
             </div>
 
@@ -168,7 +245,7 @@ function getEmailContent(type: string, data: Record<string, unknown>) {
 
   if (type === 'deal_completed') {
     return {
-      subject: `✅ Сделка завершена — ${data.channelName}`,
+      subject: `✅ Сделка завершена — ${channelName}`,
       html: `
         <!DOCTYPE html><html><head><style>${baseStyle}</style></head>
         <body><div class="container">
@@ -182,16 +259,16 @@ function getEmailContent(type: string, data: Record<string, unknown>) {
             <div class="card">
               <div class="card-row">
                 <span class="card-label">Канал</span>
-                <span class="card-value"><strong>${data.channelName}</strong></span>
+                <span class="card-value"><strong>${channelName}</strong></span>
               </div>
               <div class="card-row">
                 <span class="card-label">Рекламодатель</span>
-                <span class="card-value">${data.advertiserName || '—'}</span>
+                <span class="card-value">${advertiserName}</span>
               </div>
               <div class="card-row">
                 <span class="card-label">Сумма</span>
                 <span class="card-value" style="color:#059669;font-weight:700;">
-                  $${data.budget || '—'}
+                  $${budget}
                 </span>
               </div>
             </div>
@@ -212,7 +289,7 @@ function getEmailContent(type: string, data: Record<string, unknown>) {
 
   if (type === 'deal_accepted') {
     return {
-      subject: `✓ Ваш запрос принят — ${data.channelName}`,
+      subject: `✓ Ваш запрос принят — ${channelName}`,
       html: `
         <!DOCTYPE html><html><head><style>${baseStyle}</style></head>
         <body><div class="container">
@@ -226,11 +303,11 @@ function getEmailContent(type: string, data: Record<string, unknown>) {
             <div class="card">
               <div class="card-row">
                 <span class="card-label">Канал</span>
-                <span class="card-value"><strong>${data.channelName}</strong> (@${data.channelUsername})</span>
+                <span class="card-value"><strong>${channelName}</strong> (@${channelUsername})</span>
               </div>
               <div class="card-row">
                 <span class="card-label">Бюджет</span>
-                <span class="card-value"><strong>$${data.budget || '—'}</strong></span>
+                <span class="card-value"><strong>$${budget}</strong></span>
               </div>
             </div>
 
@@ -250,7 +327,7 @@ function getEmailContent(type: string, data: Record<string, unknown>) {
 
   if (type === 'application_rejected') {
     return {
-      subject: `Отклик отклонён — ${data.channelName}`,
+      subject: `Отклик отклонён — ${channelName}`,
       html: `
         <!DOCTYPE html><html><head><style>${baseStyle}</style></head>
         <body><div class="container">
@@ -264,15 +341,15 @@ function getEmailContent(type: string, data: Record<string, unknown>) {
             <div class="card">
               <div class="card-row">
                 <span class="card-label">Кампания</span>
-                <span class="card-value">${data.advertiserName || '—'}</span>
+                <span class="card-value">${advertiserName}</span>
               </div>
               <div class="card-row">
                 <span class="card-label">Канал</span>
-                <span class="card-value"><strong>${data.channelName}</strong></span>
+                <span class="card-value"><strong>${channelName}</strong></span>
               </div>
               <div class="card-row">
                 <span class="card-label">Бюджет</span>
-                <span class="card-value">$${data.budget || '—'}</span>
+                <span class="card-value">$${budget}</span>
               </div>
             </div>
 

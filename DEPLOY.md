@@ -4,6 +4,7 @@
 
 - [ ] All environment variables set in hosting platform
 - [ ] Supabase schema.sql executed on production database
+- [ ] **supabase/security-fixes.sql executed immediately after schema.sql** (required — without it users can set `is_admin` / `subscription_plan` on their own profile)
 - [ ] Storage bucket "avatars" created and set to public
 - [ ] Admin account created and is_admin set to true
 - [ ] Telegram bot token added to environment variables

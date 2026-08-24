@@ -1,8 +1,3 @@
-/*
-To fix existing channels with expired Telegram URLs, run this in Supabase SQL Editor:
-update channels set avatar_url = null where avatar_url like '%api/telegram/avatar%';
-This will show placeholder letters until channels are re-added or manually updated.
-*/
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/api-auth'
@@ -57,41 +52,61 @@ export async function GET(request: NextRequest) {
 
           avatarUrl = `/api/telegram/avatar?path=${encodeURIComponent(filePath)}`
 
-          const supabaseAdmin = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          )
-
-          try {
-            const imageResponse = await fetch(
-              `https://api.telegram.org/file/bot${token}/${filePath}`,
+          const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+          if (!serviceRoleKey) {
+            console.error(
+              '[telegram/route] SUPABASE_SERVICE_ROLE_KEY is not set — avatar upload to Storage skipped, using temporary proxy URL',
+            )
+          } else {
+            const supabaseAdmin = createClient(
+              process.env.NEXT_PUBLIC_SUPABASE_URL!,
+              serviceRoleKey,
             )
 
-            if (imageResponse.ok) {
-              const imageBuffer = await imageResponse.arrayBuffer()
-              const uint8Array = new Uint8Array(imageBuffer)
-              const storagePath = `channels/${cleanUsername}/avatar.jpg`
+            try {
+              const imageResponse = await fetch(
+                `https://api.telegram.org/file/bot${token}/${filePath}`,
+              )
 
-              const { error: uploadError } = await supabaseAdmin.storage
-                .from('avatars')
-                .upload(storagePath, uint8Array, {
-                  contentType: 'image/jpeg',
-                  upsert: true,
-                })
+              if (imageResponse.ok) {
+                const imageBuffer = await imageResponse.arrayBuffer()
+                const uint8Array = new Uint8Array(imageBuffer)
+                const storagePath = `channels/${cleanUsername}/avatar.jpg`
 
-              if (!uploadError) {
-                const {
-                  data: { publicUrl },
-                } = supabaseAdmin.storage.from('avatars').getPublicUrl(storagePath)
-                avatarUrl = publicUrl
+                const { error: uploadError } = await supabaseAdmin.storage
+                  .from('avatars')
+                  .upload(storagePath, uint8Array, {
+                    contentType: 'image/jpeg',
+                    upsert: true,
+                  })
+
+                if (!uploadError) {
+                  const {
+                    data: { publicUrl },
+                  } = supabaseAdmin.storage.from('avatars').getPublicUrl(storagePath)
+                  avatarUrl = publicUrl
+                } else {
+                  console.error('[telegram/route] Supabase Storage upload failed:', uploadError)
+                }
+              } else {
+                console.error(
+                  '[telegram/route] Failed to download avatar from Telegram:',
+                  imageResponse.status,
+                  imageResponse.statusText,
+                )
               }
+            } catch (downloadOrUploadError) {
+              console.error(
+                '[telegram/route] Avatar download/upload error:',
+                downloadOrUploadError,
+              )
             }
-          } catch {
-            // Fall back to proxy URL
           }
+        } else {
+          console.error('[telegram/route] Telegram getFile failed:', fileData)
         }
-      } catch {
-        // Avatar optional
+      } catch (getFileError) {
+        console.error('[telegram/route] Telegram getFile request error:', getFileError)
       }
     }
 
@@ -102,7 +117,8 @@ export async function GET(request: NextRequest) {
       subscriber_count: countData.ok ? countData.result : 0,
       avatar_url: avatarUrl,
     })
-  } catch {
+  } catch (getChatError) {
+    console.error('[telegram/route] getChat handler error:', getChatError)
     return NextResponse.json({ error: 'Ошибка подключения' }, { status: 500 })
   }
 }

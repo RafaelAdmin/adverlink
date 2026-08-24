@@ -39,6 +39,9 @@ Fill in your Supabase URL, anon key, and Telegram bot token.
 Go to your Supabase project → SQL Editor  
 Run the contents of: `supabase/schema.sql`
 
+**Important:** Immediately after `schema.sql`, run `supabase/security-fixes.sql`.  
+Without it, the base `profiles_update_own` policy lets users update any column on their own profile — including `is_admin`, `subscription_plan`, and `is_founder`. The trigger in `security-fixes.sql` blocks privilege escalation; without it, anyone could grant themselves admin access.
+
 ### 5. Set up storage
 
 In Supabase dashboard → Storage  

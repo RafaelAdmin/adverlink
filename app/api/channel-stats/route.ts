@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requireAuth } from '@/lib/api-auth'
 
 export async function GET(request: NextRequest) {
+  const session = await requireAuth()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const channelId = request.nextUrl.searchParams.get('channelId')
   const fromParam = request.nextUrl.searchParams.get('from')
   const toParam = request.nextUrl.searchParams.get('to')
@@ -10,10 +15,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Channel ID required' }, { status: 400 })
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  )
+  const { supabase, user } = session
 
   const { data: channel } = await supabase
     .from('channels')
@@ -23,6 +25,19 @@ export async function GET(request: NextRequest) {
 
   if (!channel) {
     return NextResponse.json({ error: 'Channel not found' }, { status: 404 })
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single()
+
+  const isAdmin = profile?.is_admin === true
+  const isOwner = channel.owner_id === user.id
+
+  if (!isOwner && !isAdmin) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   let fromDate = new Date()
@@ -68,8 +83,8 @@ export async function GET(request: NextRequest) {
           subscriber_count: countData.ok ? countData.result : channel.subscriber_count,
         }
       }
-    } catch {
-      // Use stored data if Telegram API fails
+    } catch (telegramError) {
+      console.error('[channel-stats] Telegram API error:', telegramError)
     }
   }
 
