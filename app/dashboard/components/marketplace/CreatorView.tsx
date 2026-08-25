@@ -88,11 +88,11 @@ export default function CreatorView({
       <p className="text-white/50 mb-6">Входящие запросы и кампании рекламодателей</p>
 
       <div className="flex gap-2 mb-6">
-        <button onClick={() => setCreatorTab('mine')} className={`rounded-full px-4 py-2 text-sm transition ${creatorTab === 'mine' ? 'tab-pill-active' : 'border border-white/20 text-white/70'}`}>
-          Мои запросы
-        </button>
         <button onClick={() => setCreatorTab('campaigns')} className={`rounded-full px-4 py-2 text-sm transition ${creatorTab === 'campaigns' ? 'tab-pill-active' : 'border border-white/20 text-white/70'}`}>
           Запросы рекламодателей
+        </button>
+        <button onClick={() => setCreatorTab('mine')} className={`rounded-full px-4 py-2 text-sm transition ${creatorTab === 'mine' ? 'tab-pill-active' : 'border border-white/20 text-white/70'}`}>
+          Мои запросы
         </button>
       </div>
 

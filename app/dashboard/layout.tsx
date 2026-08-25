@@ -8,6 +8,7 @@ import { applyAccentColor, getAccentColor } from '@/lib/theme'
 import { fetchNotificationFlags } from '@/lib/notifications'
 import ProfileCard from './components/ProfileCard'
 import BreathingBackground from './components/BreathingBackground'
+import UserAvatar from './components/UserAvatar'
 
 type Role = 'creator' | 'advertiser'
 
@@ -17,6 +18,7 @@ type DashboardContextValue = {
   user: any
   search: string
   avatarUrl: string | null
+  avatarFrameColor: string | null
   isPro: boolean
   refreshPlan: () => void
 }
@@ -671,6 +673,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   )
   const [showProfileCard, setShowProfileCard] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [avatarFrameColor, setAvatarFrameColor] = useState<string | null>(null)
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false)
   const [hasCreatorRequests, setHasCreatorRequests] = useState(false)
   const [hasAdvertiserRequests, setHasAdvertiserRequests] = useState(false)
@@ -682,10 +685,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!user) return
     const { data: profile } = await supabase
       .from('profiles')
-      .select('avatar_url')
+      .select('avatar_url, avatar_frame_color')
       .eq('id', user.id)
       .single()
     if (profile?.avatar_url) setAvatarUrl(profile.avatar_url)
+    setAvatarFrameColor(profile?.avatar_frame_color || null)
   }, [user, supabase])
 
   useEffect(() => {
@@ -711,7 +715,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     const onAvatarUpdate = () => refreshAvatar()
     window.addEventListener('adverlink-avatar-updated', onAvatarUpdate)
-    return () => window.removeEventListener('adverlink-avatar-updated', onAvatarUpdate)
+    window.addEventListener('adverlink-avatar-frame-updated', onAvatarUpdate)
+    return () => {
+      window.removeEventListener('adverlink-avatar-updated', onAvatarUpdate)
+      window.removeEventListener('adverlink-avatar-frame-updated', onAvatarUpdate)
+    }
   }, [user, refreshAvatar])
 
   const refreshNotifications = useCallback(async () => {
@@ -737,13 +745,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('is_admin, avatar_url, subscription_plan')
+        .select('is_admin, avatar_url, subscription_plan, avatar_frame_color')
         .eq('id', user.id)
         .single()
 
       if (profile?.is_admin) setIsAdmin(true)
       setIsPro(profile?.subscription_plan === 'pro' || profile?.is_admin === true)
       if (profile?.avatar_url) setAvatarUrl(profile.avatar_url)
+      setAvatarFrameColor(profile?.avatar_frame_color || null)
 
       await refreshNotificationsForUser(user.id)
     }
@@ -815,7 +824,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isActive = (path: string) => pathname === path
 
   return (
-    <DashboardContext.Provider value={{ role, toggleRole, user, search, avatarUrl, isPro, refreshPlan }}>
+    <DashboardContext.Provider value={{ role, toggleRole, user, search, avatarUrl, avatarFrameColor, isPro, refreshPlan }}>
       <BreathingBackground gradient={currentGradient} lockViewport className="min-h-screen flex h-full">
         {sidebarOpen && (
           <div
@@ -929,16 +938,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               }
             }}
           >
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0 overflow-hidden"
-              style={!avatarUrl ? { backgroundColor: 'var(--accent-primary, #9333ea)' } : undefined}
-            >
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
-              ) : (
-                user.email?.[0].toUpperCase()
-              )}
-            </div>
+            <UserAvatar
+              src={avatarUrl}
+              name={user.email?.split('@')[0]}
+              size={32}
+              frameColor={avatarFrameColor}
+              borderWidth={2}
+            />
             <div className="flex-1 min-w-0">
               <div className="text-white text-xs font-medium truncate">
                 {user.email?.split('@')[0]}
@@ -1013,14 +1019,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 type="button"
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={() => setShowProfileCard((v) => !v)}
-                className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-white text-sm font-medium hover:opacity-80 transition relative flex-shrink-0"
-                style={!avatarUrl ? { backgroundColor: 'var(--accent-primary, #9333ea)' } : {}}
+                className="hover:opacity-80 transition relative flex-shrink-0"
               >
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-                ) : (
-                  user.email?.[0].toUpperCase()
-                )}
+                <UserAvatar
+                  src={avatarUrl}
+                  name={user.email?.split('@')[0]}
+                  size={32}
+                  frameColor={avatarFrameColor}
+                  borderWidth={2}
+                />
               </button>
             </div>
           </header>

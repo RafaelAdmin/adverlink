@@ -571,6 +571,7 @@ export default function ProReportGenerator({ channel, isPro }: ProReportGenerato
           setDateTo(to)
         }}
         disabled={generating}
+        style={{ marginTop: '18px' }}
       />
     </div>
   )

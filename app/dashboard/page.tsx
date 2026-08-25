@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from './layout'
 import { CreatorDealCard, AdvertiserDealCard } from './components/DealManagement'
@@ -20,11 +20,18 @@ const glassCardStyle: React.CSSProperties = {
 
 export default function DashboardPage() {
   const { role } = useDashboard()
-  return role === 'creator' ? <CreatorDashboard /> : <AdvertiserDashboard />
+  return (
+    <Suspense fallback={<div className="text-white/50">Загрузка...</div>}>
+      {role === 'creator' ? <CreatorDashboard /> : <AdvertiserDashboard />}
+    </Suspense>
+  )
 }
 
 function CreatorDashboard() {
   const { isPro } = useDashboard()
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const [deleteSuccess, setDeleteSuccess] = useState(false)
   const [channels, setChannels] = useState<any[]>([])
   const [adRequests, setAdRequests] = useState<any[]>([])
   const [metrics, setMetrics] = useState({ postsThisMonth: 0, totalSubscribers: 0, adPosts: 0 })
@@ -89,6 +96,15 @@ function CreatorDashboard() {
     loadData()
   }, [])
 
+  useEffect(() => {
+    if (searchParams.get('channelDeleted') === '1') {
+      setDeleteSuccess(true)
+      router.replace('/dashboard')
+      const timer = window.setTimeout(() => setDeleteSuccess(false), 5000)
+      return () => window.clearTimeout(timer)
+    }
+  }, [searchParams, router])
+
   const handleDealUpdate = (id: string, patch: Record<string, unknown>) => {
     setAdRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
     if (patch.status === 'completed') {
@@ -104,6 +120,11 @@ function CreatorDashboard() {
 
   return (
     <div>
+      {deleteSuccess && (
+        <div className="mb-6 rounded-xl p-4 bg-green-500/10 border border-green-500/30 text-green-300 text-sm">
+          ✓ Канал успешно удалён
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
         <h1 className="text-2xl font-bold text-white">Мои каналы</h1>
         <Link

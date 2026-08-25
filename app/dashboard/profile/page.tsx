@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import UserAvatar from '../components/UserAvatar'
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null)
@@ -109,7 +110,7 @@ export default function ProfilePage() {
   )
 
   return (
-    <div style={{ maxWidth: '680px' }}>
+    <div>
 
       {/* ── PROFILE HEADER ── */}
       <div style={{
@@ -124,19 +125,13 @@ export default function ProfilePage() {
 
           {/* Avatar */}
           <div style={{ position: 'relative', flexShrink: 0 }}>
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="avatar"
-                style={{ width: '96px', height: '96px', borderRadius: '50%',
-                  objectFit: 'cover', border: '3px solid rgba(255,255,255,0.15)' }} />
-            ) : (
-              <div style={{ width: '96px', height: '96px', borderRadius: '50%',
-                backgroundColor: 'var(--accent-primary, #9333ea)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'white', fontSize: '38px', fontWeight: '700',
-                border: '3px solid rgba(255,255,255,0.15)' }}>
-                {user.email?.[0].toUpperCase()}
-              </div>
-            )}
+            <UserAvatar
+              src={avatarUrl}
+              name={fullName || user.email}
+              size={96}
+              frameColor={profile?.avatar_frame_color}
+              borderWidth={3}
+            />
 
             {/* Admin crown */}
             {profile?.is_admin && (

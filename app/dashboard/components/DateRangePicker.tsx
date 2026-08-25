@@ -1,17 +1,20 @@
 'use client'
 
 import { formatPeriodLabel } from '@/lib/subscriptions'
+import type { CSSProperties } from 'react'
 
 export default function DateRangePicker({
   from,
   to,
   onChange,
   disabled,
+  style,
 }: {
   from: string
   to: string
   onChange: (from: string, to: string) => void
   disabled?: boolean
+  style?: CSSProperties
 }) {
   const fromDate = from ? new Date(from) : new Date()
   const toDate = to ? new Date(to) : new Date()
@@ -24,6 +27,7 @@ export default function DateRangePicker({
         borderRadius: '14px',
         padding: '16px 20px',
         marginBottom: '16px',
+        ...style,
       }}
     >
       <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '10px' }}>

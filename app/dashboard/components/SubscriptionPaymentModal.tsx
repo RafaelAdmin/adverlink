@@ -26,11 +26,29 @@ export default function SubscriptionPaymentModal({
   onClose,
   onConfirm,
   saving,
+  title = 'Подписка Pro',
+  subtitle = 'Безопасная оплата через AdverLink Pay',
+  price = PRO_PRICE_EUR,
+  pricePeriod = '/мес',
+  priceHint = 'Pro · ежемесячно',
+  priceNote = 'Отмена в любой момент',
+  payButtonLabel,
+  successTitle = 'Подписка активирована!',
+  successMessage = 'Добро пожаловать в Pro',
 }: {
   open: boolean
   onClose: () => void
   onConfirm: () => void | Promise<void | boolean>
   saving?: boolean
+  title?: string
+  subtitle?: string
+  price?: number
+  pricePeriod?: string
+  priceHint?: string
+  priceNote?: string
+  payButtonLabel?: string
+  successTitle?: string
+  successMessage?: string
 }) {
   const [step, setStep] = useState<PaymentStep>('form')
   const [method, setMethod] = useState<PaymentMethod>('card')
@@ -74,6 +92,8 @@ export default function SubscriptionPaymentModal({
     })()
   }, [step])
 
+  const resolvedPayLabel = payButtonLabel ?? `Оплатить €${price}${pricePeriod}`
+
   if (!open) return null
 
   const cardDigits = cardNumber.replace(/\s/g, '')
@@ -116,8 +136,8 @@ export default function SubscriptionPaymentModal({
             <>
               <div className="flex items-start justify-between gap-4 mb-5">
                 <div>
-                  <h2 className="text-white text-lg font-bold">Подписка Pro</h2>
-                  <p className="text-white/50 text-sm mt-1">Безопасная оплата через AdverLink Pay</p>
+                  <h2 className="text-white text-lg font-bold">{title}</h2>
+                  <p className="text-white/50 text-sm mt-1">{subtitle}</p>
                 </div>
                 <button type="button" onClick={handleClose} className="text-white/40 hover:text-white text-xl leading-none" aria-label="Закрыть">
                   ×
@@ -131,9 +151,9 @@ export default function SubscriptionPaymentModal({
                   border: '1px solid color-mix(in srgb, var(--accent-primary, #9333ea) 35%, transparent)',
                 }}
               >
-                <p className="text-white/50 text-xs uppercase tracking-wide mb-1">Pro · ежемесячно</p>
-                <p className="text-white text-2xl font-bold">€{PRO_PRICE_EUR}/мес</p>
-                <p className="text-white/40 text-xs mt-1">Отмена в любой момент</p>
+                <p className="text-white/50 text-xs uppercase tracking-wide mb-1">{priceHint}</p>
+                <p className="text-white text-2xl font-bold">€{price}{pricePeriod}</p>
+                {priceNote && <p className="text-white/40 text-xs mt-1">{priceNote}</p>}
               </div>
 
               <div className="flex gap-2 mb-5 p-1 rounded-xl bg-white/5 border border-white/10">
@@ -184,7 +204,7 @@ export default function SubscriptionPaymentModal({
 
               <div className="flex flex-col gap-3">
                 <button type="button" disabled={!canPay} className="btn-accent w-full text-white rounded-xl py-3 text-sm font-semibold disabled:opacity-40" onClick={handlePay}>
-                  Оплатить €{PRO_PRICE_EUR}/мес
+                  {resolvedPayLabel}
                 </button>
                 <button type="button" onClick={handleClose} style={{ ...dealBtn.dispute, width: '100%', flex: 'unset' }}>
                   Отмена
@@ -206,8 +226,8 @@ export default function SubscriptionPaymentModal({
           {step === 'success' && (
             <div className="py-8 px-4 text-center">
               <div className="text-5xl mb-4">✓</div>
-              <h2 className="text-white text-lg font-bold mb-2">Подписка активирована!</h2>
-              <p className="text-white/50 text-sm">Добро пожаловать в Pro</p>
+              <h2 className="text-white text-lg font-bold mb-2">{successTitle}</h2>
+              <p className="text-white/50 text-sm">{successMessage}</p>
             </div>
           )}
         </div>

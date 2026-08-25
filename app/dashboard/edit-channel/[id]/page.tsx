@@ -15,6 +15,8 @@ export default function EditChannelPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [isPro, setIsPro] = useState(false)
   const router = useRouter()
   const params = useParams()
@@ -74,6 +76,28 @@ export default function EditChannelPage() {
     setSaving(false)
     if (error) setError(error.message)
     else setSuccess(true)
+  }
+
+  const handleDelete = async () => {
+    if (!channel || !ownerId) return
+    setDeleting(true)
+    setError(null)
+
+    const { error: deleteError } = await supabase
+      .from('channels')
+      .delete()
+      .eq('id', channel.id)
+      .eq('owner_id', ownerId)
+
+    setDeleting(false)
+
+    if (deleteError) {
+      setError(deleteError.message)
+      setShowDeleteConfirm(false)
+      return
+    }
+
+    router.push('/dashboard?channelDeleted=1')
   }
 
   if (loading) return (
@@ -214,6 +238,92 @@ export default function EditChannelPage() {
       <div style={{ marginTop: '24px' }}>
         <ProReportGenerator channel={channel} isPro={isPro} />
       </div>
+
+      <div
+        style={{
+          marginTop: '48px',
+          paddingTop: '32px',
+          borderTop: '1px solid rgba(239,68,68,0.15)',
+        }}
+      >
+        <h2 style={{ color: '#f87171', fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>
+          Опасная зона
+        </h2>
+        <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px', marginBottom: '16px', lineHeight: 1.5 }}>
+          Удаление канала необратимо. Все заявки и сделки по этому каналу будут удалены без возможности восстановления.
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowDeleteConfirm(true)}
+          style={{
+            background: 'rgba(239,68,68,0.12)',
+            border: '1px solid rgba(239,68,68,0.35)',
+            color: '#f87171',
+            borderRadius: '12px',
+            padding: '10px 20px',
+            fontSize: '14px',
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          Удалить канал
+        </button>
+      </div>
+
+      {showDeleteConfirm && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80]"
+            onClick={() => !deleting && setShowDeleteConfirm(false)}
+            aria-hidden
+          />
+          <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 pointer-events-none">
+            <div
+              role="dialog"
+              aria-modal="true"
+              className="pointer-events-auto w-full max-w-md bg-[#12101f] border border-red-500/30 rounded-2xl p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, marginBottom: '12px' }}>
+                Удалить канал навсегда?
+              </h3>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', lineHeight: 1.6, marginBottom: '20px' }}>
+                Это действие необратимо. Канал «{channel.name}» и{' '}
+                <strong style={{ color: 'rgba(255,255,255,0.85)' }}>вся история сделок и заявок</strong> по нему
+                будут удалены из базы без возможности восстановления.
+              </p>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="border border-white/20 text-white/70 rounded-xl px-4 py-2 text-sm"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={handleDelete}
+                  style={{
+                    background: '#dc2626',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '8px 16px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: deleting ? 'not-allowed' : 'pointer',
+                    opacity: deleting ? 0.7 : 1,
+                  }}
+                >
+                  {deleting ? 'Удаление...' : 'Да, удалить'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

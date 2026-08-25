@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from '../layout'
+import UserAvatar from './UserAvatar'
 
 interface ProfileCardProps {
   user: any
@@ -24,7 +25,7 @@ interface ProfileCardProps {
 export default function ProfileCard({ user, role, onClose }: ProfileCardProps) {
   const router = useRouter()
   const supabase = createClient()
-  const { avatarUrl: contextAvatarUrl } = useDashboard()
+  const { avatarUrl: contextAvatarUrl, avatarFrameColor: contextFrameColor } = useDashboard()
   const cardRef = useRef<HTMLDivElement>(null)
 
   const [loading, setLoading] = useState(true)
@@ -39,8 +40,10 @@ export default function ProfileCard({ user, role, onClose }: ProfileCardProps) {
   const [subscriptionPlan, setSubscriptionPlan] = useState('free')
   const [isAdmin, setIsAdmin] = useState(false)
   const [isFounder, setIsFounder] = useState(false)
+  const [avatarFrameColor, setAvatarFrameColor] = useState<string | null>(null)
 
   const displayAvatar = avatarUrl || contextAvatarUrl
+  const displayFrameColor = avatarFrameColor || contextFrameColor
 
   const avgRating =
     reviews.length > 0
@@ -67,6 +70,7 @@ export default function ProfileCard({ user, role, onClose }: ProfileCardProps) {
       setSubscriptionPlan(profile.subscription_plan || 'free')
       setIsAdmin(profile.is_admin || false)
       setIsFounder(profile.is_founder || false)
+      setAvatarFrameColor(profile.avatar_frame_color || null)
     }
 
     setLoading(false)
@@ -268,27 +272,13 @@ export default function ProfileCard({ user, role, onClose }: ProfileCardProps) {
                       : {}
                   }
                 >
-                  {displayAvatar ? (
-                    <img
-                      src={displayAvatar + '?t=' + new Date().getMinutes()}
-                      alt="avatar"
-                      className="w-20 h-20 rounded-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none'
-                        const fallback = e.currentTarget.nextElementSibling as HTMLElement
-                        if (fallback) fallback.style.display = 'flex'
-                      }}
-                    />
-                  ) : null}
-                  <div
-                    className="w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl font-bold"
-                    style={{
-                      backgroundColor: 'var(--accent-primary)',
-                      display: displayAvatar ? 'none' : 'flex',
-                    }}
-                  >
-                    {user.email?.[0].toUpperCase()}
-                  </div>
+                  <UserAvatar
+                    src={displayAvatar}
+                    name={fullName || user.email}
+                    size={80}
+                    frameColor={displayFrameColor}
+                    borderWidth={3}
+                  />
                 </div>
               </div>
 

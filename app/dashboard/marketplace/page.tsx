@@ -21,7 +21,7 @@ export default function DashboardMarketplacePage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [userId, setUserId] = useState('')
-  const [creatorTab, setCreatorTab] = useState<'mine' | 'campaigns'>('mine')
+  const [creatorTab, setCreatorTab] = useState<'mine' | 'campaigns'>('campaigns')
   const [myAdRequests, setMyAdRequests] = useState<any[]>([])
   const [activeCampaigns, setActiveCampaigns] = useState<any[]>([])
   const [userChannels, setUserChannels] = useState<any[]>([])

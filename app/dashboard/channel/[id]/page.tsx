@@ -67,7 +67,7 @@ export default function ChannelProfilePage() {
 
   if (error || !channel) {
     return (
-      <div style={{ maxWidth: '680px' }}>
+      <div>
         <Link
           href="/dashboard/marketplace"
           className="text-white/50 hover:text-white transition text-sm mb-8 inline-flex items-center gap-2"
@@ -107,7 +107,7 @@ export default function ChannelProfilePage() {
   ]
 
   return (
-    <div style={{ maxWidth: '680px' }}>
+    <div>
       <Link
         href="/dashboard/marketplace"
         className="text-white/50 hover:text-white transition text-sm mb-6 inline-flex items-center gap-2"

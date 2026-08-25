@@ -4,6 +4,12 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from '../layout'
 import SubscriptionPaymentModal from '../components/SubscriptionPaymentModal'
+import UserAvatar from '../components/UserAvatar'
+import {
+  AVATAR_FRAME_OPTIONS,
+  AVATAR_FRAME_PRICE_EUR,
+  type AvatarFrameColorId,
+} from '@/lib/avatar-frame'
 import {
   FREE_CAMPAIGN_LIMIT,
   FREE_CHANNEL_LIMIT,
@@ -44,12 +50,28 @@ const PRO_ADVERTISER_FEATURES = [
   'Расширенная аналитика кампаний',
 ]
 
+const BUSINESS_FEATURES = [
+  'Всё из плана Pro',
+  'API ключи для интеграций',
+  'Автопостинг через Telegram бота',
+  'Мультиаккаунт (до 5 пользователей)',
+  'Приоритетная поддержка 24/7',
+  'Персональный менеджер',
+  'Кастомная аналитика',
+  'White label (ваш бренд)',
+]
+
 export default function SubscriptionsPage() {
-  const { role, isPro, refreshPlan } = useDashboard()
+  const { role, isPro, refreshPlan, avatarUrl, avatarFrameColor } = useDashboard()
   const [plan, setPlan] = useState('free')
   const [loading, setLoading] = useState(true)
   const [showPayment, setShowPayment] = useState(false)
+  const [showFramePayment, setShowFramePayment] = useState(false)
   const [subscribing, setSubscribing] = useState(false)
+  const [buyingFrame, setBuyingFrame] = useState(false)
+  const [selectedFrame, setSelectedFrame] = useState<AvatarFrameColorId>('blue')
+  const [currentFrame, setCurrentFrame] = useState<string | null>(null)
+  const [userName, setUserName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
 
@@ -60,15 +82,17 @@ export default function SubscriptionsPage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('subscription_plan, is_admin')
+        .select('subscription_plan, is_admin, avatar_frame_color, full_name, username')
         .eq('id', user.id)
         .single()
 
       setPlan(isProPlan(profile?.subscription_plan, profile?.is_admin) ? 'pro' : 'free')
+      setCurrentFrame(profile?.avatar_frame_color || avatarFrameColor || null)
+      setUserName(profile?.full_name || profile?.username || user.email?.split('@')[0] || 'U')
       setLoading(false)
     }
     load()
-  }, [isPro])
+  }, [isPro, avatarFrameColor])
 
   const handleSubscribe = async () => {
     setSubscribing(true)
@@ -92,6 +116,31 @@ export default function SubscriptionsPage() {
     }
   }
 
+  const handleBuyFrame = async () => {
+    setBuyingFrame(true)
+    setError(null)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Не авторизован')
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_frame_color: selectedFrame })
+        .eq('id', user.id)
+
+      if (updateError) throw new Error(updateError.message)
+
+      setCurrentFrame(selectedFrame)
+      window.dispatchEvent(new CustomEvent('adverlink-avatar-frame-updated'))
+      return true
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка покупки')
+      return false
+    } finally {
+      setBuyingFrame(false)
+    }
+  }
+
   const proFeatures = role === 'creator' ? PRO_CREATOR_FEATURES : PRO_ADVERTISER_FEATURES
   const activePro = plan === 'pro' || isPro
 
@@ -100,7 +149,7 @@ export default function SubscriptionsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <SubscriptionPaymentModal
         open={showPayment}
         onClose={() => setShowPayment(false)}
@@ -110,6 +159,26 @@ export default function SubscriptionsPage() {
           return ok
         }}
         saving={subscribing}
+      />
+
+      <SubscriptionPaymentModal
+        open={showFramePayment}
+        onClose={() => setShowFramePayment(false)}
+        onConfirm={async () => {
+          const ok = await handleBuyFrame()
+          if (ok) setShowFramePayment(false)
+          return ok
+        }}
+        saving={buyingFrame}
+        title="Рамка для аватарки"
+        subtitle="Разовая покупка — цветная обводка вокруг вашего аватара"
+        price={AVATAR_FRAME_PRICE_EUR}
+        pricePeriod=""
+        priceHint="Разовая покупка"
+        priceNote="Рамка отображается в профиле и топбаре"
+        payButtonLabel={`Купить за €${AVATAR_FRAME_PRICE_EUR}`}
+        successTitle="Рамка активирована!"
+        successMessage="Цветная рамка добавлена к вашему аватару"
       />
 
       <h1 className="text-2xl font-bold text-white mb-2">Подписки</h1>
@@ -135,7 +204,7 @@ export default function SubscriptionsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <div className={`bg-white/5 border rounded-2xl p-6 ${!activePro ? 'border-white/20' : 'border-white/10 opacity-80'}`}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-white font-semibold text-lg">Free</h3>
@@ -196,9 +265,119 @@ export default function SubscriptionsPage() {
             </button>
           )}
         </div>
+
+        <div
+          className="rounded-2xl p-6 relative"
+          style={{
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            opacity: 0.7,
+            filter: 'grayscale(30%)',
+          }}
+        >
+          <span
+            className="absolute top-4 right-4 text-[11px] font-bold tracking-wider uppercase"
+            style={{
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              color: 'rgba(255,255,255,0.4)',
+              padding: '4px 10px',
+              borderRadius: '20px',
+            }}
+          >
+            Скоро
+          </span>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              Бизнес
+            </h3>
+            <span className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
+              €80/мес
+            </span>
+          </div>
+          <p className="text-xs mb-4" style={{ color: 'rgba(255,255,255,0.25)' }}>
+            Для агентств и крупных рекламодателей
+          </p>
+          <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)', margin: '0 0 16px' }} />
+          <ul className="space-y-2 mb-6">
+            {BUSINESS_FEATURES.map((f) => (
+              <li key={f} className="text-sm flex items-start gap-2" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✓</span>
+                {f}
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            disabled
+            className="w-full rounded-xl py-3 text-sm font-semibold cursor-not-allowed"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              color: 'rgba(255,255,255,0.25)',
+            }}
+          >
+            Скоро доступно
+          </button>
+        </div>
       </div>
 
       <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8">
+        <h2 className="text-white font-semibold mb-2">Рамка для аватарки</h2>
+        <p className="text-white/50 text-sm mb-6">
+          Выберите цвет рамки вокруг вашего аватара — €{AVATAR_FRAME_PRICE_EUR} за разовую покупку
+        </p>
+
+        <div className="flex flex-wrap items-center gap-8">
+          <UserAvatar
+            src={avatarUrl}
+            name={userName}
+            size={80}
+            frameColor={currentFrame || selectedFrame}
+            borderWidth={4}
+          />
+
+          <div className="flex gap-4">
+            {AVATAR_FRAME_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setSelectedFrame(option.id)}
+                title={option.label}
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  background: option.color,
+                  border:
+                    selectedFrame === option.id
+                      ? '3px solid white'
+                      : '3px solid rgba(255,255,255,0.2)',
+                  cursor: 'pointer',
+                  boxShadow: selectedFrame === option.id ? `0 0 0 2px ${option.color}` : 'none',
+                }}
+                aria-label={option.label}
+              />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowFramePayment(true)}
+            className="btn-accent text-white rounded-full px-5 py-2.5 text-sm font-medium"
+          >
+            Купить — €{AVATAR_FRAME_PRICE_EUR}
+          </button>
+        </div>
+
+        {currentFrame && (
+          <p className="text-green-400 text-sm mt-4">
+            ✓ Активная рамка: {AVATAR_FRAME_OPTIONS.find((o) => o.id === currentFrame)?.label}
+          </p>
+        )}
+      </div>
+
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
         <h2 className="text-white font-semibold mb-3 flex items-center gap-2">
           <i className="ti ti-info-circle text-white/50" />
           Об аналитике соцсетей
@@ -211,48 +390,6 @@ export default function SubscriptionsPage() {
           закрытых API — вы можете добавлять каналы и работать со сделками, но автоматические отчёты
           по охватам для этих платформ не генерируются.
         </p>
-      </div>
-
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-        <h2 className="text-white font-semibold mb-4">Сравнение лимитов</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-white/40 text-left border-b border-white/10">
-                <th className="pb-3 pr-4 font-medium">Функция</th>
-                <th className="pb-3 pr-4 font-medium">Free</th>
-                <th className="pb-3 font-medium">Pro</th>
-              </tr>
-            </thead>
-            <tbody className="text-white/70">
-              <tr className="border-b border-white/5">
-                <td className="py-3 pr-4">Каналы</td>
-                <td className="py-3 pr-4">{FREE_CHANNEL_LIMIT}</td>
-                <td className="py-3 text-green-400">∞</td>
-              </tr>
-              <tr className="border-b border-white/5">
-                <td className="py-3 pr-4">Кампании / месяц</td>
-                <td className="py-3 pr-4">{FREE_CAMPAIGN_LIMIT}</td>
-                <td className="py-3 text-green-400">∞</td>
-              </tr>
-              <tr className="border-b border-white/5">
-                <td className="py-3 pr-4">Сделки</td>
-                <td className="py-3 pr-4 text-green-400">∞</td>
-                <td className="py-3 text-green-400">∞</td>
-              </tr>
-              <tr className="border-b border-white/5">
-                <td className="py-3 pr-4">Отзывы</td>
-                <td className="py-3 pr-4 text-green-400">∞</td>
-                <td className="py-3 text-green-400">∞</td>
-              </tr>
-              <tr>
-                <td className="py-3 pr-4">Отчёты за период</td>
-                <td className="py-3 pr-4 text-white/30">—</td>
-                <td className="py-3 text-green-400">Excel / PDF</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   )

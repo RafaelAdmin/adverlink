@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase'
 import { useDashboard } from '../layout'
 import type { Channel } from '@/lib/database.types'
 import DateRangePicker from '../components/DateRangePicker'
+import FilterDropdown from '../components/FilterDropdown'
 import {
   defaultReportRange,
   filterByDateRange,
@@ -703,32 +704,21 @@ export default function AnalyticsPage() {
         <p className="text-white/50 mb-8">Детальные отчёты по вашим каналам</p>
 
         {channels.length > 1 && (
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '24px', maxWidth: '420px' }}>
             <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '8px' }}>
               Канал для анализа
             </label>
-            <select
+            <FilterDropdown
               value={selectedChannelId}
-              onChange={(e) => setSelectedChannelId(e.target.value)}
-              style={{
-                width: '100%',
-                maxWidth: '420px',
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: '12px',
-                padding: '10px 14px',
-                color: 'white',
-                fontSize: '14px',
-                outline: 'none',
-                colorScheme: 'dark',
-              }}
-            >
-              {channels.map((ch) => (
-                <option key={ch.id} value={ch.id}>
-                  {ch.name}
-                </option>
-              ))}
-            </select>
+              onChange={setSelectedChannelId}
+              fullWidth
+              size="md"
+              minWidth={280}
+              options={channels.map((ch) => ({
+                value: ch.id,
+                label: ch.name,
+              }))}
+            />
           </div>
         )}
 
