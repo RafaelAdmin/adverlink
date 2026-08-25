@@ -755,6 +755,216 @@ body {
   align-items: center;
 }
 
+/* Hero channel carousel */
+.landing-hero-carousel {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  height: min(520px, 70vh);
+  min-height: 400px;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 10%, #000 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 10%, #000 90%, transparent 100%);
+}
+
+.landing-carousel-column {
+  overflow: hidden;
+  height: 100%;
+}
+
+.landing-carousel-column--center {
+  margin-top: -36px;
+}
+
+.landing-carousel-track {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  will-change: transform;
+}
+
+.landing-carousel-track--down {
+  animation: landing-carousel-down 32s linear infinite;
+}
+
+.landing-carousel-track--up {
+  animation: landing-carousel-up 28s linear infinite;
+}
+
+@keyframes landing-carousel-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(-50%); }
+}
+
+@keyframes landing-carousel-up {
+  from { transform: translateY(-50%); }
+  to { transform: translateY(0); }
+}
+
+.landing-channel-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 14px;
+  flex-shrink: 0;
+}
+
+.landing-channel-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.landing-channel-card__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.landing-channel-card__platform {
+  font-size: 9px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.landing-channel-card__title-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.landing-channel-card__name {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.landing-channel-card__handle {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.landing-channel-card__verified {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.landing-channel-card__pro {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(234, 179, 8, 0.15);
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  color: #fbbf24;
+  flex-shrink: 0;
+}
+
+.landing-channel-card__desc {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 11px;
+  line-height: 1.45;
+  margin: 0 0 10px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 32px;
+}
+
+.landing-channel-card__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.landing-channel-card__stats div {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 6px 4px;
+  text-align: center;
+}
+
+.landing-channel-card__stats strong {
+  display: block;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.landing-channel-card__stats span {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 9px;
+}
+
+.landing-channel-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.landing-channel-card__price {
+  color: var(--accent-primary, #7c3aed);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.landing-channel-card__cta {
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent-primary, #7c3aed);
+  padding: 5px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-carousel-track--down,
+  .landing-carousel-track--up {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .landing-hero-carousel {
+    height: 360px;
+    min-height: 320px;
+  }
+
+  .landing-carousel-column--center {
+    margin-top: 0;
+  }
+}
+
 .landing-badge {
   display: inline-block;
   padding: 6px 14px;

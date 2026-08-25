@@ -2,15 +2,18 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
+import HeroChannelCarousel from './HeroChannelCarousel'
 
 function LandingScreenshot({
   src,
   alt,
   minHeight = '320px',
+  objectPosition = 'top center',
 }: {
   src: string
   alt: string
   minHeight?: string
+  objectPosition?: string
 }) {
   return (
     <div
@@ -32,7 +35,7 @@ function LandingScreenshot({
           height: '100%',
           minHeight,
           objectFit: 'cover',
-          objectPosition: 'top center',
+          objectPosition,
           display: 'block',
         }}
       />
@@ -190,11 +193,7 @@ export default function Home() {
               <div className="landing-stat"><strong>98%</strong><span>успешных</span></div>
             </div>
           </div>
-          <LandingScreenshot
-            src="/landing/screenshot-1.png"
-            alt="Маркетплейс AdverLink"
-            minHeight="400px"
-          />
+          <HeroChannelCarousel />
         </div>
       </section>
 
