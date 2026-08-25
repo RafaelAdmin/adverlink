@@ -3,10 +3,39 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 
-function ProductPlaceholder({ className = '', minHeight = '320px' }: { className?: string; minHeight?: string }) {
+function LandingScreenshot({
+  src,
+  alt,
+  minHeight = '320px',
+}: {
+  src: string
+  alt: string
+  minHeight?: string
+}) {
   return (
-    <div className={`product-placeholder ${className}`} style={{ minHeight }}>
-      [ Скриншот продукта ]
+    <div
+      className="landing-screenshot"
+      style={{
+        minHeight,
+        borderRadius: '16px',
+        overflow: 'hidden',
+        border: '1px solid rgba(255,255,255,0.12)',
+        boxShadow: '0 24px 64px rgba(0,0,0,0.35)',
+        background: 'rgba(255,255,255,0.04)',
+      }}
+    >
+      <img
+        src={src}
+        alt={alt}
+        style={{
+          width: '100%',
+          height: '100%',
+          minHeight,
+          objectFit: 'cover',
+          objectPosition: 'top center',
+          display: 'block',
+        }}
+      />
     </div>
   )
 }
@@ -116,10 +145,10 @@ const painPoints = [
 const solutionPoints = ['Каталог верифицированных каналов', 'Безопасные сделки с защитой', 'Прозрачная аналитика']
 
 const features = [
-  { title: 'Управляй каналами в одном месте', desc: 'Добавляй Telegram и YouTube, проходи верификацию, получай запросы и веди все сделки в едином дашборде.', pro: false, reverse: false },
-  { title: 'Аналитика Pro — отчёты за любой период', desc: 'Скачивай Excel и PDF отчёты с историей сделок, доходами и охватами за любой выбранный период.', pro: true, reverse: true },
-  { title: 'Кампании с несколькими каналами', desc: 'Запускай одну кампанию сразу на несколько каналов — создатели откликаются сами, вы выбираете лучших.', pro: false, reverse: false },
-  { title: 'Настрой платформу под себя', desc: 'Переключай роли рекламодатель/создатель, настраивай профиль, получай Pro-значок и приоритет в поиске.', pro: false, reverse: true },
+  { title: 'Управляй каналами в одном месте', desc: 'Добавляй Telegram и YouTube, проходи верификацию, получай запросы и веди все сделки в едином дашборде.', pro: false, reverse: false, image: '/landing/screenshot-2.png', imageAlt: 'Мои каналы в AdverLink' },
+  { title: 'Аналитика Pro — отчёты за любой период', desc: 'Скачивай Excel и PDF отчёты с историей сделок, доходами и охватами за любой выбранный период.', pro: true, reverse: true, image: '/landing/screenshot-3.png', imageAlt: 'Аналитика канала' },
+  { title: 'Кампании с несколькими каналами', desc: 'Запускай одну кампанию сразу на несколько каналов — создатели откликаются сами, вы выбираете лучших.', pro: false, reverse: false, image: '/landing/screenshot-6.png', imageAlt: 'Мои кампании' },
+  { title: 'Настрой платформу под себя', desc: 'Переключай роли рекламодатель/создатель, настраивай профиль, получай Pro-значок и приоритет в поиске.', pro: false, reverse: true, image: '/landing/screenshot-5.png', imageAlt: 'Настройки и кастомизация' },
 ]
 
 // TODO: Replace with real testimonials
@@ -142,8 +171,8 @@ export default function Home() {
       <section id="hero" className="landing-section landing-hero">
         <div className="landing-container landing-hero-grid">
           <div>
-            <div className="landing-badge">🇦🇲 №1 маркетплейс Telegram-рекламы в Армении</div>
-            <h1 className="landing-hero-title">Реклама в Telegram — без переписок, без рисков</h1>
+            <div className="landing-badge">🇦🇲 №1 маркетплейс для рекламы в социальных сетях</div>
+            <h1 className="landing-hero-title">Реклама в социальных сетях — без переписок, без рисков</h1>
             <p className="landing-hero-subtitle">
               AdverLink соединяет владельцев каналов с рекламодателями. Верифицированные каналы,
               безопасные сделки, реальная аналитика.
@@ -161,13 +190,17 @@ export default function Home() {
               <div className="landing-stat"><strong>98%</strong><span>успешных</span></div>
             </div>
           </div>
-          <ProductPlaceholder minHeight="400px" />
+          <LandingScreenshot
+            src="/landing/screenshot-1.png"
+            alt="Маркетплейс AdverLink"
+            minHeight="400px"
+          />
         </div>
       </section>
 
       <section className="landing-section">
         <div className="landing-container">
-          <h2 className="landing-section-title">Как сейчас выглядит реклама в Telegram</h2>
+          <h2 className="landing-section-title">Как сейчас выглядит реклама в социальных сетях</h2>
           <div className="landing-cards-grid">
             {painPoints.map((card) => (
               <div key={card.title} className="landing-glass-card landing-pain-card">
@@ -184,7 +217,10 @@ export default function Home() {
         <div className="landing-container">
           <h2 className="landing-section-title">AdverLink решает всё это</h2>
           <div className="landing-split">
-            <ProductPlaceholder />
+            <LandingScreenshot
+              src="/landing/screenshot-4.png"
+              alt="Страница канала в AdverLink"
+            />
             <div className="landing-solution-points">
               {solutionPoints.map((point) => (
                 <div key={point} className="landing-solution-point">
@@ -208,7 +244,11 @@ export default function Home() {
                 <h3 className="landing-feature-title">{f.title}</h3>
                 <p className="landing-card-desc">{f.desc}</p>
               </div>
-              <ProductPlaceholder minHeight="280px" />
+              <LandingScreenshot
+                src={f.image}
+                alt={f.imageAlt}
+                minHeight="280px"
+              />
             </div>
           ))}
         </div>
