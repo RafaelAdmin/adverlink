@@ -44,6 +44,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -51,6 +52,7 @@ export default function LoginPage() {
     setMode(next)
     setError('')
     setSuccess('')
+    if (next !== 'register') setAgreedToTerms(false)
   }
 
   const handleGoogleLogin = async () => {
@@ -87,6 +89,11 @@ export default function LoginPage() {
       if (signInError) setError('Неверный email или пароль')
       else router.push('/dashboard')
     } else {
+      if (!agreedToTerms) {
+        setError('Нужно принять условия использования')
+        setLoading(false)
+        return
+      }
       const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -504,12 +511,64 @@ export default function LoginPage() {
               </div>
             )}
 
-            {mode === 'register' && <div style={{ marginBottom: '6px' }} />}
+            {mode === 'register' && (
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '10px',
+                  marginBottom: '16px',
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  style={{
+                    marginTop: '2px',
+                    width: '16px',
+                    height: '16px',
+                    flexShrink: 0,
+                    accentColor: 'var(--accent-primary, #9333ea)',
+                    cursor: 'pointer',
+                  }}
+                />
+                <span
+                  style={{
+                    color: 'rgba(255,255,255,0.45)',
+                    fontSize: '13px',
+                    lineHeight: '1.5',
+                  }}
+                >
+                  Я согласен с{' '}
+                  <a
+                    href="/legal/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ color: 'rgba(255,255,255,0.65)', textDecoration: 'underline' }}
+                  >
+                    Условиями использования
+                  </a>{' '}
+                  и{' '}
+                  <a
+                    href="/legal/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ color: 'rgba(255,255,255,0.65)', textDecoration: 'underline' }}
+                  >
+                    Политикой конфиденциальности
+                  </a>
+                </span>
+              </label>
+            )}
 
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={loading}
+              disabled={loading || (mode === 'register' && !agreedToTerms)}
               style={{
                 width: '100%',
                 backgroundColor: 'var(--accent-primary, #9333ea)',
@@ -519,41 +578,14 @@ export default function LoginPage() {
                 padding: '13px',
                 fontSize: '15px',
                 fontWeight: '600',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.7 : 1,
+                cursor: loading || (mode === 'register' && !agreedToTerms) ? 'not-allowed' : 'pointer',
+                opacity: loading || (mode === 'register' && !agreedToTerms) ? 0.7 : 1,
                 transition: 'all 0.2s',
                 marginBottom: '16px',
               }}
             >
               {mainButtonLabel}
             </button>
-
-            {mode === 'register' && (
-              <p
-                style={{
-                  color: 'rgba(255,255,255,0.2)',
-                  fontSize: '11px',
-                  textAlign: 'center',
-                  lineHeight: '1.5',
-                  marginBottom: '16px',
-                }}
-              >
-                Регистрируясь, вы соглашаетесь с{' '}
-                <a
-                  href="/legal/terms"
-                  style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'underline' }}
-                >
-                  Условиями использования
-                </a>{' '}
-                и{' '}
-                <a
-                  href="/legal/privacy"
-                  style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'underline' }}
-                >
-                  Политикой конфиденциальности
-                </a>
-              </p>
-            )}
 
             <p
               style={{
