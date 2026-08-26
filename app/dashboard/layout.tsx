@@ -170,7 +170,7 @@ function LockedAnalyticsItem({ onNavigate }: { onNavigate: () => void }) {
 function RoleToggle({ role, onToggle }: { role: Role; onToggle: () => void }) {
   const isCreator = role === 'creator'
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }} data-testid="role-switch" data-active-role={role}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: !isCreator ? 'white' : 'rgba(255,255,255,0.35)', transition: 'color 0.2s', flexShrink: 0 }}>
           <path d="M18 8a3 3 0 0 1 0 6" />
@@ -193,6 +193,13 @@ function RoleToggle({ role, onToggle }: { role: Role; onToggle: () => void }) {
 
       <button
         type="button"
+        data-testid="role-switch-toggle"
+        aria-label={
+          isCreator
+            ? 'Роль: создатель. Переключить на рекламодателя'
+            : 'Роль: рекламодатель. Переключить на создателя'
+        }
+        aria-pressed={isCreator}
         onClick={onToggle}
         style={{
           position: 'relative',

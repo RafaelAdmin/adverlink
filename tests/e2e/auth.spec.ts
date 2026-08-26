@@ -9,26 +9,23 @@ test.describe('Authenticated flows', () => {
 
   test('role switch toggles creator/advertiser labels', async ({ page }) => {
     await page.goto('/dashboard')
-    await expect(page.getByText('Рекламодатель').first()).toBeVisible()
-    await expect(page.getByText('Создатель').first()).toBeVisible()
 
-    const advertiserLabel = page.locator('.topbar-role-label', { hasText: 'Рекламодатель' })
-    const creatorLabel = page.locator('.topbar-role-label', { hasText: 'Создатель' })
+    const roleSwitch = page.getByTestId('role-switch')
+    const roleToggle = page.getByTestId('role-switch-toggle')
 
-    const advertiserWeight = await advertiserLabel.evaluate((el) => getComputedStyle(el).fontWeight)
-    expect(Number(advertiserWeight)).toBeGreaterThanOrEqual(600)
-
-    const roleToggle = page
-      .locator('div')
-      .filter({ has: page.getByText('Рекламодатель', { exact: true }) })
-      .filter({ has: page.getByText('Создатель', { exact: true }) })
-      .locator('button')
-      .first()
+    await expect(roleSwitch).toBeVisible()
+    await expect(roleSwitch).toHaveAttribute('data-active-role', 'advertiser')
+    await expect(roleToggle).toHaveAttribute('aria-pressed', 'false')
 
     await roleToggle.click()
 
-    const creatorWeight = await creatorLabel.evaluate((el) => getComputedStyle(el).fontWeight)
-    expect(Number(creatorWeight)).toBeGreaterThanOrEqual(600)
+    await expect(roleSwitch).toHaveAttribute('data-active-role', 'creator')
+    await expect(roleToggle).toHaveAttribute('aria-pressed', 'true')
+
+    await roleToggle.click()
+
+    await expect(roleSwitch).toHaveAttribute('data-active-role', 'advertiser')
+    await expect(roleToggle).toHaveAttribute('aria-pressed', 'false')
   })
 
   test('marketplace filters interact without crashing', async ({ page }) => {
