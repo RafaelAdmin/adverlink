@@ -65,6 +65,16 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
+## Testing & QA
+
+See **[QA.md](./QA.md)** for unit tests, Playwright E2E, CI pipeline, and required environment variables.
+
+```bash
+npm test          # Vitest unit tests
+npm run typecheck # TypeScript
+npm run test:e2e  # Playwright (run `npm run build` first)
+```
+
 ## Environment Variables
 
 ```
