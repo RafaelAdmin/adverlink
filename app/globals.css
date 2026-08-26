@@ -756,6 +756,22 @@ body {
 }
 
 /* Hero channel carousel */
+.landing-hero-carousel-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.landing-hero-carousel-label {
+  margin: 0;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+}
+
 .landing-hero-carousel {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1289,6 +1305,44 @@ body {
   font-size: 0.75rem;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.landing-pricing-soon {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.landing-pricing-waitlist {
+  margin-top: 12px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.35);
+  text-align: center;
+}
+
+.landing-pricing-waitlist a {
+  color: rgba(255, 255, 255, 0.5);
+  text-decoration: underline;
+}
+
+.landing-btn--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.landing-logo--footer {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
 }
 
 .landing-pricing-name {

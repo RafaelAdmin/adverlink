@@ -90,14 +90,14 @@ function LandingNavbar() {
 
 const advertiserSteps = [
   { num: '1', icon: '🔍', title: 'Найди канал', desc: 'Фильтруй по тематике, подписчикам, цене и ER. Только верифицированные каналы.' },
-  { num: '2', icon: '📨', title: 'Отправь запрос', desc: 'Оплата резервируется на платформе. Создатель видит запрос и принимает решение.' },
-  { num: '3', icon: '✅', title: 'Получи результат', desc: 'Создатель публикует рекламу, вы проверяете — деньги переводятся после подтверждения.' },
+  { num: '2', icon: '📨', title: 'Отправь запрос', desc: 'Создатель видит запрос в платформе и принимает решение.' },
+  { num: '3', icon: '✅', title: 'Получи результат', desc: 'Создатель публикует рекламу, вы подтверждаете результат в платформе.' },
 ]
 
 const creatorSteps = [
   { num: '1', icon: '📱', title: 'Добавь канал', desc: 'Подключи Telegram или YouTube. Пройди верификацию и укажи цену за рекламу.' },
   { num: '2', icon: '📬', title: 'Получай заказы', desc: 'Рекламодатели находят ваш канал в маркетплейсе и отправляют запросы напрямую.' },
-  { num: '3', icon: '💰', title: 'Получай оплату', desc: 'Выполни заказ, отправь proof — средства поступают после подтверждения рекламодателем.' },
+  { num: '3', icon: '💰', title: 'Заверши сделку', desc: 'Выполни заказ, отправь proof — сделка завершается после подтверждения рекламодателем.' },
 ]
 
 function HowItWorksSection() {
@@ -145,20 +145,13 @@ const painPoints = [
   { icon: '❓', title: 'Не знаешь что покупаешь', desc: 'Накрученные подписчики, фейковые охваты, устаревшая статистика — рискуешь бюджетом вслепую.' },
 ]
 
-const solutionPoints = ['Каталог верифицированных каналов', 'Безопасные сделки с защитой', 'Прозрачная аналитика']
+const solutionPoints = ['Каталог верифицированных каналов', 'Safe Deal — скоро', 'Прозрачная аналитика']
 
 const features = [
   { title: 'Управляй каналами в одном месте', desc: 'Добавляй Telegram и YouTube, проходи верификацию, получай запросы и веди все сделки в едином дашборде.', pro: false, reverse: false, image: '/landing/screenshot-2.png', imageAlt: 'Мои каналы в AdverLink' },
   { title: 'Аналитика Pro — отчёты за любой период', desc: 'Скачивай Excel и PDF отчёты с историей сделок, доходами и охватами за любой выбранный период.', pro: true, reverse: true, image: '/landing/screenshot-3.png', imageAlt: 'Аналитика канала' },
   { title: 'Кампании с несколькими каналами', desc: 'Запускай одну кампанию сразу на несколько каналов — создатели откликаются сами, вы выбираете лучших.', pro: false, reverse: false, image: '/landing/screenshot-6.png', imageAlt: 'Мои кампании' },
   { title: 'Настрой платформу под себя', desc: 'Переключай роли рекламодатель/создатель, настраивай профиль, получай Pro-значок и приоритет в поиске.', pro: false, reverse: true, image: '/landing/screenshot-5.png', imageAlt: 'Настройки и кастомизация' },
-]
-
-// TODO: Replace with real testimonials
-const testimonials = [
-  { name: 'Арам П.', role: 'Владелец канала', text: '«Раньше тратил часы на поиск рекламодателей в чатах. Теперь заказы приходят сами через AdverLink — удобно и прозрачно.»' },
-  { name: 'Маринэ С.', role: 'Маркетолог, Ереван', text: '«Наконец-то можно покупать рекламу с гарантией. Вижу статистику канала, оплата через платформу — спокойно за бюджет.»' },
-  { name: 'Гагик А.', role: 'Владелец бизнеса', text: '«Запустил кампанию на 5 каналов за один день. Все сделки в одном месте, отчёты понятные. Рекомендую.»' },
 ]
 
 export default function Home() {
@@ -174,24 +167,17 @@ export default function Home() {
       <section id="hero" className="landing-section landing-hero">
         <div className="landing-container landing-hero-grid">
           <div>
-            <div className="landing-badge">🇦🇲 №1 маркетплейс для рекламы в социальных сетях</div>
-            <h1 className="landing-hero-title">Реклама в социальных сетях — без переписок, без рисков</h1>
+            <div className="landing-badge">🇦🇲 Маркетплейс рекламы для создателей и брендов в Армении</div>
+            <h1 className="landing-hero-title">Реклама в социальных сетях — проще и прозрачнее</h1>
             <p className="landing-hero-subtitle">
-              AdverLink соединяет владельцев каналов с рекламодателями. Верифицированные каналы,
-              безопасные сделки, реальная аналитика.
+              AdverLink соединяет рекламодателей и создателей контента в одном месте: поиск, аналитика,
+              верификация, сделки и отзывы.
             </p>
             <div className="landing-hero-buttons">
               <Link href="/auth/login" className="landing-btn landing-btn--accent">Найти каналы →</Link>
               <Link href="/auth/login" className="landing-btn landing-btn--outline">Добавить канал</Link>
             </div>
             <p className="landing-hero-note">🏆 Первые 50 каналов получают Pro навсегда</p>
-            <div className="landing-stats">
-              <div className="landing-stat"><strong>500+</strong><span>каналов</span></div>
-              <div className="landing-stat-divider" />
-              <div className="landing-stat"><strong>1,200+</strong><span>сделок</span></div>
-              <div className="landing-stat-divider" />
-              <div className="landing-stat"><strong>98%</strong><span>успешных</span></div>
-            </div>
           </div>
           <HeroChannelCarousel />
         </div>
@@ -273,6 +259,7 @@ export default function Home() {
             </div>
             <div className="landing-glass-card landing-pricing-card landing-pricing-card--pro">
               <span className="landing-pricing-recommend">Рекомендуем</span>
+              <span className="landing-pricing-soon">Скоро</span>
               <h3 className="landing-pricing-name">Pro</h3>
               <div className="landing-pricing-price">€18<span>/месяц</span></div>
               <p className="landing-pricing-year">или €144/год (скидка 33%)</p>
@@ -285,7 +272,17 @@ export default function Home() {
                 <CheckItem>Excel / PDF отчёты</CheckItem>
                 <CheckItem>0% комиссия платформы</CheckItem>
               </ul>
-              <Link href="/auth/login" className="landing-btn landing-btn--accent landing-btn--full">Попробовать Pro</Link>
+              <button
+                type="button"
+                disabled
+                className="landing-btn landing-btn--outline landing-btn--full landing-btn--disabled"
+              >
+                Скоро
+              </button>
+              <p className="landing-pricing-waitlist">
+                Оплата Pro скоро будет доступна.{' '}
+                <a href="mailto:support@adverlink.am">support@adverlink.am</a>
+              </p>
             </div>
             <div
               className="landing-pricing-card landing-pricing-card--business"
@@ -378,28 +375,9 @@ export default function Home() {
 
       <section className="landing-section">
         <div className="landing-container">
-          {/* TODO: Replace with real testimonials */}
-          <h2 className="landing-section-title">Что говорят пользователи</h2>
-          <div className="landing-cards-grid">
-            {testimonials.map((t) => (
-              <div key={t.name} className="landing-glass-card landing-review-card">
-                <div className="landing-stars">★★★★★</div>
-                <p className="landing-review-text">{t.text}</p>
-                <div className="landing-review-author">
-                  <strong>{t.name}</strong>
-                  <span>{t.role}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="landing-section">
-        <div className="landing-container">
           <div className="landing-final-cta">
             <h2 className="landing-final-title">Готов начать?</h2>
-            <p className="landing-final-subtitle">Присоединяйся к сотням создателей и рекламодателей Армении</p>
+            <p className="landing-final-subtitle">Присоединяйся к создателям и рекламодателям в Армении</p>
             <div className="landing-hero-buttons landing-hero-buttons--center">
               <Link href="/auth/login" className="landing-btn landing-btn--accent">Добавить канал бесплатно →</Link>
               <Link href="/auth/login" className="landing-btn landing-btn--outline-light">Найти каналы</Link>
@@ -413,8 +391,8 @@ export default function Home() {
         <div className="landing-container">
           <div className="landing-footer-grid">
             <div>
-              <div className="landing-logo">Adver<span>Link</span></div>
-              <p className="landing-footer-tagline">Маркетплейс Telegram-рекламы в Армении</p>
+              <div className="landing-logo landing-logo--footer">AdverLink</div>
+              <p className="landing-footer-tagline">Маркетплейс рекламы для создателей и брендов в Армении</p>
               <div className="landing-social">
                 <a href="https://t.me/adverlink" target="_blank" rel="noopener noreferrer" aria-label="Telegram">
                   <i className="ti ti-brand-telegram" />

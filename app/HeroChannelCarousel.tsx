@@ -191,8 +191,6 @@ function LandingChannelCard({ channel }: { channel: MockChannel }) {
           <div className="landing-channel-card__name">{channel.name}</div>
           <div className="landing-channel-card__handle">{channel.handle}</div>
         </div>
-        {channel.verified && <span className="landing-channel-card__verified">✓</span>}
-        {channel.pro && <span className="landing-channel-card__pro">PRO</span>}
       </div>
 
       <p className="landing-channel-card__desc">{channel.description}</p>
@@ -251,10 +249,13 @@ function rotateChannels(offset: number): MockChannel[] {
 
 export default function HeroChannelCarousel() {
   return (
-    <div className="landing-hero-carousel" aria-hidden>
-      <CarouselColumn channels={rotateChannels(0)} direction="down" />
-      <CarouselColumn channels={rotateChannels(3)} direction="up" centered />
-      <CarouselColumn channels={rotateChannels(6)} direction="down" />
+    <div className="landing-hero-carousel-wrap">
+      <p className="landing-hero-carousel-label">Примеры карточек каналов</p>
+      <div className="landing-hero-carousel" aria-label="Примеры карточек каналов в маркетплейсе">
+        <CarouselColumn channels={rotateChannels(0)} direction="down" />
+        <CarouselColumn channels={rotateChannels(3)} direction="up" centered />
+        <CarouselColumn channels={rotateChannels(6)} direction="down" />
+      </div>
     </div>
   )
 }
