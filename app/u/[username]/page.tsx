@@ -21,6 +21,7 @@ export default function PublicProfilePage() {
   const [channels, setChannels] = useState<any[]>([])
   const [reviews, setReviews] = useState<any[]>([])
   const [campaigns, setCampaigns] = useState<any[]>([])
+  const [completedDeals, setCompletedDeals] = useState(0)
   const [shareToast, setShareToast] = useState(false)
 
   useEffect(() => {
@@ -60,9 +61,29 @@ export default function PublicProfilePage() {
           .eq('status', 'active'),
       ])
 
-      setChannels(channelsRes.data || [])
+      const channels = channelsRes.data || []
+      const channelIds = channels.map((c) => c.id)
+
+      let dealsCount = 0
+      if (channelIds.length > 0) {
+        const { count: creatorCount } = await supabase
+          .from('ad_requests')
+          .select('*', { count: 'exact', head: true })
+          .in('channel_id', channelIds)
+          .eq('status', 'completed')
+        dealsCount += creatorCount || 0
+      }
+      const { count: advertiserCount } = await supabase
+        .from('ad_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('advertiser_id', profileData.id)
+        .eq('status', 'completed')
+      dealsCount += advertiserCount || 0
+
+      setChannels(channels)
       setReviews(reviewsRes.data || [])
       setCampaigns(campaignsRes.data || [])
+      setCompletedDeals(dealsCount)
       setLoading(false)
     }
 
@@ -124,7 +145,7 @@ export default function PublicProfilePage() {
       ? (reviews.reduce((s, r) => s + (Number(r.rating) || 0), 0) / reviews.length).toFixed(1)
       : null
   const totalSubs = channels.reduce((s, c) => s + (Number(c.subscriber_count) || 0), 0)
-  const levelBadge = getLevelBadge(profile.level_deals || 0)
+  const levelBadge = getLevelBadge(completedDeals)
   const hasVerifiedChannel = channels.some((c) => c.is_verified || c.verification_status === 'verified')
   const displayName = profile.full_name || profile.username || 'Пользователь'
 

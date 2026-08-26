@@ -7,6 +7,7 @@ import { getChannelHandle } from '@/lib/channel-helpers'
 import PlatformBadge from '../PlatformBadge'
 import VerifiedBadge from '../VerifiedBadge'
 import ChannelAvatar from './ChannelAvatar'
+import { formatEngagementRate } from '@/lib/channel-metrics'
 
 export default function ChannelCard({
   channel,
@@ -21,6 +22,8 @@ export default function ChannelCard({
 }) {
   const convertChannelPrice = (price: number, fromCurrency: string = 'USD'): string =>
     formatConvertedPrice(price, fromCurrency, displayCurrency, rates, 'По запросу')
+
+  const engagementLabel = formatEngagementRate(channel.subscriber_count, channel.avg_views)
 
   return (
     <Link
@@ -115,10 +118,17 @@ export default function ChannelCard({
             </div>
             <div className="text-white/40 text-xs">охваты</div>
           </div>
-          <div className="bg-white/5 rounded-xl p-2 text-center">
-            <div className="text-white text-sm font-semibold">{channel.engagement_rate || 0}%</div>
-            <div className="text-white/40 text-xs">вовлечённость</div>
-          </div>
+          {engagementLabel ? (
+            <div className="bg-white/5 rounded-xl p-2 text-center">
+              <div className="text-white text-sm font-semibold">{engagementLabel}</div>
+              <div className="text-white/40 text-xs">ER</div>
+            </div>
+          ) : (
+            <div className="bg-white/5 rounded-xl p-2 text-center">
+              <div className="text-white/30 text-sm font-semibold">—</div>
+              <div className="text-white/40 text-xs">ER</div>
+            </div>
+          )}
         </div>
 
         <div style={{ flex: 1 }} />

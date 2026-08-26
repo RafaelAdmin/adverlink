@@ -22,6 +22,7 @@ export default function UserProfileCard({ profileId, onClose }: UserProfileCardP
   const [channels, setChannels] = useState<Channel[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
   const [campaigns, setCampaigns] = useState<any[]>([])
+  const [completedDeals, setCompletedDeals] = useState(0)
   const [friendshipStatus, setFriendshipStatus] = useState<'none' | 'friends' | 'sent' | 'received'>('none')
   const [loading, setLoading] = useState(true)
 
@@ -54,9 +55,28 @@ export default function UserProfileCard({ profileId, onClose }: UserProfileCardP
       ])
 
       setProfile(profileRes.data as Profile) // TODO: strict type
-      setChannels((channelsRes.data || []) as Channel[]) // TODO: strict type
+      const channels = (channelsRes.data || []) as Channel[]
+      setChannels(channels)
       setReviews((reviewsRes.data || []) as Review[]) // TODO: strict type
       setCampaigns(campaignsRes.data || [])
+
+      const channelIds = channels.map((c) => c.id)
+      let dealsCount = 0
+      if (channelIds.length > 0) {
+        const { count: creatorCount } = await supabase
+          .from('ad_requests')
+          .select('*', { count: 'exact', head: true })
+          .in('channel_id', channelIds)
+          .eq('status', 'completed')
+        dealsCount += creatorCount || 0
+      }
+      const { count: advertiserCount } = await supabase
+        .from('ad_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('advertiser_id', profileId)
+        .eq('status', 'completed')
+      dealsCount += advertiserCount || 0
+      setCompletedDeals(dealsCount)
 
       const friendship = friendshipRes.data?.[0]
       if (friendship) {
@@ -75,7 +95,7 @@ export default function UserProfileCard({ profileId, onClose }: UserProfileCardP
       ? (reviews.reduce((s, r) => s + (Number(r.rating) || 0), 0) / reviews.length).toFixed(1)
       : null
 
-  const levelBadge = profile ? getLevelBadge(profile.level_deals || 0) : null
+  const levelBadge = profile ? getLevelBadge(completedDeals) : null
 
   return (
     <div

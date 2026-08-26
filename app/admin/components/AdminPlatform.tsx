@@ -116,71 +116,48 @@ export default function AdminPlatform({
             <span className="text-white font-bold">{platformStats.completedDeals}</span>
           </div>
           <div className="text-white/50 col-span-2">
-            Общий оборот:{' '}
+            Сумма завершённых сделок (бюджеты):{' '}
             <span className="text-green-400 font-bold text-lg">
-              ${platformStats.totalRevenue.toLocaleString()}
+              {platformStats.totalRevenue.toLocaleString('ru-RU')} AMD
             </span>
           </div>
         </div>
       </div>
 
       <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-        <h2 className="text-white font-semibold mb-4">Системные настройки</h2>
+        <h2 className="text-white font-semibold mb-2">Системные настройки</h2>
+        <p className="text-white/40 text-sm mb-4">
+          Глобальные переключатели платформы будут доступны после запуска серверной конфигурации.
+        </p>
+        <div
+          className="rounded-xl p-4 mb-4"
+          style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)' }}
+        >
+          <p className="text-yellow-400/90 text-sm font-medium mb-1">Скоро</p>
+          <p className="text-white/50 text-xs leading-relaxed">
+            Текущие переключатели сохранялись только в браузере администратора и не влияли на платформу.
+            До подключения серверных настроек они отключены.
+          </p>
+        </div>
         {[
-          {
-            key: 'registrationOpen' as const,
-            label: 'Регистрация открыта',
-            storage: 'adverlink_reg_open',
-          },
-          {
-            key: 'channelVerification' as const,
-            label: 'Верификация каналов',
-            storage: 'adverlink_verify_channels',
-          },
-          {
-            key: 'campaignCreation' as const,
-            label: 'Создание кампаний',
-            storage: 'adverlink_create_campaigns',
-          },
+          { label: 'Регистрация открыта' },
+          { label: 'Верификация каналов' },
+          { label: 'Создание кампаний' },
         ].map((item) => (
           <div
-            key={item.key}
-            className="flex justify-between items-center py-3 border-b border-white/5"
+            key={item.label}
+            className="flex justify-between items-center py-3 border-b border-white/5 opacity-50"
           >
             <span className="text-white text-sm">{item.label}</span>
-            <button
-              type="button"
-              onClick={() =>
-                onPlatformSettingsChange({
-                  ...platformSettings,
-                  [item.key]: !platformSettings[item.key],
-                })
-              }
-              className="relative w-11 h-6 rounded-full transition-colors"
-              style={{
-                background: platformSettings[item.key]
-                  ? '#ef4444'
-                  : 'rgba(255,255,255,0.15)',
-              }}
+            <span
+              className="relative w-11 h-6 rounded-full"
+              style={{ background: 'rgba(255,255,255,0.1)' }}
+              aria-hidden
             >
-              <span
-                className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
-                style={{
-                  transform: platformSettings[item.key]
-                    ? 'translateX(20px)'
-                    : 'translateX(0)',
-                }}
-              />
-            </button>
+              <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-white/40 rounded-full shadow" />
+            </span>
           </div>
         ))}
-        <button
-          type="button"
-          onClick={onSavePlatformSettings}
-          className="mt-4 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/20 rounded-xl px-6 py-2.5 text-sm font-medium"
-        >
-          Сохранить настройки
-        </button>
       </div>
     </>
   )

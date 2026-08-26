@@ -77,7 +77,7 @@ export default function VerifyChannelPage() {
     const youtube = channel.platform === 'youtube'
 
     setVerifying(true)
-    setStep(3)
+    setStep(isYoutube ? 3 : 2)
     setVerificationResult(null)
 
     try {
@@ -115,9 +115,8 @@ export default function VerifyChannelPage() {
         { num: 3, label: 'Проверка' },
       ]
     : [
-        { num: 1, label: 'Добавить бота' },
-        { num: 2, label: 'Добавить код' },
-        { num: 3, label: 'Проверка' },
+        { num: 1, label: 'Добавить код' },
+        { num: 2, label: 'Проверка' },
       ]
 
   return (
@@ -174,7 +173,7 @@ export default function VerifyChannelPage() {
                 {s.label}
               </span>
             </div>
-            {i < 2 && (
+            {i < stepLabels.length - 1 && (
               <div
                 style={{
                   flex: 1,
@@ -188,114 +187,6 @@ export default function VerifyChannelPage() {
           </Fragment>
         ))}
       </div>
-
-      {step === 1 && isTelegram && (
-        <div style={glassCard}>
-          <h2 className="text-white font-semibold text-lg mb-5">Шаг 1: Добавьте нашего бота в канал</h2>
-
-          <div
-            style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '16px',
-              padding: '20px',
-              marginBottom: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-            }}
-          >
-            <div
-              className="avatar-accent-fallback"
-              style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <i className="ti ti-brand-telegram" style={{ fontSize: '24px', color: 'white' }} />
-            </div>
-            <div>
-              <div style={{ color: 'white', fontWeight: '600', fontSize: '15px' }}>@adverlink_bot</div>
-              <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginTop: '4px' }}>
-                Добавьте @adverlink_bot как администратора канала
-              </div>
-            </div>
-          </div>
-
-          <ol style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: '2', marginBottom: '20px', paddingLeft: '20px' }}>
-            <li>Откройте ваш канал {channelHandle} в Telegram</li>
-            <li>Перейдите в Настройки канала → Администраторы</li>
-            <li>Нажмите &quot;Добавить администратора&quot;</li>
-            <li>Найдите @adverlink_bot и добавьте его</li>
-            <li>Достаточно прав &quot;Просмотр сообщений&quot;</li>
-          </ol>
-
-          <a
-            href="https://t.me/adverlink_bot"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              background: 'rgba(37,99,235,0.2)',
-              border: '1px solid rgba(37,99,235,0.4)',
-              color: '#60a5fa',
-              borderRadius: '12px',
-              padding: '10px 16px',
-              fontSize: '14px',
-              textDecoration: 'none',
-              marginBottom: '20px',
-            }}
-          >
-            <i className="ti ti-brand-telegram" />
-            Открыть @adverlink_bot
-          </a>
-
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              cursor: 'pointer',
-              color: 'rgba(255,255,255,0.7)',
-              fontSize: '14px',
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={step1Confirmed}
-              onChange={(e) => setStep1Confirmed(e.target.checked)}
-              style={{ width: '18px', height: '18px', accentColor: 'var(--accent-primary, #9333ea)' }}
-            />
-            Я добавил бота как администратора
-          </label>
-
-          <button
-            type="button"
-            onClick={() => setStep(2)}
-            disabled={!step1Confirmed}
-            style={{
-              marginTop: '20px',
-              backgroundColor: step1Confirmed ? 'var(--accent-primary, #9333ea)' : 'rgba(255,255,255,0.1)',
-              color: step1Confirmed ? 'white' : 'rgba(255,255,255,0.3)',
-              border: 'none',
-              borderRadius: '14px',
-              padding: '12px 24px',
-              fontSize: '14px',
-              cursor: step1Confirmed ? 'pointer' : 'not-allowed',
-              width: '100%',
-            }}
-          >
-            Далее →
-          </button>
-        </div>
-      )}
 
       {step === 1 && isYoutube && (
         <div style={glassCard}>
@@ -403,12 +294,12 @@ export default function VerifyChannelPage() {
         </div>
       )}
 
-      {step === 2 && (
+      {((step === 1 && isTelegram) || (step === 2 && isYoutube)) && (
         <div style={glassCard}>
           <h2 className="text-white font-semibold text-lg mb-5">
             {isYoutube
               ? 'Шаг 2: Добавьте код в описание YouTube канала'
-              : 'Шаг 2: Добавьте код верификации в описание канала'}
+              : 'Шаг 1: Добавьте код верификации в описание канала'}
           </h2>
 
           <div
@@ -453,6 +344,24 @@ export default function VerifyChannelPage() {
             </button>
           </div>
 
+          {isTelegram && (
+            <div
+              style={{
+                background: 'rgba(59,130,246,0.1)',
+                border: '1px solid rgba(59,130,246,0.2)',
+                borderRadius: '12px',
+                padding: '12px 16px',
+                marginBottom: '16px',
+              }}
+            >
+              <p style={{ color: '#93c5fd', fontSize: '13px', margin: 0 }}>
+                Поддерживаются только публичные Telegram-каналы с @username. Приватные каналы не
+                поддерживаются. Верификация проверяет код в описании канала — бот-администратор не
+                требуется.
+              </p>
+            </div>
+          )}
+
           {isTelegram ? (
             <ol style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: '2', marginBottom: '20px', paddingLeft: '20px' }}>
               <li>Откройте ваш канал {channelHandle} в Telegram</li>
@@ -493,22 +402,24 @@ export default function VerifyChannelPage() {
           </div>
 
           <div style={{ display: 'flex', gap: '12px' }}>
-            <button
-              type="button"
-              onClick={() => setStep(1)}
-              style={{
-                flex: 1,
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: 'white',
-                borderRadius: '14px',
-                padding: '12px 24px',
-                fontSize: '14px',
-                cursor: 'pointer',
-              }}
-            >
-              ← Назад
-            </button>
+            {isYoutube && (
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                style={{
+                  flex: 1,
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  color: 'white',
+                  borderRadius: '14px',
+                  padding: '12px 24px',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                }}
+              >
+                ← Назад
+              </button>
+            )}
             <button
               type="button"
               onClick={handleVerify}
@@ -529,7 +440,7 @@ export default function VerifyChannelPage() {
         </div>
       )}
 
-      {step === 3 && (
+      {((step === 2 && isTelegram) || (step === 3 && isYoutube)) && (
         <div style={glassCard}>
           {verifying && (
             <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -558,11 +469,29 @@ export default function VerifyChannelPage() {
               <h2 style={{ color: 'white', fontSize: '24px', fontWeight: '700', marginBottom: '8px' }}>
                 {isYoutube ? 'YouTube канал верифицирован!' : 'Канал верифицирован!'}
               </h2>
-              <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '24px' }}>
+              <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '16px' }}>
                 {isYoutube
                   ? `${channel.name} (${channelHandle}) успешно подтверждён`
                   : `${channelHandle} успешно подтверждён`}
               </p>
+              {isTelegram && (
+                <div
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '12px',
+                    padding: '14px 16px',
+                    marginBottom: '24px',
+                    textAlign: 'left',
+                  }}
+                >
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', margin: 0, lineHeight: 1.6 }}>
+                    <strong style={{ color: 'white' }}>Аналитика (опционально):</strong> подключение
+                    @adverlink_bot для расширенной статистики будет доступно позже. Для верификации
+                    владения бот не нужен.
+                  </p>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => router.push('/dashboard')}
@@ -600,7 +529,7 @@ export default function VerifyChannelPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setStep(2)
+                    setStep(isYoutube ? 2 : 1)
                     setVerificationResult(null)
                   }}
                   style={{

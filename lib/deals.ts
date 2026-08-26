@@ -42,7 +42,7 @@ export function getDealStatusBadge(status: string) {
   const s = normalizeDealStatus(status)
   const map: Record<DealStatus, { label: string; bg: string; color: string }> = {
     new: { label: 'Новый', bg: 'rgba(234,179,8,0.15)', color: '#fbbf24' },
-    payment_pending: { label: '💳 Оплата зарезервирована', bg: 'rgba(234,179,8,0.2)', color: '#fbbf24' },
+    payment_pending: { label: 'Beta: ожидает ответа', bg: 'rgba(234,179,8,0.2)', color: '#fbbf24' },
     accepted: { label: 'Принят', bg: 'rgba(34,197,94,0.15)', color: '#4ade80' },
     in_progress: { label: 'В работе', bg: 'rgba(59,130,246,0.15)', color: '#60a5fa' },
     submitted: { label: 'На проверке', bg: 'rgba(147,51,234,0.15)', color: '#a78bfa' },
@@ -90,7 +90,7 @@ export function getCreatorSteps(status: string) {
   const pastNew = !['new', 'rejected', 'cancelled'].includes(s)
   return [
     { label: 'Получен', done: true },
-    { label: 'Оплата', done: ['payment_pending', 'accepted', 'in_progress', 'submitted', 'completed', 'disputed', 'resolved_creator', 'resolved_advertiser'].includes(s) },
+    { label: 'Заявка', done: ['payment_pending', 'accepted', 'in_progress', 'submitted', 'completed', 'disputed', 'resolved_creator', 'resolved_advertiser'].includes(s) },
     { label: 'Принят', done: pastNew && s !== 'payment_pending' },
     { label: 'В работе', done: ['in_progress', 'submitted', 'completed', 'disputed', 'resolved_creator', 'resolved_advertiser'].includes(s) },
     { label: 'Завершён', done: ['completed', 'resolved_creator', 'resolved_advertiser'].includes(s) },
@@ -101,7 +101,7 @@ export function getAdvertiserSteps(status: string) {
   const s = normalizeDealStatus(status)
   return [
     { label: 'Отправлен', done: true },
-    { label: 'Оплата', done: s !== 'new' },
+    { label: 'Заявка', done: s !== 'new' },
     { label: 'Принят', done: !['new', 'payment_pending', 'rejected', 'cancelled'].includes(s) },
     { label: 'На проверке', done: ['submitted', 'completed', 'disputed', 'resolved_creator', 'resolved_advertiser'].includes(s) },
     { label: 'Завершён', done: ['completed', 'resolved_creator', 'resolved_advertiser'].includes(s) },

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { Channel } from '@/lib/database.types'
 import DateRangePicker from './DateRangePicker'
 import { defaultReportRange } from '@/lib/subscriptions'
+import { formatEngagementRate } from '@/lib/channel-metrics'
 
 interface ProReportGeneratorProps {
   channel: Channel
@@ -69,7 +70,7 @@ export default function ProReportGenerator({ channel, isPro }: ProReportGenerato
       ['СТАТИСТИКА', ''],
       ['Подписчиков', tg?.subscriber_count || channelData.subscriber_count || 0],
       ['Средние охваты', channelData.avg_views || 0],
-      ['Вовлечённость (ER)', (channelData.engagement_rate || 0) + '%'],
+      ['Вовлечённость (ER)', formatEngagementRate(channelData.subscriber_count, channelData.avg_views) ?? '—'],
       ['Цена рекламы', (channelData.ad_price || 0) + ' ' + (channelData.ad_price_currency || 'USD')],
       ['Статус верификации', channelData.is_verified ? 'Верифицирован ✓' : 'На проверке'],
       ['', ''],
@@ -77,8 +78,8 @@ export default function ProReportGenerator({ channel, isPro }: ProReportGenerato
       ['Всего запросов', stats.totalRequests],
       ['Завершённых сделок', stats.completedDeals],
       ['Ожидают ответа', stats.pendingDeals],
-      ['Общий доход', stats.totalRevenue + ' USD'],
-      ['Средняя сделка', stats.avgDealValue.toFixed(2) + ' USD'],
+      ['Общий доход', stats.totalRevenue + ' AMD'],
+      ['Средняя сделка', stats.avgDealValue.toFixed(2) + ' AMD'],
     ]
 
     const ws1 = XLSX.utils.aoa_to_sheet(overviewData)
@@ -89,7 +90,7 @@ export default function ProReportGenerator({ channel, isPro }: ProReportGenerato
       new Date(r.created_at).toLocaleDateString('ru-RU'),
       r.advertiser_name || '—',
       r.advertiser_contact || '—',
-      (r.budget || 0) + ' USD',
+      (r.budget || 0) + ' AMD',
       r.status === 'completed'
         ? 'Завершена'
         : r.status === 'new'
@@ -134,6 +135,7 @@ export default function ProReportGenerator({ channel, isPro }: ProReportGenerato
     const platformBg = platform === 'youtube' ? '#fef2f2' : '#eff6ff'
     const platformColor = platform === 'youtube' ? '#dc2626' : '#2563eb'
     const platformBorder = platform === 'youtube' ? '#fecaca' : '#bfdbfe'
+    const erLabel = formatEngagementRate(channelData.subscriber_count, channelData.avg_views) ?? '—'
 
     const formatStatus = (status: string) => {
       const map: Record<string, { label: string; bg: string; color: string }> = {
@@ -368,7 +370,7 @@ export default function ProReportGenerator({ channel, isPro }: ProReportGenerato
             </div>
             <div class="card">
               <div class="card-label">Вовлечённость</div>
-              <div class="card-value">${channelData.engagement_rate || 0}%</div>
+              <div class="card-value">${erLabel}</div>
             </div>
             <div class="card">
               <div class="card-label">Цена рекламы</div>

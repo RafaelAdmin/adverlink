@@ -117,7 +117,7 @@ export default function RequestAdPage() {
         message: message.trim(),
         budget: Number(budget),
         status: 'payment_pending',
-        payment_status: 'reserved',
+        payment_status: 'manual',
         advertiser_id: authUser?.id || null,
         advertiser_email: authUser?.email || advertiserContact,
         updated_at: now,
@@ -170,6 +170,9 @@ export default function RequestAdPage() {
         }}
         budget={budget}
         channel={channel}
+        title="Отправить заявку"
+        subtitle="Beta: оплата согласуется напрямую с создателем"
+        confirmLabel="Отправить заявку"
         saving={submitting}
       />
 
@@ -188,10 +191,10 @@ export default function RequestAdPage() {
         <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
           <div className="text-4xl mb-4">✓</div>
           <p className="text-white font-medium mb-2">
-            Запрос отправлен! Оплата зарезервирована.
+            Запрос отправлен!
           </p>
           <p className="text-white/50 text-sm">
-            Владелец канала увидит ваш запрос и сможет принять заказ.
+            Владелец канала увидит ваш запрос. Оплату стороны согласуют напрямую (Beta).
           </p>
         </div>
       ) : (

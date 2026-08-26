@@ -12,6 +12,7 @@ import {
   formatPeriodLabel,
   parseReportRange,
 } from '@/lib/subscriptions'
+import { formatEngagementRate } from '@/lib/channel-metrics'
 
 async function generateExcel(data: any) {
   const XLSX = await import('xlsx')
@@ -38,7 +39,7 @@ async function generateExcel(data: any) {
     ['СТАТИСТИКА', ''],
     ['Подписчиков', tg?.subscriber_count || channelData.subscriber_count || 0],
     ['Средние охваты', channelData.avg_views || 0],
-    ['Вовлечённость (ER)', (channelData.engagement_rate || 0) + '%'],
+    ['Вовлечённость (ER)', formatEngagementRate(channelData.subscriber_count, channelData.avg_views) ?? '—'],
     ['Цена рекламы', (channelData.ad_price || 0) + ' ' + (channelData.ad_price_currency || 'USD')],
     ['Статус верификации', channelData.is_verified ? 'Верифицирован ✓' : 'На проверке'],
     ['', ''],
@@ -46,8 +47,8 @@ async function generateExcel(data: any) {
     ['Всего запросов', stats.totalRequests],
     ['Завершённых сделок', stats.completedDeals],
     ['Ожидают ответа', stats.pendingDeals],
-    ['Общий доход', stats.totalRevenue + ' USD'],
-    ['Средняя сделка', stats.avgDealValue.toFixed(2) + ' USD'],
+    ['Общий доход', stats.totalRevenue + ' AMD'],
+    ['Средняя сделка', stats.avgDealValue.toFixed(2) + ' AMD'],
   ]
 
   const ws1 = XLSX.utils.aoa_to_sheet(overviewData)
@@ -58,7 +59,7 @@ async function generateExcel(data: any) {
     new Date(r.created_at).toLocaleDateString('ru-RU'),
     r.advertiser_name || '—',
     r.advertiser_contact || '—',
-    (r.budget || 0) + ' USD',
+    (r.budget || 0) + ' AMD',
     r.status === 'completed'
       ? 'Завершена'
       : r.status === 'new'
@@ -101,6 +102,7 @@ async function generatePDF(data: any) {
   const platform = channelData.platform || 'telegram'
   const platformLabel = platform === 'youtube' ? 'YouTube' : platform === 'instagram' ? 'Instagram' : platform === 'tiktok' ? 'TikTok' : 'Telegram'
   const platformBg = platform === 'youtube' ? '#fef2f2' : '#eff6ff'
+  const erLabel = formatEngagementRate(channelData.subscriber_count, channelData.avg_views) ?? '—'
   const platformColor = platform === 'youtube' ? '#dc2626' : '#2563eb'
   const platformBorder = platform === 'youtube' ? '#fecaca' : '#bfdbfe'
 
@@ -193,15 +195,15 @@ async function generatePDF(data: any) {
         <div class="grid">
           <div class="card"><div class="card-label">Подписчиков</div><div class="card-value">${(tg?.subscriber_count || channelData.subscriber_count || 0).toLocaleString('ru-RU')}</div></div>
           <div class="card"><div class="card-label">Средние охваты</div><div class="card-value">${(channelData.avg_views || 0).toLocaleString('ru-RU')}</div></div>
-          <div class="card"><div class="card-label">Вовлечённость</div><div class="card-value">${channelData.engagement_rate || 0}%</div></div>
+          <div class="card"><div class="card-label">Вовлечённость</div><div class="card-value">${erLabel}</div></div>
           <div class="card"><div class="card-label">Цена рекламы</div><div class="card-value small">${(channelData.ad_price || 0).toLocaleString('ru-RU')} ${channelData.ad_price_currency || 'USD'}</div></div>
         </div>
         <h2>Рекламная активность</h2>
         <div class="grid">
           <div class="card"><div class="card-label">Всего запросов</div><div class="card-value">${stats.totalRequests}</div></div>
           <div class="card"><div class="card-label">Завершённых сделок</div><div class="card-value">${stats.completedDeals}</div></div>
-          <div class="card"><div class="card-label">Общий доход</div><div class="card-value">$${stats.totalRevenue.toLocaleString('ru-RU')}</div></div>
-          <div class="card"><div class="card-label">Средняя сделка</div><div class="card-value">$${Math.round(stats.avgDealValue).toLocaleString('ru-RU')}</div></div>
+          <div class="card"><div class="card-label">Общий доход</div><div class="card-value">${stats.totalRevenue.toLocaleString('ru-RU')} AMD</div></div>
+          <div class="card"><div class="card-label">Средняя сделка</div><div class="card-value">${Math.round(stats.avgDealValue).toLocaleString('ru-RU')} AMD</div></div>
         </div>
         <h2>История сделок</h2>
         <table>
@@ -258,7 +260,7 @@ async function generateAdvertiserExcel(data: any) {
   const dealRows = (data.requests || []).map((r: any) => [
     new Date(r.created_at).toLocaleDateString('ru-RU'),
     r.channel_name || '—',
-    (r.budget || 0) + ' USD',
+    (r.budget || 0) + ' AMD',
     r.reach || 0,
   ])
 
@@ -729,7 +731,10 @@ export default function AnalyticsPage() {
               value={(selectedChannel.subscriber_count || 0).toLocaleString('ru-RU')}
             />
             <MetricCard label="Средние охваты" value={(selectedChannel.avg_views || 0).toLocaleString('ru-RU')} />
-            <MetricCard label="Вовлечённость" value={`${selectedChannel.engagement_rate || 0}%`} />
+            <MetricCard
+              label="Вовлечённость (ER)"
+              value={formatEngagementRate(selectedChannel.subscriber_count, selectedChannel.avg_views) ?? '—'}
+            />
             <MetricCard
               label="Цена рекламы"
               value={`${(selectedChannel.ad_price || 0).toLocaleString('ru-RU')} ${selectedChannel.ad_price_currency || 'USD'}`}

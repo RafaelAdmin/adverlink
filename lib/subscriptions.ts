@@ -1,6 +1,6 @@
 export const FREE_CHANNEL_LIMIT = 3
 export const FREE_CAMPAIGN_LIMIT = 3
-export const PRO_PRICE_EUR = 18
+export { PRO_PRICE_EUR } from './pricing'
 
 export type SubscriptionPlan = 'free' | 'pro'
 

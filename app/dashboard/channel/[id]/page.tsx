@@ -9,6 +9,7 @@ import { getChannelHandle, getChannelLink, getPlatformLabel } from '@/lib/channe
 import CurrencySelector from '@/app/dashboard/components/CurrencySelector'
 import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
 import VerifiedBadge from '@/app/dashboard/components/VerifiedBadge'
+import { formatEngagementRate } from '@/lib/channel-metrics'
 
 export default function ChannelProfilePage() {
   const params = useParams()
@@ -84,9 +85,7 @@ export default function ChannelProfilePage() {
   const isVerified = channel.is_verified || channel.verification_status === 'verified'
   const subscribers = channel.subscriber_count ?? 0
   const avgViews = channel.avg_views ?? 0
-  const estimatedReach = Math.round(subscribers * 0.3)
-  const estimatedEngagement =
-    subscribers > 0 ? ((avgViews / subscribers) * 100).toFixed(1) : '0'
+  const engagementLabel = formatEngagementRate(subscribers, avgViews)
 
   const convertChannelPrice = (price: number, fromCurrency: string = 'USD'): string =>
     formatConvertedPrice(price, fromCurrency, displayCurrency, rates)
@@ -94,7 +93,7 @@ export default function ChannelProfilePage() {
   const metrics = [
     { label: 'Подписчики', value: subscribers.toLocaleString() },
     { label: 'Средние охваты', value: avgViews.toLocaleString() },
-    { label: 'Вовлечённость', value: `${channel.engagement_rate ?? 0}%` },
+    { label: 'Вовлечённость (ER)', value: engagementLabel ?? '—' },
     {
       label: 'Цена рекламы',
       value: channel.ad_price
@@ -273,28 +272,8 @@ export default function ChannelProfilePage() {
           Аналитика
         </h2>
         <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', margin: '0 0 16px' }}>
-          Расширенная аналитика скоро появится
+          ER = средние охваты ÷ подписчики × 100. Расширенная аналитика — скоро.
         </p>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-            gap: '12px',
-          }}
-        >
-          <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '16px' }}>
-            <div style={{ color: 'white', fontWeight: '600', marginBottom: '4px' }}>
-              {estimatedReach.toLocaleString()}
-            </div>
-            <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px' }}>Примерный охват поста</div>
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '16px' }}>
-            <div style={{ color: 'white', fontWeight: '600', marginBottom: '4px' }}>
-              {estimatedEngagement}%
-            </div>
-            <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px' }}>Вовлечённость %</div>
-          </div>
-        </div>
       </div>
 
       {isMyChannel ? (

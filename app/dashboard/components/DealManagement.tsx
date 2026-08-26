@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import {
@@ -12,8 +12,9 @@ import {
   glassDealCard,
   normalizeDealStatus,
 } from '@/lib/deals'
-import { formatAmdWithUsd, toUsdEstimate } from '@/lib/currency'
+import { formatAmdWithUsd } from '@/lib/currency'
 import DealChat from './DealChat'
+import BetaPaymentNoticeModal from './BetaPaymentNoticeModal'
 import { AutoCompleteCountdown, PaymentReservedBadge, RefundSummary, SplitPaymentSummary } from './DealExtras'
 import { incrementCampaignSlots } from '@/lib/campaigns'
 import { markDealViewed } from '@/lib/notifications'
@@ -474,29 +475,15 @@ export function CreatorDealActions({
   )
 }
 
-type PaymentMethod = 'card' | 'idram' | 'telcell'
-type PaymentStep = 'form' | 'processing' | 'success'
-
-const paymentInputClass =
-  'bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm w-full outline-none focus-accent'
-
-function formatCardNumber(value: string) {
-  const digits = value.replace(/\D/g, '').slice(0, 16)
-  return digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim()
-}
-
-function formatExpiry(value: string) {
-  const digits = value.replace(/\D/g, '').slice(0, 4)
-  if (digits.length <= 2) return digits
-  return `${digits.slice(0, 2)}/${digits.slice(2)}`
-}
-
 export function DealPaymentModal({
   open,
   onClose,
   onConfirm,
   budget,
   saving,
+  title = 'Подтверждение заявки',
+  subtitle = 'Beta: оплата согласуется напрямую между сторонами',
+  confirmLabel = 'Подтвердить',
 }: {
   open: boolean
   onClose: () => void
@@ -504,391 +491,21 @@ export function DealPaymentModal({
   budget: number | string | null | undefined
   channel?: any
   saving?: boolean
+  title?: string
+  subtitle?: string
+  confirmLabel?: string
 }) {
-  const [step, setStep] = useState<PaymentStep>('form')
-  const [method, setMethod] = useState<PaymentMethod>('card')
-  const [cardName, setCardName] = useState('')
-  const [cardNumber, setCardNumber] = useState('')
-  const [expiry, setExpiry] = useState('')
-  const [cvv, setCvv] = useState('')
-  const [walletPhone, setWalletPhone] = useState('')
-  const confirmStarted = useRef(false)
-  const onConfirmRef = useRef(onConfirm)
-  onConfirmRef.current = onConfirm
-
-  const amd = Number(budget) || 0
-  const usd = toUsdEstimate(budget)
-
-  useEffect(() => {
-    if (!open) return
-    setStep('form')
-    setMethod('card')
-    setCardName('')
-    setCardNumber('')
-    setExpiry('')
-    setCvv('')
-    setWalletPhone('')
-    confirmStarted.current = false
-  }, [open])
-
-  useEffect(() => {
-    if (step !== 'processing') return
-    const delay = 2000 + Math.floor(Math.random() * 1000)
-    const timer = window.setTimeout(() => setStep('success'), delay)
-    return () => window.clearTimeout(timer)
-  }, [step])
-
-  useEffect(() => {
-    if (step !== 'success' || confirmStarted.current) return
-    confirmStarted.current = true
-    void (async () => {
-      const result = await onConfirmRef.current()
-      if (result === false) {
-        confirmStarted.current = false
-        setStep('form')
-      }
-    })()
-  }, [step])
-
-  if (!open) return null
-
-  const cardDigits = cardNumber.replace(/\s/g, '')
-  const canPayCard =
-    cardName.trim().length >= 2 &&
-    cardDigits.length === 16 &&
-    expiry.length === 5 &&
-    cvv.length >= 3
-  const canPayWallet = walletPhone.replace(/\D/g, '').length >= 8
-  const canPay = method === 'card' ? canPayCard : canPayWallet
-
-  const handlePay = () => {
-    if (!canPay || step !== 'form') return
-    setStep('processing')
-  }
-
-  const handleClose = () => {
-    if (step === 'processing' || saving) return
-    onClose()
-  }
-
-  const methodTabs: { id: PaymentMethod; label: string; icon: string }[] = [
-    { id: 'card', label: 'Карта', icon: 'ti-credit-card' },
-    { id: 'idram', label: 'Idram', icon: 'ti-wallet' },
-    { id: 'telcell', label: 'Telcell', icon: 'ti-device-mobile' },
-  ]
-
   return (
-    <>
-      <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80]"
-        onClick={handleClose}
-        aria-hidden
-      />
-      <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 pointer-events-none">
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="deal-payment-title"
-          className="pointer-events-auto w-full max-w-md max-h-[90vh] overflow-y-auto"
-          style={{
-            ...glassDealCard,
-            padding: '28px',
-            boxShadow: '0 24px 80px rgba(0,0,0,0.45)',
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {step === 'form' && (
-            <>
-              <div className="flex items-start justify-between gap-4 mb-5">
-                <div>
-                  <h2 id="deal-payment-title" className="text-white text-lg font-bold">
-                    Оплата заказа
-                  </h2>
-                  <p className="text-white/50 text-sm mt-1">Безопасная оплата через AdverLink Pay</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="text-white/40 hover:text-white text-xl leading-none"
-                  aria-label="Закрыть"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div
-                className="text-center mb-5 rounded-2xl py-4 px-4"
-                style={{
-                  background: 'color-mix(in srgb, var(--accent-primary, #9333ea) 12%, transparent)',
-                  border: '1px solid color-mix(in srgb, var(--accent-primary, #9333ea) 35%, transparent)',
-                }}
-              >
-                <p className="text-white/50 text-xs uppercase tracking-wide mb-1">К оплате</p>
-                <p className="text-white text-2xl font-bold">{amd.toLocaleString('ru-RU')} AMD</p>
-                <p className="text-price-accent text-base font-semibold mt-0.5">≈ ${usd}</p>
-              </div>
-
-              <div className="flex gap-2 mb-5 p-1 rounded-xl bg-white/5 border border-white/10">
-                {methodTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setMethod(tab.id)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-medium transition ${
-                      method === tab.id
-                        ? 'tab-pill-active text-white'
-                        : 'text-white/50 hover:text-white/80'
-                    }`}
-                  >
-                    <i className={`ti ${tab.icon} text-sm`} />
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              {method === 'card' && (
-                <div className="space-y-3 mb-5">
-                  <div
-                    className="rounded-2xl p-4 mb-4"
-                    style={{
-                      background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent-primary, #9333ea) 40%, #1a1a2e), #0f0f1a)',
-                      border: '1px solid rgba(255,255,255,0.15)',
-                    }}
-                  >
-                    <div className="flex justify-between items-start mb-8">
-                      <i className="ti ti-credit-card text-white/80 text-2xl" />
-                      <span className="text-white/40 text-xs font-mono tracking-widest">VISA</span>
-                    </div>
-                    <p className="text-white/90 font-mono text-lg tracking-widest mb-4 min-h-[28px]">
-                      {cardNumber || '•••• •••• •••• ••••'}
-                    </p>
-                    <div className="flex justify-between text-xs">
-                      <div>
-                        <p className="text-white/40 mb-0.5">Владелец</p>
-                        <p className="text-white/80 uppercase truncate max-w-[140px]">
-                          {cardName || 'ИМЯ ФАМИЛИЯ'}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-white/40 mb-0.5">Срок</p>
-                        <p className="text-white/80 font-mono">{expiry || 'MM/YY'}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-white/50 text-xs mb-1.5 block">Имя на карте</label>
-                    <input
-                      type="text"
-                      value={cardName}
-                      onChange={(e) => setCardName(e.target.value.toUpperCase())}
-                      placeholder="IVAN IVANOV"
-                      className={paymentInputClass}
-                      autoComplete="cc-name"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-white/50 text-xs mb-1.5 block">Номер карты</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                      placeholder="0000 0000 0000 0000"
-                      className={paymentInputClass}
-                      autoComplete="cc-number"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-white/50 text-xs mb-1.5 block">Срок действия</label>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={expiry}
-                        onChange={(e) => setExpiry(formatExpiry(e.target.value))}
-                        placeholder="MM/YY"
-                        className={paymentInputClass}
-                        autoComplete="cc-exp"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-white/50 text-xs mb-1.5 block">CVV</label>
-                      <input
-                        type="password"
-                        inputMode="numeric"
-                        value={cvv}
-                        onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                        placeholder="•••"
-                        className={paymentInputClass}
-                        autoComplete="cc-csc"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {method === 'idram' && (
-                <div className="space-y-4 mb-5">
-                  <div
-                    className="rounded-2xl p-5 text-center"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(255,107,0,0.2), rgba(255,107,0,0.05))',
-                      border: '1px solid rgba(255,107,0,0.35)',
-                    }}
-                  >
-                    <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center text-2xl font-bold text-white"
-                      style={{ background: 'linear-gradient(135deg, #ff6b00, #e85d00)' }}>
-                      iD
-                    </div>
-                    <p className="text-white font-semibold">Idram Wallet</p>
-                    <p className="text-white/50 text-xs mt-1">Мгновенный перевод с кошелька Idram</p>
-                  </div>
-                  <div>
-                    <label className="text-white/50 text-xs mb-1.5 block">Номер телефона Idram</label>
-                    <input
-                      type="tel"
-                      value={walletPhone}
-                      onChange={(e) => setWalletPhone(e.target.value)}
-                      placeholder="+374 XX XXX XXX"
-                      className={paymentInputClass}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {method === 'telcell' && (
-                <div className="space-y-4 mb-5">
-                  <div
-                    className="rounded-2xl p-5 text-center"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(0,122,255,0.2), rgba(0,122,255,0.05))',
-                      border: '1px solid rgba(0,122,255,0.35)',
-                    }}
-                  >
-                    <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center"
-                      style={{ background: 'linear-gradient(135deg, #007aff, #0056b3)' }}>
-                      <i className="ti ti-device-mobile text-white text-2xl" />
-                    </div>
-                    <p className="text-white font-semibold">Telcell Wallet</p>
-                    <p className="text-white/50 text-xs mt-1">Оплата через приложение Telcell</p>
-                  </div>
-                  <div>
-                    <label className="text-white/50 text-xs mb-1.5 block">Номер телефона Telcell</label>
-                    <input
-                      type="tel"
-                      value={walletPhone}
-                      onChange={(e) => setWalletPhone(e.target.value)}
-                      placeholder="+374 XX XXX XXX"
-                      className={paymentInputClass}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-center gap-2 text-white/35 text-xs mb-4">
-                <i className="ti ti-lock text-sm" />
-                <span>256-bit SSL · Данные защищены</span>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <button
-                  type="button"
-                  disabled={!canPay}
-                  className="btn-accent w-full text-white rounded-xl py-3 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
-                  onClick={handlePay}
-                >
-                  {method === 'card'
-                    ? `Оплатить ${amd.toLocaleString('ru-RU')} AMD`
-                    : method === 'idram'
-                      ? 'Оплатить через Idram'
-                      : 'Оплатить через Telcell'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  style={{ ...dealBtn.dispute, width: '100%', flex: 'unset' }}
-                >
-                  Отмена
-                </button>
-              </div>
-            </>
-          )}
-
-          {step === 'processing' && (
-            <div className="py-10 px-4 text-center">
-              <div className="relative w-16 h-16 mx-auto mb-6">
-                <div
-                  className="absolute inset-0 rounded-full border-2 border-white/10"
-                  aria-hidden
-                />
-                <div
-                  className="absolute inset-0 rounded-full border-2 border-transparent border-t-[var(--accent-primary,#9333ea)] animate-spin"
-                  aria-hidden
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <i className="ti ti-credit-card text-white/60 text-xl" />
-                </div>
-              </div>
-              <h2 className="text-white text-lg font-bold mb-2">Обработка платежа</h2>
-              <p className="text-white/50 text-sm mb-1">Пожалуйста, не закрывайте окно</p>
-              <p className="text-white/30 text-xs">
-                {amd.toLocaleString('ru-RU')} AMD ·{' '}
-                {method === 'card' ? 'Банковская карта' : method === 'idram' ? 'Idram' : 'Telcell'}
-              </p>
-              <div className="flex justify-center gap-1.5 mt-6">
-                {[0, 1, 2].map((i) => (
-                  <span
-                    key={i}
-                    className="w-2 h-2 rounded-full bg-white/30 animate-pulse"
-                    style={{ animationDelay: `${i * 200}ms` }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === 'success' && (
-            <div className="py-8 px-4 text-center">
-              <div
-                className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center"
-                style={{
-                  background: 'rgba(34,197,94,0.15)',
-                  border: '2px solid rgba(34,197,94,0.4)',
-                }}
-              >
-                <i className="ti ti-check text-green-400 text-4xl" />
-              </div>
-              <h2 className="text-white text-xl font-bold mb-2">Оплата прошла успешно</h2>
-              <p className="text-white/50 text-sm mb-4">
-                {amd.toLocaleString('ru-RU')} AMD списано с вашего счёта
-              </p>
-              <div
-                className="rounded-xl py-3 px-4 mb-6 text-left text-sm"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
-              >
-                <div className="flex justify-between text-white/50 mb-1">
-                  <span>Статус</span>
-                  <span className="text-green-400">Подтверждено</span>
-                </div>
-                <div className="flex justify-between text-white/50">
-                  <span>Сумма</span>
-                  <span className="text-white/80">{amd.toLocaleString('ru-RU')} AMD</span>
-                </div>
-              </div>
-              {saving ? (
-                <p className="text-white/40 text-sm flex items-center justify-center gap-2">
-                  <span className="inline-block w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
-                  Завершаем заказ...
-                </p>
-              ) : (
-                <p className="text-green-400/80 text-sm">Заказ будет завершён автоматически</p>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </>
+    <BetaPaymentNoticeModal
+      open={open}
+      onClose={onClose}
+      onConfirm={onConfirm}
+      budget={budget}
+      saving={saving}
+      title={title}
+      subtitle={subtitle}
+      confirmLabel={confirmLabel}
+    />
   )
 }
 
@@ -984,10 +601,14 @@ export function AdvertiserDealActions({
         onConfirm={async () => {
           const ok = await confirmPayment()
           if (ok) setShowPaymentModal(false)
+          return ok
         }}
         budget={request.budget}
         channel={channel}
         saving={saving}
+        title="Подтвердить выполнение"
+        subtitle="Завершение сделки на этапе Beta"
+        confirmLabel="Завершить сделку"
       />
       {showDetails && (
         <div className="space-y-3 text-sm mb-4">
@@ -1013,7 +634,7 @@ export function AdvertiserDealActions({
       <ProgressTracker steps={getAdvertiserSteps(request.status)} />
 
       {status === 'new' && !request.campaign_id && (
-        <p className="text-white/50 text-sm mt-2">Ожидает подтверждения оплаты</p>
+        <p className="text-white/50 text-sm mt-2">Заявка отправлена — ожидает ответа создателя</p>
       )}
 
       {status === 'payment_pending' && !request.campaign_id && (

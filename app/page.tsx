@@ -369,7 +369,9 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <p className="landing-pricing-note">Free пользователи платят 10% комиссию с каждой сделки</p>
+          <p className="landing-pricing-note">
+            После запуска Safe Deal: Free — 10% комиссия с каждой сделки. Pro — 0% комиссия.
+          </p>
         </div>
       </section>
 

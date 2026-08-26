@@ -254,13 +254,18 @@ export default function SubscriptionsPage() {
             ))}
           </ul>
           {!activePro ? (
-            <button
-              type="button"
-              onClick={() => setShowPayment(true)}
-              className="btn-accent w-full text-white rounded-full px-4 py-2.5 text-sm font-medium"
-            >
-              Перейти на Pro — €{PRO_PRICE_EUR}/мес
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setShowPayment(true)}
+                className="w-full border border-white/20 text-white/70 rounded-full px-4 py-2.5 text-sm font-medium hover:border-white/40 transition"
+              >
+                Скоро — €{PRO_PRICE_EUR}/мес
+              </button>
+              <p className="text-white/35 text-xs mt-3 text-center">
+                Оплата Pro пока недоступна. Напишите на support@adverlink.am для раннего доступа.
+              </p>
+            </>
           ) : (
             <button disabled className="w-full border border-white/20 text-white/50 rounded-full px-4 py-2.5 text-sm cursor-not-allowed">
               Pro активен
@@ -365,10 +370,10 @@ export default function SubscriptionsPage() {
 
           <button
             type="button"
-            onClick={() => setShowFramePayment(true)}
-            className="btn-accent text-white rounded-full px-5 py-2.5 text-sm font-medium"
+            disabled
+            className="w-full border border-white/20 text-white/40 rounded-full px-5 py-2.5 text-sm cursor-not-allowed"
           >
-            Купить — €{AVATAR_FRAME_PRICE_EUR}
+            Скоро — €{AVATAR_FRAME_PRICE_EUR}
           </button>
         </div>
 
