@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { validateCronRequest } from '@/lib/cron-auth'
 
 export async function GET(request: Request) {
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
+  const authResult = validateCronRequest(
+    request.headers.get('authorization'),
+    process.env.CRON_SECRET,
+  )
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!authResult.ok) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status })
   }
 
   try {
@@ -24,7 +27,8 @@ export async function GET(request: Request) {
       .lt('updated_at', cutoff)
 
     if (fetchError) {
-      return NextResponse.json({ error: fetchError.message }, { status: 500 })
+      console.error('Auto-complete fetch error:', fetchError.message)
+      return NextResponse.json({ error: 'Failed to fetch deals' }, { status: 500 })
     }
 
     if (!stale?.length) {
@@ -44,7 +48,8 @@ export async function GET(request: Request) {
       .in('id', ids)
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
+      console.error('Auto-complete update error:', updateError.message)
+      return NextResponse.json({ error: 'Failed to complete deals' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, completed: ids.length })

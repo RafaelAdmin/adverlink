@@ -263,6 +263,7 @@ export function CreatorDealActions({
                     body: JSON.stringify({
                       type: 'deal_accepted',
                       channelId: request.channel_id,
+                      dealId: request.id,
                       advertiserName: request.advertiser_name,
                       advertiserContact: request.advertiser_contact,
                       budget: request.budget,
@@ -963,6 +964,7 @@ export function AdvertiserDealActions({
           body: JSON.stringify({
             type: 'deal_completed',
             channelId: request.channel_id,
+            dealId: request.id,
             advertiserName: request.advertiser_name,
             budget: request.budget,
           }),
@@ -1060,6 +1062,7 @@ export function AdvertiserDealActions({
                     body: JSON.stringify({
                       type: 'application_rejected',
                       channelId: request.channel_id,
+                      dealId: request.id,
                       advertiserName: request.advertiser_name,
                       budget: request.budget,
                     }),

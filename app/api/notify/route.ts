@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/api-auth'
+import {
+  checkRateLimit,
+  isKnownNotifyType,
+  validateNotifyAuthorization,
+} from '@/lib/notify-auth'
 
-const RATE_LIMIT_MAX = 5
+const RATE_LIMIT_MAX_PER_DEAL = 3
+const RATE_LIMIT_MAX_PER_USER = 10
 const RATE_LIMIT_WINDOW_MS = 60_000
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>()
 
@@ -16,44 +22,6 @@ function escapeHtml(value: unknown): string {
     .replace(/'/g, '&#39;')
 }
 
-function checkRateLimit(key: string): boolean {
-  const now = Date.now()
-  const entry = rateLimitStore.get(key)
-
-  if (!entry || now > entry.resetAt) {
-    rateLimitStore.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
-    return true
-  }
-
-  if (entry.count >= RATE_LIMIT_MAX) {
-    return false
-  }
-
-  entry.count += 1
-  return true
-}
-
-function canSendNotification(
-  type: string,
-  userId: string,
-  ownerId: string,
-  isAdmin: boolean,
-): boolean {
-  if (isAdmin) return true
-
-  switch (type) {
-    case 'new_ad_request':
-      return userId !== ownerId
-    case 'deal_accepted':
-      return userId === ownerId
-    case 'deal_completed':
-    case 'application_rejected':
-      return userId !== ownerId
-    default:
-      return false
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
     const session = await requireAuth()
@@ -61,15 +29,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { type, channelId, advertiserName, advertiserContact, message, budget } = body
+    let body: {
+      type?: string
+      channelId?: string
+      dealId?: string
+      advertiserName?: string
+      advertiserContact?: string
+      message?: string
+      budget?: unknown
+    }
 
-    if (!type || !channelId) {
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
+    }
+
+    const { type, channelId, dealId, advertiserName, advertiserContact, message, budget } = body
+
+    if (!type || !channelId || !dealId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const rateLimitKey = `${session.user.id}:${channelId}`
-    if (!checkRateLimit(rateLimitKey)) {
+    if (!isKnownNotifyType(type)) {
+      return NextResponse.json({ error: 'Unknown notification type' }, { status: 400 })
+    }
+
+    const userId = session.user.id
+    const userRateKey = `user:${userId}`
+    const dealRateKey = `deal:${userId}:${dealId}`
+
+    if (
+      !checkRateLimit(rateLimitStore, userRateKey, RATE_LIMIT_MAX_PER_USER, RATE_LIMIT_WINDOW_MS) ||
+      !checkRateLimit(rateLimitStore, dealRateKey, RATE_LIMIT_MAX_PER_DEAL, RATE_LIMIT_WINDOW_MS)
+    ) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
     }
 
@@ -77,6 +70,16 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
     )
+
+    const { data: deal } = await supabaseAdmin
+      .from('ad_requests')
+      .select('id, channel_id, advertiser_id, status')
+      .eq('id', dealId)
+      .single()
+
+    if (!deal || deal.channel_id !== channelId) {
+      return NextResponse.json({ error: 'Deal not found' }, { status: 404 })
+    }
 
     const { data: channel } = await supabaseAdmin
       .from('channels')
@@ -88,15 +91,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Channel not found' }, { status: 404 })
     }
 
+    const channelOwnerId = channel.owner_id
+
     const { data: callerProfile } = await supabaseAdmin
       .from('profiles')
       .select('is_admin')
-      .eq('id', session.user.id)
+      .eq('id', userId)
       .single()
 
     const isAdmin = callerProfile?.is_admin === true
 
-    if (!canSendNotification(type, session.user.id, channel.owner_id, isAdmin)) {
+    const authorized = validateNotifyAuthorization(
+      type,
+      userId,
+      {
+        id: deal.id,
+        channel_id: deal.channel_id,
+        advertiser_id: deal.advertiser_id,
+        status: deal.status,
+        channel_owner_id: channelOwnerId,
+      },
+      isAdmin,
+    )
+
+    if (!authorized) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

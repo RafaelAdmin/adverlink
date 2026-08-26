@@ -108,18 +108,22 @@ export default function RequestAdPage() {
     const advertiserContact = contact.trim() || authUser?.email || ''
     const now = new Date().toISOString()
 
-    const { error } = await supabase.from('ad_requests').insert({
-      channel_id: channelId,
-      advertiser_name: advertiserName.trim(),
-      advertiser_contact: advertiserContact,
-      message: message.trim(),
-      budget: Number(budget),
-      status: 'payment_pending',
-      payment_status: 'reserved',
-      advertiser_id: authUser?.id || null,
-      advertiser_email: authUser?.email || advertiserContact,
-      updated_at: now,
-    })
+    const { data: inserted, error } = await supabase
+      .from('ad_requests')
+      .insert({
+        channel_id: channelId,
+        advertiser_name: advertiserName.trim(),
+        advertiser_contact: advertiserContact,
+        message: message.trim(),
+        budget: Number(budget),
+        status: 'payment_pending',
+        payment_status: 'reserved',
+        advertiser_id: authUser?.id || null,
+        advertiser_email: authUser?.email || advertiserContact,
+        updated_at: now,
+      })
+      .select('id')
+      .single()
 
     setSubmitting(false)
 
@@ -135,6 +139,7 @@ export default function RequestAdPage() {
         body: JSON.stringify({
           type: 'new_ad_request',
           channelId: channelId,
+          dealId: inserted.id,
           advertiserName: advertiserName.trim(),
           advertiserContact: advertiserContact,
           message: message.trim(),

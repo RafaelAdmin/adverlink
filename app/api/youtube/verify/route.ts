@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
+import { verifyCodeInDescription } from '@/lib/verification-check'
 
 async function resolveYouTubeChannel(handle: string, apiKey: string) {
   let normalized = handle.trim()
@@ -62,6 +63,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ verified: false, error: 'Forbidden' }, { status: 403 })
   }
 
+  if (!channel.verification_code) {
+    return NextResponse.json({ verified: false, error: 'Verification code not issued' }, { status: 400 })
+  }
+
   try {
     const ytChannel = await resolveYouTubeChannel(channel.telegram_username || '', apiKey)
     if (!ytChannel) {
@@ -69,7 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     const description = ytChannel.snippet?.description || ''
-    const verified = description.includes(code)
+    const verified = verifyCodeInDescription(code, channel.verification_code, description)
 
     if (verified) {
       const { error: updateError } = await supabase.rpc('verify_channel_after_check', {
@@ -77,44 +82,20 @@ export async function POST(request: NextRequest) {
       })
 
       if (updateError) {
-        return NextResponse.json({ verified: false, error: updateError.message }, { status: 500 })
+        console.error('YouTube verify RPC error:', updateError.message)
+        return NextResponse.json({ verified: false, error: 'Verification failed' }, { status: 500 })
       }
     }
 
-    return NextResponse.json({
-      verified,
-      description: description.substring(0, 200),
-    })
+    return NextResponse.json({ verified })
   } catch {
     return NextResponse.json({ verified: false, error: 'API error' }, { status: 500 })
   }
 }
 
-export async function GET(request: NextRequest) {
-  const channelInput = request.nextUrl.searchParams.get('channel')
-  const code = request.nextUrl.searchParams.get('code')
-
-  if (!channelInput || !code) {
-    return NextResponse.json({ verified: false, error: 'Missing params' })
-  }
-
-  const apiKey = process.env.YOUTUBE_API_KEY
-  if (!apiKey) {
-    return NextResponse.json({ verified: false, error: 'YouTube API not configured' })
-  }
-
-  try {
-    const channel = await resolveYouTubeChannel(channelInput, apiKey)
-    if (!channel) {
-      return NextResponse.json({ verified: false, error: 'Channel not found' })
-    }
-
-    const description = channel.snippet?.description || ''
-    return NextResponse.json({
-      verified: description.includes(code),
-      description: description.substring(0, 200),
-    })
-  } catch {
-    return NextResponse.json({ verified: false, error: 'API error' })
-  }
+export async function GET() {
+  return NextResponse.json(
+    { verified: false, error: 'Use POST with authentication' },
+    { status: 405 },
+  )
 }

@@ -104,12 +104,14 @@ export default function SubscriptionsPage() {
         body: JSON.stringify({ plan: 'pro' }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Ошибка оплаты')
+      if (!res.ok) {
+        throw new Error(data.message || data.error || 'Оплата временно недоступна')
+      }
       setPlan('pro')
       refreshPlan?.()
       return true
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка оплаты')
+      setError(err instanceof Error ? err.message : 'Оплата временно недоступна')
       return false
     } finally {
       setSubscribing(false)
@@ -120,21 +122,21 @@ export default function SubscriptionsPage() {
     setBuyingFrame(true)
     setError(null)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Не авторизован')
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_frame_color: selectedFrame })
-        .eq('id', user.id)
-
-      if (updateError) throw new Error(updateError.message)
+      const res = await fetch('/api/avatar-frame', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ frameColor: selectedFrame }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.message || data.error || 'Покупка временно недоступна')
+      }
 
       setCurrentFrame(selectedFrame)
       window.dispatchEvent(new CustomEvent('adverlink-avatar-frame-updated'))
       return true
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка покупки')
+      setError(err instanceof Error ? err.message : 'Покупка временно недоступна')
       return false
     } finally {
       setBuyingFrame(false)
