@@ -1,10 +1,12 @@
 import type { DealStatus } from '@/lib/deal-lifecycle'
+import type { AdRequest } from '@/lib/database.types'
 import type { TermsProposalPayload, TransitionPayload } from '@/lib/server/deal-actions'
 
 type ApiResult<T = unknown> = { ok: true; deal?: unknown; placements?: unknown; material?: unknown; lifecycle?: unknown; completionReady?: boolean } & T
-type ApiError = { ok: false; error: string }
+export type DealApiError = { ok: false; error: string; status: number }
+export type DealApiResult = ApiResult | DealApiError
 
-async function postJson<T>(url: string, body: unknown): Promise<T | ApiError> {
+async function postJson<T>(url: string, body: unknown): Promise<T | DealApiError> {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -12,9 +14,13 @@ async function postJson<T>(url: string, body: unknown): Promise<T | ApiError> {
   })
   const data = await res.json()
   if (!res.ok || !data.ok) {
-    return { ok: false, error: data.error || 'Request failed' }
+    return { ok: false, error: data.error || 'Request failed', status: res.status }
   }
   return data as T
+}
+
+export function isStaleTermsApiError(result: DealApiResult): result is DealApiError {
+  return !result.ok && result.status === 409
 }
 
 export async function postDealTransition(dealId: string, payload: TransitionPayload) {
@@ -37,8 +43,11 @@ export async function postProposeTerms(dealId: string, payload: TermsProposalPay
   return postJson<ApiResult>(`/api/deals/${dealId}/terms/propose`, payload)
 }
 
-export async function postAcceptTerms(dealId: string) {
-  return postJson<ApiResult>(`/api/deals/${dealId}/terms/accept`, {})
+export async function postAcceptTerms(dealId: string, proposedAt?: string) {
+  return postJson<ApiResult>(
+    `/api/deals/${dealId}/terms/accept`,
+    proposedAt ? { proposedAt } : {},
+  )
 }
 
 export async function postPublishPlacement(dealId: string, placementIndex: number, proofUrl: string) {
@@ -54,16 +63,16 @@ export async function postResolveDispute(dealId: string, toStatus: Extract<DealS
 }
 
 export function applyDealApiPatch(
-  onUpdate: (patch: Record<string, unknown>) => void,
-  result: ApiResult | ApiError,
+  onUpdate: (patch: Partial<AdRequest>) => void,
+  result: DealApiResult,
 ): boolean {
   if (!result.ok) return false
   if (result.deal && typeof result.deal === 'object') {
-    onUpdate(result.deal as Record<string, unknown>)
+    onUpdate(result.deal as Partial<AdRequest>)
   }
   return true
 }
 
-export function getDealApiError(result: ApiResult | ApiError): string | null {
+export function getDealApiError(result: DealApiResult): string | null {
   return result.ok ? null : result.error
 }

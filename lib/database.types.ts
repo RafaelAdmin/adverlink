@@ -1,3 +1,10 @@
+import type {
+  ContentMode,
+  ContentStatus,
+  PlacementStatus,
+  TermsStatus,
+} from '@/lib/deal-lifecycle'
+
 export type Profile = {
   id: string
   full_name: string | null
@@ -101,6 +108,62 @@ export type AdRequest = {
   creator_viewed_at: string | null
   advertiser_viewed_at: string | null
   created_at: string
+  /** Phase 0 lifecycle columns (deal-lifecycle-phase0.sql) */
+  content_mode: ContentMode | null
+  budget_currency: CurrencyCode | null
+  final_price: number | null
+  final_price_currency: CurrencyCode | null
+  placements_count: number | null
+  placement_start_at: string | null
+  placement_end_at: string | null
+  terms_status: TermsStatus
+  final_terms: unknown | null
+  final_terms_proposed_by: string | null
+  final_terms_proposed_at: string | null
+  final_terms_accepted_at: string | null
+  terms_locked_at: string | null
+  content_status: ContentStatus
+  content_submitted_at: string | null
+  content_approved_at: string | null
+  all_placements_published_at: string | null
+  final_review_started_at: string | null
+  auto_complete_deadline: string | null
+}
+
+export type DealPlacement = {
+  id: string
+  ad_request_id: string
+  placement_index: number
+  status: PlacementStatus
+  scheduled_at: string | null
+  published_at: string | null
+  proof_url: string | null
+  telegram_message_id: number | null
+  telegram_post_id: string | null
+  issue_reported_at: string | null
+  issue_reported_by: string | null
+  issue_comment: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type DealMaterialAttachment = {
+  url?: string
+  name?: string
+  mime_type?: string
+  size_bytes?: number
+}
+
+export type DealMaterial = {
+  id: string
+  ad_request_id: string
+  body_text: string | null
+  destination_url: string | null
+  attachments: DealMaterialAttachment[] | unknown | null
+  creator_submission_text: string | null
+  change_request_comment: string | null
+  created_at: string
+  updated_at: string
 }
 
 export type Campaign = {

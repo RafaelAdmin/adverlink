@@ -1141,3 +1141,5 @@ export function DealTimeline({ request }: { request: any }) {
     </div>
   )
 }
+
+export { default as DealFinalTermsSection } from './deal/FinalTermsSection'

@@ -12,8 +12,11 @@ import {
 } from '../../components/DealManagement'
 import { formatAmdWithUsd } from '@/lib/currency'
 import { glassDealCard } from '@/lib/deals'
+import FinalTermsSection from '@/app/dashboard/components/deal/FinalTermsSection'
 import DealChat from '@/app/dashboard/components/DealChat'
 import { markDealViewed } from '@/lib/notifications'
+import type { AdRequest, Channel } from '@/lib/database.types'
+import { coerceAdRequestRow } from '@/lib/final-terms-ui'
 
 export default function DealDetailPage() {
   const params = useParams()
@@ -21,8 +24,8 @@ export default function DealDetailPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  const [request, setRequest] = useState<any>(null)
-  const [channel, setChannel] = useState<any>(null)
+  const [request, setRequest] = useState<AdRequest | null>(null)
+  const [channel, setChannel] = useState<Channel | null>(null)
   const [userId, setUserId] = useState('')
   const [role, setRole] = useState<'creator' | 'advertiser' | null>(null)
   const [loading, setLoading] = useState(true)
@@ -63,7 +66,7 @@ export default function DealDetailPage() {
         return
       }
 
-      setRequest(deal)
+      setRequest(coerceAdRequestRow(deal as Record<string, unknown>))
       setChannel(ch)
       const userRole = isCreator ? 'creator' : 'advertiser'
       setRole(userRole)
@@ -73,8 +76,13 @@ export default function DealDetailPage() {
     load()
   }, [dealId, router, supabase])
 
-  const handleUpdate = (patch: Record<string, unknown>) => {
-    setRequest((prev: any) => (prev ? { ...prev, ...patch } : prev))
+  const handleUpdate = (patch: Partial<AdRequest>) => {
+    setRequest((prev) => (prev ? { ...prev, ...patch } : prev))
+  }
+
+  const refreshDeal = async () => {
+    const { data } = await supabase.from('ad_requests').select('*').eq('id', dealId).single()
+    if (data) setRequest(coerceAdRequestRow(data as Record<string, unknown>))
   }
 
   if (loading || !request || !role) {
@@ -149,12 +157,22 @@ export default function DealDetailPage() {
         </div>
       </div>
 
+      <FinalTermsSection
+        dealId={dealId}
+        request={request}
+        currentUserId={userId}
+        onUpdate={handleUpdate}
+        onRefresh={refreshDeal}
+      />
+
       <div style={{ ...glassDealCard, padding: '24px', marginBottom: '16px' }}>
         <h2 className="text-white font-semibold mb-4">История</h2>
         <DealTimeline request={request} />
       </div>
 
-      {(status === 'submitted' || status === 'completed') && request.proof_links?.length > 0 && (
+      {(status === 'submitted' || status === 'completed') &&
+        request.proof_links &&
+        request.proof_links.length > 0 && (
         <div style={{ ...glassDealCard, padding: '24px', marginBottom: '16px' }}>
           <h2 className="text-white font-semibold mb-4">Доказательства выполнения</h2>
           {request.proof_links.map((link: string, i: number) => (
