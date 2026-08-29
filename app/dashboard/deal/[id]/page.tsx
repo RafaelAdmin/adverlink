@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
@@ -13,10 +13,17 @@ import {
 import { formatAmdWithUsd } from '@/lib/currency'
 import { glassDealCard } from '@/lib/deals'
 import FinalTermsSection from '@/app/dashboard/components/deal/FinalTermsSection'
+import PlacementsSection from '@/app/dashboard/components/deal/PlacementsSection'
 import DealChat from '@/app/dashboard/components/DealChat'
 import { markDealViewed } from '@/lib/notifications'
-import type { AdRequest, Channel } from '@/lib/database.types'
+import type { AdRequest, Channel, DealPlacement } from '@/lib/database.types'
 import { coerceAdRequestRow } from '@/lib/final-terms-ui'
+import {
+  coercePlacements,
+  parseTelegramAnalyticsMap,
+  shouldUsePlacementsWorkflow,
+  type PlacementTelegramAnalytics,
+} from '@/lib/placements-ui'
 
 export default function DealDetailPage() {
   const params = useParams()
@@ -26,9 +33,57 @@ export default function DealDetailPage() {
 
   const [request, setRequest] = useState<AdRequest | null>(null)
   const [channel, setChannel] = useState<Channel | null>(null)
+  const [placements, setPlacements] = useState<DealPlacement[]>([])
+  const [telegramAnalytics, setTelegramAnalytics] = useState<
+    Record<string, PlacementTelegramAnalytics>
+  >({})
   const [userId, setUserId] = useState('')
   const [role, setRole] = useState<'creator' | 'advertiser' | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const loadTelegramAnalytics = useCallback(
+    async (rows: DealPlacement[]) => {
+      const postIds = rows
+        .map((p) => p.telegram_post_id)
+        .filter((id): id is string => Boolean(id))
+
+      if (postIds.length === 0) {
+        setTelegramAnalytics({})
+        return
+      }
+
+      const [{ data: posts }, { data: snapshots }] = await Promise.all([
+        supabase.from('telegram_posts').select('id, current_views').in('id', postIds),
+        supabase
+          .from('telegram_post_snapshots')
+          .select('post_id, views, captured_at')
+          .in('post_id', postIds)
+          .eq('checkpoint', '24h'),
+      ])
+
+      setTelegramAnalytics(parseTelegramAnalyticsMap(posts, snapshots))
+    },
+    [supabase],
+  )
+
+  const refreshDealState = useCallback(async () => {
+    const [{ data: deal }, { data: placementRows }] = await Promise.all([
+      supabase.from('ad_requests').select('*').eq('id', dealId).single(),
+      supabase
+        .from('deal_placements')
+        .select('*')
+        .eq('ad_request_id', dealId)
+        .order('placement_index', { ascending: true }),
+    ])
+
+    if (deal) {
+      setRequest(coerceAdRequestRow(deal as Record<string, unknown>))
+    }
+
+    const nextPlacements = coercePlacements(placementRows)
+    setPlacements(nextPlacements)
+    await loadTelegramAnalytics(nextPlacements)
+  }, [dealId, loadTelegramAnalytics, supabase])
 
   useEffect(() => {
     const load = async () => {
@@ -71,18 +126,23 @@ export default function DealDetailPage() {
       const userRole = isCreator ? 'creator' : 'advertiser'
       setRole(userRole)
       await markDealViewed(supabase, dealId, userRole)
+
+      const { data: placementRows } = await supabase
+        .from('deal_placements')
+        .select('*')
+        .eq('ad_request_id', dealId)
+        .order('placement_index', { ascending: true })
+
+      const nextPlacements = coercePlacements(placementRows)
+      setPlacements(nextPlacements)
+      await loadTelegramAnalytics(nextPlacements)
       setLoading(false)
     }
     load()
-  }, [dealId, router, supabase])
+  }, [dealId, loadTelegramAnalytics, router, supabase])
 
   const handleUpdate = (patch: Partial<AdRequest>) => {
     setRequest((prev) => (prev ? { ...prev, ...patch } : prev))
-  }
-
-  const refreshDeal = async () => {
-    const { data } = await supabase.from('ad_requests').select('*').eq('id', dealId).single()
-    if (data) setRequest(coerceAdRequestRow(data as Record<string, unknown>))
   }
 
   if (loading || !request || !role) {
@@ -90,6 +150,7 @@ export default function DealDetailPage() {
   }
 
   const status = request.status
+  const usePlacementsWorkflow = shouldUsePlacementsWorkflow(request, placements)
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -162,7 +223,19 @@ export default function DealDetailPage() {
         request={request}
         currentUserId={userId}
         onUpdate={handleUpdate}
-        onRefresh={refreshDeal}
+        onRefresh={refreshDealState}
+      />
+
+      <PlacementsSection
+        dealId={dealId}
+        request={request}
+        placements={placements}
+        role={role}
+        channel={channel}
+        telegramAnalytics={telegramAnalytics}
+        onDealUpdate={handleUpdate}
+        onPlacementsUpdate={setPlacements}
+        onRefresh={refreshDealState}
       />
 
       <div style={{ ...glassDealCard, padding: '24px', marginBottom: '16px' }}>
@@ -170,12 +243,13 @@ export default function DealDetailPage() {
         <DealTimeline request={request} />
       </div>
 
-      {(status === 'submitted' || status === 'completed') &&
+      {!usePlacementsWorkflow &&
+        (status === 'submitted' || status === 'completed') &&
         request.proof_links &&
         request.proof_links.length > 0 && (
         <div style={{ ...glassDealCard, padding: '24px', marginBottom: '16px' }}>
           <h2 className="text-white font-semibold mb-4">Доказательства выполнения</h2>
-          {request.proof_links.map((link: string, i: number) => (
+          {request.proof_links.map((link, i) => (
             <a
               key={i}
               href={link}
@@ -211,6 +285,7 @@ export default function DealDetailPage() {
             userId={userId}
             onUpdate={handleUpdate}
             showDetails={false}
+            hideLegacyProofSubmit={usePlacementsWorkflow}
           />
         ) : (
           <AdvertiserDealActions

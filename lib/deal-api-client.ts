@@ -23,6 +23,14 @@ export function isStaleTermsApiError(result: DealApiResult): result is DealApiEr
   return !result.ok && result.status === 409
 }
 
+export function isConcurrentMutationError(result: DealApiResult): result is DealApiError {
+  return !result.ok && result.status === 409
+}
+
+export async function postInitializePlacements(dealId: string) {
+  return postJson<ApiResult>(`/api/deals/${dealId}/placements/initialize`, {})
+}
+
 export async function postDealTransition(dealId: string, payload: TransitionPayload) {
   return postJson<ApiResult>(`/api/deals/${dealId}/transition`, payload)
 }

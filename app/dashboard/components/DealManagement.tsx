@@ -149,12 +149,14 @@ export function CreatorDealActions({
   userId,
   onUpdate,
   showDetails = true,
+  hideLegacyProofSubmit = false,
 }: {
   request: any
   channel?: any
   userId: string
   onUpdate: (patch: Record<string, unknown>) => void
   showDetails?: boolean
+  hideLegacyProofSubmit?: boolean
 }) {
   const supabase = createClient()
   const [saving, setSaving] = useState(false)
@@ -363,6 +365,8 @@ export function CreatorDealActions({
               <p className="text-white/70 text-sm">{request.advertiser_note}</p>
             </div>
           )}
+          {!hideLegacyProofSubmit && (
+            <>
           <label className="block mt-4">
             <span className="text-white/50 text-xs mb-2 block">Ссылки на посты</span>
             <textarea
@@ -412,6 +416,8 @@ export function CreatorDealActions({
           >
             Отправить на проверку
           </button>
+            </>
+          )}
         </div>
       )}
 
@@ -1143,3 +1149,4 @@ export function DealTimeline({ request }: { request: any }) {
 }
 
 export { default as DealFinalTermsSection } from './deal/FinalTermsSection'
+export { default as DealPlacementsSection } from './deal/PlacementsSection'
