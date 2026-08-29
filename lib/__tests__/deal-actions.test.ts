@@ -10,6 +10,8 @@ import { DealActionError } from '@/lib/server/deal-errors'
 import {
   assertActorCanTransition,
   assertTelegramPostNotLinkedElsewhere,
+  parseAdvertiserContentPayload,
+  parseCreatorSubmissionPayload,
   parseMaterialSavePayload,
   validateTermsProposalPayload,
 } from '@/lib/server/deal-actions'
@@ -182,6 +184,18 @@ describe('mass assignment guards', () => {
     })
     expect(payload.bodyText).toBe('hello')
     expect(payload.destinationUrl).toBe('https://example.com')
+  })
+
+  it('advertiser content payload rejects creator fields', () => {
+    expect(() =>
+      parseAdvertiserContentPayload({ action: 'save_advertiser_brief', creatorSubmissionText: 'x' }),
+    ).toThrow(/Unexpected field/)
+  })
+
+  it('creator submission payload rejects blank text', () => {
+    expect(() =>
+      parseCreatorSubmissionPayload({ action: 'submit_creator_content', creatorSubmissionText: '  ' }),
+    ).toThrow(/creatorSubmissionText required/)
   })
 })
 

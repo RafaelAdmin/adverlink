@@ -10,6 +10,7 @@ import {
   canStartFinalReview,
   canSubmitCreatorContent,
   computeAutoCompleteDeadline,
+  isAllPlacementsPublished,
   isDealCompletionReady,
   isLegacyLifecycleDeal,
   isNewLifecycleDeal,
@@ -28,10 +29,8 @@ import {
   type GenericTransitionPayload,
 } from '@/lib/server/deal-transition-policy'
 import {
-  buildLifecycleContext,
   getAdminClient,
   reloadDealBundle,
-  type DealRecord,
   type PlacementRecord,
 } from '@/lib/server/deal-repository'
 import { associateTelegramProof } from '@/lib/server/telegram-deal-proof'
@@ -353,31 +352,46 @@ export async function initializePlacements(dealId: string) {
   return reloadDealBundle(dealId)
 }
 
-async function maybeStartFinalReview(deal: DealRecord, placements: PlacementRecord[]) {
-  const lifecycle = buildLifecycleContext(deal, placements)
-  if (!canStartFinalReview(lifecycle)) return null
-  if (deal.final_review_started_at) return null
+/**
+ * Re-reads authoritative deal state and starts final review exactly once when all
+ * prerequisites are satisfied (terms, N/N placements, creator content if required).
+ */
+export async function tryStartFinalReview(dealId: string) {
+  let bundle = await reloadDealBundle(dealId)
+  if (bundle.deal.final_review_started_at) return bundle
+  if (!canStartFinalReview(bundle.lifecycle)) return bundle
 
   const now = new Date()
+  const nowIso = now.toISOString()
+
+  if (isAllPlacementsPublished(bundle.lifecycle) && !bundle.deal.all_placements_published_at) {
+    await conditionalDealUpdate(
+      dealId,
+      {
+        all_placements_published_at: nowIso,
+        updated_at: nowIso,
+      },
+      (q) => q.is('all_placements_published_at', null),
+    )
+    bundle = await reloadDealBundle(dealId)
+    if (bundle.deal.final_review_started_at) return bundle
+    if (!canStartFinalReview(bundle.lifecycle)) return bundle
+  }
+
   const deadline = computeAutoCompleteDeadline(now)
-
-  const admin = getAdminClient()
-  const { data, error } = await admin
-    .from('ad_requests')
-    .update({
-      all_placements_published_at: deal.all_placements_published_at ?? now.toISOString(),
-      final_review_started_at: now.toISOString(),
+  const updated = await conditionalDealUpdate(
+    dealId,
+    {
+      all_placements_published_at: bundle.deal.all_placements_published_at ?? nowIso,
+      final_review_started_at: nowIso,
       auto_complete_deadline: deadline.toISOString(),
-      updated_at: now.toISOString(),
-    })
-    .eq('id', deal.id)
-    .is('final_review_started_at', null)
-    .select('id')
-    .maybeSingle()
+      updated_at: nowIso,
+    },
+    (q) => q.is('final_review_started_at', null),
+  )
 
-  if (error) throw new DealActionError(error.message, 500)
-  if (!data) return null
-  return reloadDealBundle(deal.id)
+  if (!updated) return reloadDealBundle(dealId)
+  return reloadDealBundle(dealId)
 }
 
 export async function publishPlacementProof(
@@ -441,28 +455,13 @@ export async function publishPlacementProof(
     throw new DealActionError('Placement state changed; refresh and retry', 409)
   }
 
-  let refreshed = await reloadDealBundle(dealId)
+  const refreshed = await reloadDealBundle(dealId)
 
-  if (isAllPlacementsPublishedNow(refreshed)) {
-    await conditionalDealUpdate(dealId, {
-      all_placements_published_at: now,
-      updated_at: now,
-    }, (q) => q.is('all_placements_published_at', null))
-
-    refreshed = await reloadDealBundle(dealId)
-    const started = await maybeStartFinalReview(refreshed.deal, refreshed.placements)
-    if (started) refreshed = started
+  if (isAllPlacementsPublished(refreshed.lifecycle)) {
+    return tryStartFinalReview(dealId)
   }
 
   return refreshed
-}
-
-function isAllPlacementsPublishedNow(bundle: Awaited<ReturnType<typeof reloadDealBundle>>) {
-  const lifecycle = bundle.lifecycle
-  return lifecycle.placementsCount != null && lifecycle.placementsCount >= 1
-    ? bundle.placements.filter((p) => p.status === 'published' || p.status === 'issue_reported').length
-        >= lifecycle.placementsCount
-    : false
 }
 
 export async function reportPlacementIssue(
@@ -667,17 +666,55 @@ export type MaterialSavePayload = {
   creatorSubmissionText?: string | null
 }
 
-export function parseMaterialSavePayload(body: unknown): MaterialSavePayload {
+function assertAllowedFields(body: unknown, allowed: Set<string>) {
   if (!body || typeof body !== 'object') {
     throw new DealActionError('Invalid body', 400)
   }
-  const record = body as Record<string, unknown>
-  const allowed = new Set(['action', 'bodyText', 'destinationUrl', 'attachments', 'creatorSubmissionText', 'comment'])
-  for (const key of Object.keys(record)) {
+  for (const key of Object.keys(body as Record<string, unknown>)) {
     if (!allowed.has(key)) {
       throw new DealActionError(`Unexpected field: ${key}`, 400)
     }
   }
+}
+
+export function parseAdvertiserContentPayload(body: unknown): Pick<
+  MaterialSavePayload,
+  'bodyText' | 'destinationUrl'
+> {
+  assertAllowedFields(body, new Set(['action', 'bodyText', 'destinationUrl']))
+  const record = body as Record<string, unknown>
+  return {
+    bodyText: record.bodyText == null ? null : String(record.bodyText),
+    destinationUrl: record.destinationUrl == null ? null : String(record.destinationUrl),
+  }
+}
+
+export function parseCreatorSubmissionPayload(body: unknown): Pick<
+  MaterialSavePayload,
+  'creatorSubmissionText'
+> {
+  assertAllowedFields(body, new Set(['action', 'creatorSubmissionText']))
+  const record = body as Record<string, unknown>
+  const text = record.creatorSubmissionText == null ? '' : String(record.creatorSubmissionText).trim()
+  if (!text) {
+    throw new DealActionError('creatorSubmissionText required', 400)
+  }
+  return { creatorSubmissionText: text }
+}
+
+export function parseMaterialSavePayload(body: unknown): MaterialSavePayload {
+  assertAllowedFields(
+    body,
+    new Set([
+      'action',
+      'bodyText',
+      'destinationUrl',
+      'attachments',
+      'creatorSubmissionText',
+      'comment',
+    ]),
+  )
+  const record = body as Record<string, unknown>
   return {
     bodyText: record.bodyText == null ? null : String(record.bodyText),
     destinationUrl: record.destinationUrl == null ? null : String(record.destinationUrl),
@@ -687,19 +724,26 @@ export function parseMaterialSavePayload(body: unknown): MaterialSavePayload {
   }
 }
 
-export async function saveAdvertiserMaterial(dealId: string, payload: MaterialSavePayload) {
+export async function saveAdvertiserMaterial(
+  dealId: string,
+  payload: Pick<MaterialSavePayload, 'bodyText' | 'destinationUrl'>,
+) {
   const bundle = await reloadDealBundle(dealId)
   if (bundle.deal.content_mode !== 'advertiser_provides') {
     throw new DealActionError('Deal is not advertiser_provides mode', 400)
+  }
+
+  const bodyText = payload.bodyText?.trim()
+  if (!bodyText) {
+    throw new DealActionError('bodyText required', 400)
   }
 
   const admin = getAdminClient()
   const now = new Date().toISOString()
   const row = {
     ad_request_id: dealId,
-    body_text: payload.bodyText ?? null,
-    destination_url: payload.destinationUrl ?? null,
-    attachments: payload.attachments ?? null,
+    body_text: bodyText,
+    destination_url: payload.destinationUrl?.trim() || null,
     updated_at: now,
   }
 
@@ -715,10 +759,58 @@ export async function saveAdvertiserMaterial(dealId: string, payload: MaterialSa
   return reloadDealBundle(dealId)
 }
 
-export async function submitCreatorContent(dealId: string, payload: MaterialSavePayload) {
+export async function saveAdvertiserBrief(
+  dealId: string,
+  payload: Pick<MaterialSavePayload, 'bodyText' | 'destinationUrl'>,
+) {
+  const bundle = await reloadDealBundle(dealId)
+  if (bundle.deal.content_mode !== 'creator_creates') {
+    throw new DealActionError('Deal is not creator_creates mode', 400)
+  }
+
+  const status = bundle.deal.content_status
+  if (status === 'submitted' || status === 'approved') {
+    throw new DealActionError('Cannot edit brief while content is under review or approved', 400)
+  }
+
+  const bodyText = payload.bodyText?.trim()
+  if (!bodyText) {
+    throw new DealActionError('bodyText required', 400)
+  }
+
+  const admin = getAdminClient()
+  const now = new Date().toISOString()
+  const row = {
+    ad_request_id: dealId,
+    body_text: bodyText,
+    destination_url: payload.destinationUrl?.trim() || null,
+    updated_at: now,
+  }
+
+  const existing = bundle.material
+  if (existing) {
+    const { error } = await admin.from('deal_materials').update(row).eq('id', existing.id)
+    if (error) throw new DealActionError(error.message, 500)
+  } else {
+    const { error } = await admin.from('deal_materials').insert({ ...row, created_at: now })
+    if (error) throw new DealActionError(error.message, 500)
+  }
+
+  return reloadDealBundle(dealId)
+}
+
+export async function submitCreatorContent(
+  dealId: string,
+  payload: Pick<MaterialSavePayload, 'creatorSubmissionText'>,
+) {
   const bundle = await reloadDealBundle(dealId)
   if (!canSubmitCreatorContent(bundle.lifecycle)) {
     throw new DealActionError('Cannot submit creator content now', 400)
+  }
+
+  const submissionText = payload.creatorSubmissionText?.trim()
+  if (!submissionText) {
+    throw new DealActionError('creatorSubmissionText required', 400)
   }
 
   const admin = getAdminClient()
@@ -726,8 +818,7 @@ export async function submitCreatorContent(dealId: string, payload: MaterialSave
 
   const materialRow = {
     ad_request_id: dealId,
-    creator_submission_text: payload.creatorSubmissionText ?? null,
-    attachments: payload.attachments ?? null,
+    creator_submission_text: submissionText,
     updated_at: now,
   }
 
@@ -770,7 +861,7 @@ export async function approveCreatorContent(dealId: string) {
     .eq('content_status', 'submitted')
 
   if (error) throw new DealActionError(error.message, 500)
-  return reloadDealBundle(dealId)
+  return tryStartFinalReview(dealId)
 }
 
 export async function requestCreatorContentChanges(dealId: string, comment: string) {

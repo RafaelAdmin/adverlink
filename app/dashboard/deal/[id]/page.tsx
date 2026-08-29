@@ -13,11 +13,13 @@ import {
 import { formatAmdWithUsd } from '@/lib/currency'
 import { glassDealCard } from '@/lib/deals'
 import FinalTermsSection from '@/app/dashboard/components/deal/FinalTermsSection'
+import DealContentSection from '@/app/dashboard/components/deal/DealContentSection'
 import PlacementsSection from '@/app/dashboard/components/deal/PlacementsSection'
 import DealChat from '@/app/dashboard/components/DealChat'
 import { markDealViewed } from '@/lib/notifications'
-import type { AdRequest, Channel, DealPlacement } from '@/lib/database.types'
+import type { AdRequest, Channel, DealMaterial, DealPlacement } from '@/lib/database.types'
 import { coerceAdRequestRow } from '@/lib/final-terms-ui'
+import { coerceMaterial } from '@/lib/deal-content-ui'
 import {
   coercePlacements,
   parseTelegramAnalyticsMap,
@@ -34,6 +36,7 @@ export default function DealDetailPage() {
   const [request, setRequest] = useState<AdRequest | null>(null)
   const [channel, setChannel] = useState<Channel | null>(null)
   const [placements, setPlacements] = useState<DealPlacement[]>([])
+  const [material, setMaterial] = useState<DealMaterial | null>(null)
   const [telegramAnalytics, setTelegramAnalytics] = useState<
     Record<string, PlacementTelegramAnalytics>
   >({})
@@ -67,13 +70,14 @@ export default function DealDetailPage() {
   )
 
   const refreshDealState = useCallback(async () => {
-    const [{ data: deal }, { data: placementRows }] = await Promise.all([
+    const [{ data: deal }, { data: placementRows }, { data: materialRow }] = await Promise.all([
       supabase.from('ad_requests').select('*').eq('id', dealId).single(),
       supabase
         .from('deal_placements')
         .select('*')
         .eq('ad_request_id', dealId)
         .order('placement_index', { ascending: true }),
+      supabase.from('deal_materials').select('*').eq('ad_request_id', dealId).maybeSingle(),
     ])
 
     if (deal) {
@@ -82,6 +86,7 @@ export default function DealDetailPage() {
 
     const nextPlacements = coercePlacements(placementRows)
     setPlacements(nextPlacements)
+    setMaterial(coerceMaterial(materialRow))
     await loadTelegramAnalytics(nextPlacements)
   }, [dealId, loadTelegramAnalytics, supabase])
 
@@ -127,14 +132,18 @@ export default function DealDetailPage() {
       setRole(userRole)
       await markDealViewed(supabase, dealId, userRole)
 
-      const { data: placementRows } = await supabase
-        .from('deal_placements')
-        .select('*')
-        .eq('ad_request_id', dealId)
-        .order('placement_index', { ascending: true })
+      const [{ data: placementRows }, { data: materialRow }] = await Promise.all([
+        supabase
+          .from('deal_placements')
+          .select('*')
+          .eq('ad_request_id', dealId)
+          .order('placement_index', { ascending: true }),
+        supabase.from('deal_materials').select('*').eq('ad_request_id', dealId).maybeSingle(),
+      ])
 
       const nextPlacements = coercePlacements(placementRows)
       setPlacements(nextPlacements)
+      setMaterial(coerceMaterial(materialRow))
       await loadTelegramAnalytics(nextPlacements)
       setLoading(false)
     }
@@ -223,6 +232,18 @@ export default function DealDetailPage() {
         request={request}
         currentUserId={userId}
         onUpdate={handleUpdate}
+        onRefresh={refreshDealState}
+      />
+
+      <DealContentSection
+        dealId={dealId}
+        request={request}
+        material={material}
+        placements={placements}
+        role={role}
+        onDealUpdate={handleUpdate}
+        onMaterialUpdate={setMaterial}
+        onPlacementsUpdate={setPlacements}
         onRefresh={refreshDealState}
       />
 

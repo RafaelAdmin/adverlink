@@ -328,6 +328,15 @@ describe('all placements published & final review', () => {
     expect(canStartFinalReview(ctx)).toBe(false)
   })
 
+  it('creator_creates N/N with approved content can start final review', () => {
+    const ctx = newLifecycleCtx({
+      contentMode: 'creator_creates',
+      contentStatus: 'approved',
+      placements: placements([1, 'published'], [2, 'published']),
+    })
+    expect(canStartFinalReview(ctx)).toBe(true)
+  })
+
   it('advertiser_provides does not require creator content approval', () => {
     const ctx = newLifecycleCtx({
       contentMode: 'advertiser_provides',
