@@ -259,4 +259,15 @@ export async function refreshChannelSubscribers(
   return count
 }
 
+/** Refresh subscriber count for verified channels without optional bot analytics. */
+export async function refreshVerifiedChannelSubscribersByUsername(
+  supabase: SupabaseClient,
+  channelId: string,
+  telegramUsername: string,
+): Promise<number | null> {
+  const clean = telegramUsername.replace('@', '').replace(/[^a-zA-Z0-9_]/g, '')
+  if (!clean) return null
+  return refreshChannelSubscribers(supabase, channelId, `@${clean}`)
+}
+
 export { ANALYTICS_MIN_POSTS }

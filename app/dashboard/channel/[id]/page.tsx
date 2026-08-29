@@ -102,6 +102,7 @@ export default function ChannelProfilePage() {
         subscribers,
         channel.analytics_avg_views_24h ?? null,
         channel.analytics_err24_eligible_count ?? 0,
+        channel.analytics_status,
       )
     : null
   const cpmLabel =

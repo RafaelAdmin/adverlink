@@ -7,6 +7,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { getChannelHandle } from '@/lib/channel-helpers'
 import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
 import ProReportGenerator from '@/app/dashboard/components/ProReportGenerator'
+import TelegramAnalyticsConnect from '@/app/dashboard/components/TelegramAnalyticsConnect'
 
 export default function EditChannelPage() {
   const [channel, setChannel] = useState<any>(null)
@@ -238,6 +239,16 @@ export default function EditChannelPage() {
       <div style={{ marginTop: '24px' }}>
         <ProReportGenerator channel={channel} isPro={isPro} />
       </div>
+
+      <TelegramAnalyticsConnect
+        channelId={channel.id}
+        analyticsStatus={channel.analytics_status}
+        isVerified={channel.verification_status === 'verified'}
+        platform={channel.platform}
+        onConnected={() =>
+          setChannel({ ...channel, analytics_status: 'connected' })
+        }
+      />
 
       <div
         style={{

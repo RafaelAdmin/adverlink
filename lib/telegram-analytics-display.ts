@@ -39,11 +39,21 @@ function formatMetricCell(metric: MetricValue, formatter: (n: number) => string)
   return { value: '—', label: '' }
 }
 
+export type MarketplaceMetricsMode = 'err24' | 'err' | 'collecting' | 'unavailable'
+
+export function isOptionalAnalyticsConnected(status?: string | null): boolean {
+  return status === 'connected' || status === 'collecting' || status === 'active'
+}
+
+export function isAnalyticsDisconnected(status?: string | null): boolean {
+  return !status || status === 'disconnected' || status === 'error'
+}
+
 export function getMarketplaceMetrics(channel: ChannelAnalyticsFields): {
   subscribers: MarketplaceMetricCell
   engagement: MarketplaceMetricCell & { metricLabel: string }
   price: MarketplaceMetricCell
-  mode: 'err24' | 'err' | 'collecting'
+  mode: MarketplaceMetricsMode
 } {
   const subs = channel.subscriber_count ?? 0
   const avgViews = channel.avg_views ?? 0
@@ -51,13 +61,8 @@ export function getMarketplaceMetrics(channel: ChannelAnalyticsFields): {
   const eligible24h = channel.analytics_err24_eligible_count ?? 0
   const adPrice = channel.ad_price ?? 0
   const postsTracked = channel.analytics_posts_tracked ?? 0
+  const analyticsConnected = isOptionalAnalyticsConnected(channel.analytics_status)
   const hasViewMetrics = avgViews > 0
-
-  const collection = getAnalyticsCollectionState({
-    analyticsStatus: channel.analytics_status,
-    postsTracked,
-    hasViewMetrics,
-  })
 
   const subscribers: MarketplaceMetricCell = {
     value: formatSubs(subs),
@@ -104,29 +109,70 @@ export function getMarketplaceMetrics(channel: ChannelAnalyticsFields): {
     }
   }
 
-  const collectingLabel =
-    collection.status === 'collecting'
-      ? `${collection.postsTracked}/${collection.minPosts}`
-      : collection.status === 'connected'
-        ? '0'
-        : '—'
+  if (err !== null) {
+    return {
+      subscribers,
+      engagement: {
+        value: `${err}%`,
+        label: 'ERR',
+        metricLabel: 'ERR',
+      },
+      price: {
+        value: '—',
+        label: 'CPM',
+      },
+      mode: 'err',
+    }
+  }
+
+  if (analyticsConnected) {
+    const collection = getAnalyticsCollectionState({
+      analyticsStatus: channel.analytics_status,
+      postsTracked,
+      hasViewMetrics,
+    })
+    const collectingLabel =
+      collection.status === 'collecting'
+        ? `${collection.postsTracked}/${collection.minPosts}`
+        : collection.status === 'connected'
+          ? '0'
+          : '—'
+
+    return {
+      subscribers,
+      engagement: {
+        value: collectingLabel,
+        label: 'аналитика',
+        metricLabel: 'Сбор данных',
+      },
+      price: {
+        value: '—',
+        label: 'CPM',
+      },
+      mode: 'collecting',
+    }
+  }
 
   return {
     subscribers,
     engagement: {
-      value: collectingLabel,
-      label: 'аналитика',
-      metricLabel: 'Сбор данных',
+      value: '—',
+      label: 'Нет данных',
+      metricLabel: 'Аналитика',
     },
     price: {
-      value: channel.ad_price ? 'цена' : '—',
-      label: channel.ad_price ? '' : 'цена',
+      value: '—',
+      label: 'аналитика',
     },
-    mode: 'collecting',
+    mode: 'unavailable',
   }
 }
 
 export function getAnalyticsStatusLabel(channel: ChannelAnalyticsFields): string | null {
+  if (isAnalyticsDisconnected(channel.analytics_status)) {
+    return null
+  }
+
   const postsTracked = channel.analytics_posts_tracked ?? 0
   const hasViewMetrics = (channel.avg_views ?? 0) > 0
   const state = getAnalyticsCollectionState({
@@ -136,17 +182,25 @@ export function getAnalyticsStatusLabel(channel: ChannelAnalyticsFields): string
   })
 
   switch (state.status) {
-    case 'disconnected':
-      return null
     case 'connected':
-      return 'Аналитика подключена — ожидаем новые посты'
+      return 'Автоаналитика подключена — ожидаем новые посты'
     case 'collecting':
-      return `Сбор аналитики: ${state.postsTracked} / ${state.minPosts} постов`
+      return `Сбор автоаналитики: ${state.postsTracked} / ${state.minPosts} постов`
     case 'active':
-      return 'Аналитика активна'
+      return 'Автоаналитика активна'
     default:
       return null
   }
+}
+
+export function formatAnalyticsMetricLabel(
+  analyticsStatus: string | null | undefined,
+  hasManualViews: boolean,
+): string {
+  if (isAnalyticsDisconnected(analyticsStatus) && !hasManualViews) {
+    return 'Нет данных'
+  }
+  return '—'
 }
 
 export function formatErrDisplay(
@@ -162,7 +216,11 @@ export function formatErr24Display(
   subscribers: number,
   avgViews24h: number | null,
   eligibleCount: number,
+  analyticsStatus?: string | null,
 ): string {
+  if (isAnalyticsDisconnected(analyticsStatus)) {
+    return 'Нет данных'
+  }
   if (eligibleCount < 1 || avgViews24h === null || avgViews24h <= 0) return 'Сбор данных'
   const err24 = computeErr24(subscribers, avgViews24h)
   return err24 !== null ? `${err24}%` : '—'

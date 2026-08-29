@@ -7,6 +7,7 @@
 alter table public.channels
   add column if not exists telegram_chat_id bigint,
   add column if not exists analytics_status text default 'disconnected',
+  -- Optional auto-analytics integration state only (NOT ownership verification).
   add column if not exists analytics_connected_at timestamp with time zone,
   add column if not exists analytics_posts_tracked integer default 0,
   add column if not exists analytics_last_sync_at timestamp with time zone,
@@ -179,11 +180,13 @@ end;
 $$;
 
 -- ============================================================
--- RPC: CONNECT TELEGRAM ANALYTICS (owner only)
+-- RPC: CONNECT TELEGRAM ANALYTICS (service role / trusted API only)
+-- Telegram chat ID is resolved server-side; p_owner_id is verified after API auth.
 -- ============================================================
 create or replace function public.connect_telegram_analytics(
   p_channel_id uuid,
-  p_telegram_chat_id bigint
+  p_telegram_chat_id bigint,
+  p_owner_id uuid
 )
 returns void
 language plpgsql
@@ -191,14 +194,14 @@ security definer
 set search_path = public
 as $$
 begin
-  if auth.uid() is null then
-    raise exception 'Not authenticated';
+  if p_owner_id is null then
+    raise exception 'Owner id required';
   end if;
 
   if not exists (
     select 1 from public.channels
     where id = p_channel_id
-      and owner_id = auth.uid()
+      and owner_id = p_owner_id
       and verification_status = 'verified'
       and (platform = 'telegram' or platform is null)
   ) then
@@ -212,12 +215,12 @@ begin
     telegram_chat_id = p_telegram_chat_id,
     analytics_status = 'connected',
     analytics_connected_at = coalesce(analytics_connected_at, now())
-  where id = p_channel_id and owner_id = auth.uid();
+  where id = p_channel_id and owner_id = p_owner_id;
 end;
 $$;
 
-revoke all on function public.connect_telegram_analytics(uuid, bigint) from public;
-grant execute on function public.connect_telegram_analytics(uuid, bigint) to authenticated;
+revoke all on function public.connect_telegram_analytics(uuid, bigint, uuid) from public;
+grant execute on function public.connect_telegram_analytics(uuid, bigint, uuid) to service_role;
 
 -- ============================================================
 -- RPC: SYNC CHANNEL ANALYTICS (service role / cron only)

@@ -30,9 +30,6 @@ export default function VerifyChannelPage() {
   const [verifying, setVerifying] = useState(false)
   const [verificationResult, setVerificationResult] = useState<'success' | 'fail' | null>(null)
   const [step1Confirmed, setStep1Confirmed] = useState(false)
-  const [analyticsConnecting, setAnalyticsConnecting] = useState(false)
-  const [analyticsConnected, setAnalyticsConnected] = useState(false)
-  const [analyticsError, setAnalyticsError] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -56,9 +53,6 @@ export default function VerifyChannelPage() {
       }
 
       setChannel(data)
-      if (data.analytics_status && data.analytics_status !== 'disconnected') {
-        setAnalyticsConnected(true)
-      }
       setLoading(false)
     }
     load()
@@ -105,32 +99,6 @@ export default function VerifyChannelPage() {
     }
 
     setVerifying(false)
-  }
-
-  const handleConnectAnalytics = async () => {
-    if (!channel) return
-    setAnalyticsConnecting(true)
-    setAnalyticsError(null)
-    try {
-      const response = await fetch('/api/telegram/analytics/connect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channelId: channel.id }),
-      })
-      const data = await response.json()
-      if (data.connected) {
-        setAnalyticsConnected(true)
-      } else if (data.error === 'bot_not_admin') {
-        setAnalyticsError(
-          `Добавьте ${data.botUsername || '@adverlink_bot'} администратором канала, затем нажмите «Подключить аналитику» снова.`,
-        )
-      } else {
-        setAnalyticsError(data.error || 'Не удалось подключить аналитику')
-      }
-    } catch {
-      setAnalyticsError('Ошибка подключения')
-    }
-    setAnalyticsConnecting(false)
   }
 
   if (loading || !channel) {
@@ -507,86 +475,17 @@ export default function VerifyChannelPage() {
                   : `${channelHandle} успешно подтверждён`}
               </p>
               {isTelegram && (
-                <div style={{ textAlign: 'left', marginBottom: '24px' }}>
-                  <div
-                    style={{
-                      background: 'rgba(34,197,94,0.1)',
-                      border: '1px solid rgba(34,197,94,0.25)',
-                      borderRadius: '12px',
-                      padding: '12px 16px',
-                      marginBottom: '12px',
-                    }}
-                  >
-                    <p style={{ color: '#86efac', fontSize: '13px', margin: 0, fontWeight: 600 }}>
-                      ✓ Владение подтверждено
-                    </p>
-                  </div>
-
-                  <div
-                    style={{
-                      background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '12px',
-                      padding: '16px',
-                    }}
-                  >
-                    <p style={{ color: 'white', fontSize: '14px', fontWeight: 600, margin: '0 0 8px' }}>
-                      Шаг 2: Подключение аналитики (рекомендуется)
-                    </p>
-                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', margin: '0 0 12px', lineHeight: 1.6 }}>
-                      Аналитика собирается только для <strong style={{ color: 'white' }}>новых постов</strong>{' '}
-                      после подключения. Исторические посты не импортируются.
-                    </p>
-                    <ol style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', lineHeight: '1.9', paddingLeft: '20px', margin: '0 0 12px' }}>
-                      <li>
-                        Добавьте <strong style={{ color: 'white' }}>@adverlink_bot</strong> в канал как{' '}
-                        <strong style={{ color: 'white' }}>администратора</strong>
-                      </li>
-                      <li>
-                        Специальные права (публикация, удаление и т.д.) боту не нужны — достаточно статуса
-                        администратора для получения новых постов
-                      </li>
-                      <li>Нажмите «Подключить аналитику» ниже</li>
-                    </ol>
-
-                    {analyticsConnected ? (
-                      <div
-                        style={{
-                          background: 'rgba(34,197,94,0.1)',
-                          border: '1px solid rgba(34,197,94,0.25)',
-                          borderRadius: '10px',
-                          padding: '10px 14px',
-                          color: '#86efac',
-                          fontSize: '13px',
-                        }}
-                      >
-                        ✓ Аналитика подключена — новые посты будут отслеживаться
-                      </div>
-                    ) : (
-                      <>
-                        {analyticsError && (
-                          <p style={{ color: '#f87171', fontSize: '13px', margin: '0 0 12px' }}>{analyticsError}</p>
-                        )}
-                        <button
-                          type="button"
-                          onClick={handleConnectAnalytics}
-                          disabled={analyticsConnecting}
-                          className="btn-accent"
-                          style={{
-                            border: 'none',
-                            borderRadius: '12px',
-                            padding: '10px 20px',
-                            fontSize: '14px',
-                            cursor: analyticsConnecting ? 'wait' : 'pointer',
-                            opacity: analyticsConnecting ? 0.7 : 1,
-                          }}
-                        >
-                          {analyticsConnecting ? 'Подключение...' : 'Подключить аналитику'}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
+                <p
+                  style={{
+                    color: 'rgba(255,255,255,0.45)',
+                    fontSize: '13px',
+                    marginBottom: '24px',
+                    lineHeight: 1.6,
+                  }}
+                >
+                  Канал готов к использованию на маркетплейсе. Автоматическую аналитику можно
+                  подключить позже в настройках канала — это необязательно.
+                </p>
               )}
               <button
                 type="button"

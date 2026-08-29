@@ -7,6 +7,7 @@ import {
   isBotChannelAdmin,
 } from '@/lib/telegram-bot'
 import { checkRateLimit } from '@/lib/notify-auth'
+import { createAdminClient } from '@/lib/supabase-admin'
 
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>()
 const RATE_LIMIT_MAX = 5
@@ -79,9 +80,10 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  const { error: rpcError } = await supabase.rpc('connect_telegram_analytics', {
+  const { error: rpcError } = await createAdminClient().rpc('connect_telegram_analytics', {
     p_channel_id: channelId,
     p_telegram_chat_id: chat.id,
+    p_owner_id: user.id,
   })
 
   if (rpcError) {
