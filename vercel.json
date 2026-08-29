@@ -3,6 +3,10 @@
     {
       "path": "/api/auto-complete",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/telegram-analytics",
+      "schedule": "15 * * * *"
     }
   ]
 }

@@ -8,6 +8,7 @@ import PlatformBadge from '../PlatformBadge'
 import VerifiedBadge from '../VerifiedBadge'
 import ChannelAvatar from './ChannelAvatar'
 import { formatEngagementRate } from '@/lib/channel-metrics'
+import { getMarketplaceMetrics } from '@/lib/telegram-analytics-display'
 
 export default function ChannelCard({
   channel,
@@ -23,7 +24,23 @@ export default function ChannelCard({
   const convertChannelPrice = (price: number, fromCurrency: string = 'USD'): string =>
     formatConvertedPrice(price, fromCurrency, displayCurrency, rates, 'По запросу')
 
-  const engagementLabel = formatEngagementRate(channel.subscriber_count, channel.avg_views)
+  const isTelegram = channel.platform === 'telegram' || !channel.platform
+  const marketplaceMetrics = isTelegram ? getMarketplaceMetrics(channel) : null
+  const engagementLabel = marketplaceMetrics
+    ? marketplaceMetrics.mode === 'collecting'
+      ? null
+      : marketplaceMetrics.engagement.value
+    : formatEngagementRate(channel.subscriber_count, channel.avg_views)
+  const thirdMetricValue = marketplaceMetrics
+    ? marketplaceMetrics.mode === 'collecting'
+      ? '—'
+      : marketplaceMetrics.price.value
+    : engagementLabel
+  const thirdMetricLabel = marketplaceMetrics
+    ? marketplaceMetrics.mode === 'collecting'
+      ? 'CPM'
+      : marketplaceMetrics.price.label || 'CPM'
+    : 'ER'
 
   return (
     <Link
@@ -108,17 +125,48 @@ export default function ChannelCard({
         >
           <div className="bg-white/5 rounded-xl p-2 text-center">
             <div className="text-white text-sm font-semibold">
-              {channel.subscriber_count >= 1000 ? `${(channel.subscriber_count / 1000).toFixed(1)}K` : channel.subscriber_count}
+              {marketplaceMetrics
+                ? marketplaceMetrics.subscribers.value
+                : channel.subscriber_count >= 1000
+                  ? `${(channel.subscriber_count / 1000).toFixed(1)}K`
+                  : channel.subscriber_count}
             </div>
-            <div className="text-white/40 text-xs">подписчиков</div>
+            <div className="text-white/40 text-xs">
+              {marketplaceMetrics ? marketplaceMetrics.subscribers.label : 'подписчиков'}
+            </div>
           </div>
           <div className="bg-white/5 rounded-xl p-2 text-center">
-            <div className="text-white text-sm font-semibold">
-              {channel.avg_views >= 1000 ? `${(channel.avg_views / 1000).toFixed(1)}K` : channel.avg_views}
-            </div>
-            <div className="text-white/40 text-xs">охваты</div>
+            {marketplaceMetrics && marketplaceMetrics.mode === 'collecting' ? (
+              <>
+                <div className="text-white/50 text-sm font-semibold">{marketplaceMetrics.engagement.value}</div>
+                <div className="text-white/40 text-xs">{marketplaceMetrics.engagement.label}</div>
+              </>
+            ) : marketplaceMetrics && marketplaceMetrics.mode !== 'collecting' ? (
+              <>
+                <div className="text-white text-sm font-semibold">{marketplaceMetrics.engagement.value}</div>
+                <div className="text-white/40 text-xs">{marketplaceMetrics.engagement.metricLabel}</div>
+              </>
+            ) : (
+              <>
+                <div className="text-white text-sm font-semibold">
+                  {channel.avg_views >= 1000 ? `${(channel.avg_views / 1000).toFixed(1)}K` : channel.avg_views}
+                </div>
+                <div className="text-white/40 text-xs">охваты</div>
+              </>
+            )}
           </div>
-          {engagementLabel ? (
+          {marketplaceMetrics ? (
+            <div className="bg-white/5 rounded-xl p-2 text-center">
+              <div
+                className={
+                  marketplaceMetrics.mode === 'collecting' ? 'text-white/50 text-sm font-semibold' : 'text-white text-sm font-semibold'
+                }
+              >
+                {thirdMetricValue}
+              </div>
+              <div className="text-white/40 text-xs">{thirdMetricLabel}</div>
+            </div>
+          ) : engagementLabel ? (
             <div className="bg-white/5 rounded-xl p-2 text-center">
               <div className="text-white text-sm font-semibold">{engagementLabel}</div>
               <div className="text-white/40 text-xs">ER</div>

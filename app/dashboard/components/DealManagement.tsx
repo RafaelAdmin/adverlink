@@ -372,11 +372,25 @@ export function CreatorDealActions({
             style={{ ...dealBtn.submit, marginTop: '16px', opacity: saving || !proofLinks.trim() ? 0.5 : 1 }}
             onClick={async () => {
               const links = proofLinks.split('\n').map((l: string) => l.trim()).filter(Boolean)
-              await patch({
+              const ok = await patch({
                 status: 'submitted',
                 proof_links: links,
                 creator_note: creatorNote.trim() || null,
               })
+              if (ok && request.channel_id) {
+                for (const link of links) {
+                  if (!link.includes('t.me/') && !link.includes('telegram.me/')) continue
+                  try {
+                    await fetch('/api/telegram/analytics/associate-post', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ dealId: request.id, postUrl: link }),
+                    })
+                  } catch {
+                    /* association is best-effort in V1 */
+                  }
+                }
+              }
             }}
           >
             Отправить на проверку

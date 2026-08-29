@@ -35,6 +35,43 @@ export type Channel = {
   verification_status: string
   platform: string
   platform_url: string | null
+  telegram_chat_id: number | null
+  analytics_status: string
+  analytics_connected_at: string | null
+  analytics_posts_tracked: number
+  analytics_last_sync_at: string | null
+  analytics_avg_views_24h: number | null
+  analytics_err24_eligible_count: number
+  created_at: string
+}
+
+export type TelegramPost = {
+  id: string
+  channel_id: string
+  telegram_chat_id: number
+  telegram_message_id: number
+  published_at: string
+  subscriber_count_at_publish: number | null
+  views_at_ingest: number | null
+  current_views: number | null
+  last_analytics_update: string | null
+  ad_request_id: string | null
+  deal_price: number | null
+  is_deleted: boolean
+  edited_at: string | null
+  created_at: string
+}
+
+export type TelegramPostSnapshot = {
+  id: string
+  post_id: string
+  checkpoint: string
+  scheduled_at: string
+  captured_at: string | null
+  subscriber_count: number | null
+  views: number | null
+  views_unavailable: boolean
+  status: string
   created_at: string
 }
 
