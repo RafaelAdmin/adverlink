@@ -4,18 +4,14 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { CurrencyCode, getExchangeRates, formatConvertedPrice } from '@/lib/currency'
+import { getExchangeRates } from '@/lib/currency'
+import { usePreferredCurrency } from '@/lib/usePreferredCurrency'
 import { getChannelHandle, getChannelLink, getPlatformLabel } from '@/lib/channel-helpers'
 import CurrencySelector from '@/app/dashboard/components/CurrencySelector'
 import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
 import VerifiedBadge from '@/app/dashboard/components/VerifiedBadge'
+import TelegramChannelAnalyticsSection from '@/app/dashboard/components/TelegramChannelAnalyticsSection'
 import { formatEngagementRate } from '@/lib/channel-metrics'
-import {
-  formatErr24Display,
-  formatErrDisplay,
-  getAnalyticsStatusLabel,
-} from '@/lib/telegram-analytics-display'
-import { computeCpm, computeCpm24 } from '@/lib/telegram-analytics'
 
 export default function ChannelProfilePage() {
   const params = useParams()
@@ -24,7 +20,7 @@ export default function ChannelProfilePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isMyChannel, setIsMyChannel] = useState(false)
-  const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>('USD')
+  const [displayCurrency, setDisplayCurrency] = usePreferredCurrency()
   const [rates, setRates] = useState<Record<string, number>>({})
   const router = useRouter()
   const supabase = createClient()
@@ -90,81 +86,32 @@ export default function ChannelProfilePage() {
 
   const isVerified = channel.is_verified || channel.verification_status === 'verified'
   const isTelegram = channel.platform === 'telegram' || !channel.platform
-  const subscribers = channel.subscriber_count ?? 0
-  const avgViews = channel.avg_views ?? 0
-  const engagementLabel = formatEngagementRate(subscribers, avgViews)
-  const analyticsStatusLabel = isTelegram ? getAnalyticsStatusLabel(channel) : null
-  const errLabel = isTelegram
-    ? formatErrDisplay(subscribers, avgViews > 0 ? avgViews : null)
-    : engagementLabel ?? '—'
-  const err24Label = isTelegram
-    ? formatErr24Display(
-        subscribers,
-        channel.analytics_avg_views_24h ?? null,
-        channel.analytics_err24_eligible_count ?? 0,
-        channel.analytics_status,
-      )
-    : null
-  const cpmLabel =
-    isTelegram && channel.ad_price && avgViews > 0
-      ? computeCpm(channel.ad_price, avgViews)
-      : null
-  const cpm24Label =
-    isTelegram && channel.ad_price && (channel.analytics_avg_views_24h ?? 0) > 0
-      ? computeCpm24(channel.ad_price, channel.analytics_avg_views_24h)
-      : null
+  const engagementLabel = formatEngagementRate(channel.subscriber_count, channel.avg_views)
 
-  const convertChannelPrice = (price: number, fromCurrency: string = 'USD'): string =>
-    formatConvertedPrice(price, fromCurrency, displayCurrency, rates)
-
-  const metrics = [
-    { label: 'Подписчики', value: subscribers.toLocaleString() },
-    ...(isTelegram
-      ? [
-          { label: 'Средние просмотры', value: avgViews > 0 ? avgViews.toLocaleString() : '—' },
-          { label: 'ERR', value: errLabel },
-          { label: 'ERR24', value: err24Label ?? '—' },
-          {
-            label: 'CPM',
-            value: cpmLabel !== null ? `$${cpmLabel.toFixed(2)}` : '—',
-          },
-          {
-            label: 'CPM24',
-            value:
-              cpm24Label !== null && (channel.analytics_err24_eligible_count ?? 0) > 0
-                ? `$${cpm24Label.toFixed(2)}`
-                : 'Сбор данных',
-          },
-          {
-            label: 'Постов отслеживается',
-            value: String(channel.analytics_posts_tracked ?? 0),
-          },
-          ...(analyticsStatusLabel
-            ? [{ label: 'Статус аналитики', value: analyticsStatusLabel }]
-            : []),
-          ...(channel.analytics_last_sync_at
-            ? [
-                {
-                  label: 'Последнее обновление',
-                  value: new Date(channel.analytics_last_sync_at).toLocaleString('ru-RU'),
-                },
-              ]
-            : []),
-        ]
-      : [
-          { label: 'Средние охваты', value: avgViews.toLocaleString() },
-          { label: 'Вовлечённость (ER)', value: engagementLabel ?? '—' },
-        ]),
-    {
-      label: 'Цена рекламы',
-      value: channel.ad_price
-        ? convertChannelPrice(channel.ad_price, channel.ad_price_currency || 'USD')
-        : '—',
-      accent: true,
-    },
-    { label: 'Страна', value: channel.country || '—' },
-    { label: 'Язык', value: channel.language || '—' },
-  ]
+  const generalMetrics = isTelegram
+    ? [
+        { label: 'Страна', value: channel.country || '—' },
+        { label: 'Язык', value: channel.language || '—' },
+      ]
+    : [
+        {
+          label: 'Подписчики',
+          value:
+            channel.subscriber_count != null
+              ? channel.subscriber_count.toLocaleString()
+              : '—',
+        },
+        {
+          label: 'Средние охваты',
+          value:
+            channel.avg_views != null && channel.avg_views > 0
+              ? channel.avg_views.toLocaleString()
+              : '—',
+        },
+        { label: 'Вовлечённость (ER)', value: engagementLabel ?? '—' },
+        { label: 'Страна', value: channel.country || '—' },
+        { label: 'Язык', value: channel.language || '—' },
+      ]
 
   return (
     <div>
@@ -266,40 +213,46 @@ export default function ChannelProfilePage() {
         }}
       >
         <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>
-          Показывать цены в:
+          Предпочитаемая валюта:
         </span>
         <CurrencySelector value={displayCurrency} onChange={setDisplayCurrency} size="sm" />
       </div>
 
-      <div
-        className="stats-grid"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-          gap: '12px',
-          marginBottom: '16px',
-        }}
-      >
-        {metrics.map((item) => (
-          <div
-            key={item.label}
-            style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: '14px',
-              padding: '20px',
-            }}
-          >
+      {isTelegram ? (
+        <TelegramChannelAnalyticsSection
+          channel={channel}
+          display={{ displayCurrency, rates }}
+        />
+      ) : null}
+
+      {generalMetrics.length > 0 && (
+        <div
+          className="stats-grid"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+            gap: '12px',
+            marginBottom: '16px',
+          }}
+        >
+          {generalMetrics.map((item) => (
             <div
-              className={item.accent ? 'text-price-accent' : 'text-white'}
-              style={{ fontSize: '20px', fontWeight: '700', marginBottom: '4px' }}
+              key={item.label}
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '14px',
+                padding: '20px',
+              }}
             >
-              {item.value}
+              <div className="text-white" style={{ fontSize: '20px', fontWeight: '700', marginBottom: '4px' }}>
+                {item.value}
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>{item.label}</div>
             </div>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>{item.label}</div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {channel.description && (
         <div
@@ -319,23 +272,6 @@ export default function ChannelProfilePage() {
           </p>
         </div>
       )}
-
-      <div
-        style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '16px',
-          padding: '24px',
-          marginBottom: '16px',
-        }}
-      >
-        <h2 style={{ color: 'white', fontWeight: '600', fontSize: '16px', margin: '0 0 8px' }}>
-          Аналитика
-        </h2>
-        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', margin: '0 0 16px' }}>
-          ER = средние охваты ÷ подписчики × 100. Расширенная аналитика — скоро.
-        </p>
-      </div>
 
       {isMyChannel ? (
         <div

@@ -10,51 +10,114 @@ import type { CurrencyCode } from '@/lib/database.types'
 
 export type { CurrencyCode } from '@/lib/database.types'
 
-// Cache exchange rates
+export type MoneySource = {
+  sourceAmount: number
+  sourceCurrency: string
+}
+
+export type MoneyDisplayContext = {
+  displayCurrency: CurrencyCode
+  rates: Record<string, number>
+}
+
+/** Convert stored amount to viewer currency. Returns null if rates unavailable. */
+export function convertMoneyAmount(
+  amount: number | null | undefined,
+  fromCurrency: string | null | undefined,
+  toCurrency: CurrencyCode,
+  rates: Record<string, number>,
+): number | null {
+  if (amount == null || !Number.isFinite(amount) || amount <= 0) return null
+
+  const from = fromCurrency || 'USD'
+  if (from === toCurrency) return amount
+
+  const fromRate = rates[from]
+  const toRate = rates[toCurrency]
+  if (!fromRate || !toRate) return null
+
+  return (amount / fromRate) * toRate
+}
+
+export function formatDisplayMoney(
+  amount: number | null | undefined,
+  fromCurrency: string | null | undefined,
+  toCurrency: CurrencyCode,
+  rates: Record<string, number>,
+  emptyLabel = '—',
+): string {
+  const converted = convertMoneyAmount(amount, fromCurrency, toCurrency, rates)
+  if (converted === null) return emptyLabel
+  return formatPrice(Math.round(converted), toCurrency)
+}
+
+export function formatDisplayCpmValue(
+  cpmValue: number | null,
+  displayCurrency: CurrencyCode,
+  emptyLabel = '—',
+): string {
+  if (cpmValue === null || !Number.isFinite(cpmValue)) return emptyLabel
+  const symbol = getCurrencySymbol(displayCurrency)
+  return `${symbol}${cpmValue.toFixed(2)}`
+}
+
+// Cache exchange rates (freshness window applies — no hard-coded production fallback)
+export const EXCHANGE_RATES_CACHE_MS = 60 * 60 * 1000
+
 let ratesCache: Record<string, number> | null = null
 let ratesCacheTime = 0
 
-export async function getExchangeRates(): Promise<Record<string, number>> {
-  const now = Date.now()
-  // Cache for 1 hour
-  if (ratesCache && now - ratesCacheTime < 3600000) {
-    return ratesCache
+export type ExchangeRatesResult = {
+  rates: Record<string, number> | null
+  source: 'cache' | 'network' | 'unavailable'
+}
+
+export function resetExchangeRatesCacheForTests(): void {
+  ratesCache = null
+  ratesCacheTime = 0
+}
+
+export async function fetchExchangeRates(now: number = Date.now()): Promise<ExchangeRatesResult> {
+  if (ratesCache && now - ratesCacheTime < EXCHANGE_RATES_CACHE_MS) {
+    return { rates: ratesCache, source: 'cache' }
   }
 
   try {
-    const response = await fetch(
-      'https://api.exchangerate-api.com/v4/latest/USD'
-    )
-    const data = await response.json()
+    const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD')
+    if (!response.ok) {
+      return { rates: null, source: 'unavailable' }
+    }
+
+    const data = (await response.json()) as { rates?: Record<string, number> }
+    if (!data.rates || typeof data.rates !== 'object') {
+      return { rates: null, source: 'unavailable' }
+    }
+
     ratesCache = data.rates
     ratesCacheTime = now
-    return data.rates
+    return { rates: ratesCache, source: 'network' }
   } catch {
-    // Fallback rates if API fails
-    return {
-      USD: 1,
-      EUR: 0.92,
-      AMD: 387,
-      GEL: 2.71,
-      RUB: 89,
-    }
+    return { rates: null, source: 'unavailable' }
   }
+}
+
+/** Returns rates map or empty object when no trustworthy rate is available. */
+export async function getExchangeRates(): Promise<Record<string, number>> {
+  const result = await fetchExchangeRates()
+  return result.rates ?? {}
 }
 
 export async function convertPrice(
   amount: number,
   fromCurrency: CurrencyCode,
   toCurrency: CurrencyCode
-): Promise<number> {
+): Promise<number | null> {
   if (fromCurrency === toCurrency) return amount
 
   const rates = await getExchangeRates()
-
-  // Convert to USD first, then to target currency
-  const inUSD = amount / (rates[fromCurrency] || 1)
-  const result = inUSD * (rates[toCurrency] || 1)
-
-  return Math.round(result)
+  const converted = convertMoneyAmount(amount, fromCurrency, toCurrency, rates)
+  if (converted === null) return null
+  return Math.round(converted)
 }
 
 export function formatPrice(amount: number, currency: CurrencyCode): string {
@@ -96,12 +159,7 @@ export function formatConvertedPrice(
   emptyLabel = '—',
 ): string {
   if (!price) return emptyLabel
-  if (!rates[fromCurrency] || !rates[toCurrency]) {
-    return formatPrice(price, fromCurrency as CurrencyCode)
-  }
-  const inUSD = price / rates[fromCurrency]
-  const converted = Math.round(inUSD * rates[toCurrency])
-  return formatPrice(converted, toCurrency)
+  return formatDisplayMoney(price, fromCurrency, toCurrency, rates, emptyLabel)
 }
 
 export function toUsdEstimate(amount: number | string | null | undefined) {

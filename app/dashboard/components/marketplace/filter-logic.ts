@@ -1,3 +1,5 @@
+import { convertMoneyAmount } from '@/lib/currency'
+
 export function filterCreatorRequests(requests: any[], search: string) {
   const q = search.toLowerCase()
   return requests.filter((r) =>
@@ -63,16 +65,23 @@ export function filterChannels(
   rates: Record<string, number>,
   sortBy: string,
 ) {
+  const targetCurrency = displayCurrency as import('@/lib/database.types').CurrencyCode
   return channels
     .filter((ch) => {
       const matchSearch = ch.name?.toLowerCase().includes(search.toLowerCase()) ||
         ch.telegram_username?.toLowerCase().includes(search.toLowerCase())
       const matchSubs = (ch.subscriber_count || 0) >= minSubs && (ch.subscriber_count || 0) <= maxSubs
       const matchViews = (ch.avg_views || 0) >= minViews && (ch.avg_views || 0) <= maxViews
-      const channelPriceInDisplayCurrency = ch.ad_price
-        ? Math.round((ch.ad_price / (rates[ch.ad_price_currency || 'USD'] || 1)) * (rates[displayCurrency] || 1))
-        : 0
-      const matchPrice = !ch.ad_price || (channelPriceInDisplayCurrency >= minPrice && channelPriceInDisplayCurrency <= maxPrice)
+      const convertedPrice = ch.ad_price
+        ? convertMoneyAmount(ch.ad_price, ch.ad_price_currency || 'USD', targetCurrency, rates)
+        : null
+      const channelPriceInDisplayCurrency =
+        convertedPrice !== null ? Math.round(convertedPrice) : null
+      const matchPrice =
+        !ch.ad_price ||
+        (channelPriceInDisplayCurrency !== null &&
+          channelPriceInDisplayCurrency >= minPrice &&
+          channelPriceInDisplayCurrency <= maxPrice)
       const matchSocial = selectedSocialNet === 'all' || (ch.platform || 'telegram') === selectedSocialNet
       const matchCountry = selectedCountry === 'all' || (ch.country || '') === selectedCountry
       return matchSearch && matchSubs && matchViews && matchPrice && matchSocial && matchCountry

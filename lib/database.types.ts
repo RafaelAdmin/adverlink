@@ -11,6 +11,7 @@ export type Profile = {
   level: string
   level_deals: number
   friends_count: number
+  preferred_currency: CurrencyCode | null
   created_at: string
 }
 

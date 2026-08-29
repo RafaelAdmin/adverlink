@@ -8,6 +8,8 @@ import { getChannelHandle } from '@/lib/channel-helpers'
 import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
 import ProReportGenerator from '@/app/dashboard/components/ProReportGenerator'
 import TelegramAnalyticsConnect from '@/app/dashboard/components/TelegramAnalyticsConnect'
+import CurrencySelector from '@/app/dashboard/components/CurrencySelector'
+import { CurrencyCode } from '@/lib/currency'
 
 export default function EditChannelPage() {
   const [channel, setChannel] = useState<any>(null)
@@ -67,6 +69,7 @@ export default function EditChannelPage() {
         description,
         avg_views: avgViews,
         ad_price: adPrice,
+        ad_price_currency: channel.ad_price_currency || 'USD',
         contact_telegram: (channel.contact_telegram || '').trim().slice(0, 64),
         language: channel.language,
         country: channel.country,
@@ -175,13 +178,24 @@ export default function EditChannelPage() {
             />
           </div>
           <div className="flex flex-col gap-2">
-            <label className="text-white/70 text-sm">Цена рекламы ($)</label>
-            <input
-              type="number"
-              value={channel.ad_price || 0}
-              onChange={(e) => setChannel({ ...channel, ad_price: e.target.value })}
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus-accent transition text-sm"
-            />
+            <label className="text-white/70 text-sm">Цена рекламы</label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <CurrencySelector
+                value={(channel.ad_price_currency || 'USD') as CurrencyCode}
+                onChange={(currency) => setChannel({ ...channel, ad_price_currency: currency })}
+              />
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={channel.ad_price || 0}
+                onChange={(e) => setChannel({ ...channel, ad_price: e.target.value })}
+                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus-accent transition text-sm"
+              />
+            </div>
+            <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>
+              Цена сохраняется в выбранной валюте
+            </span>
           </div>
         </div>
 

@@ -5,6 +5,9 @@ import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { accentColors, applyAccentColor, getAccentColor, saveAccentColor } from '@/lib/theme'
 import { useDashboard } from '../layout'
+import CurrencySelector from '@/app/dashboard/components/CurrencySelector'
+import { CurrencyCode } from '@/lib/currency'
+import { usePreferredCurrency } from '@/lib/usePreferredCurrency'
 
 const notificationItems = [
   { key: 'adverlink_notify_new_requests', label: 'Новые запросы на рекламу', default: true },
@@ -44,6 +47,7 @@ export default function SettingsPage() {
   const [selectedColor, setSelectedColor] = useState(() => getAccentColor(role).value)
   const [previewGradient, setPreviewGradient] = useState(() => getAccentColor(role).gradientRaw)
   const [notifications, setNotifications] = useState<Record<string, boolean>>({})
+  const [preferredCurrency, setPreferredCurrency] = usePreferredCurrency()
 
   useEffect(() => {
     const color = getAccentColor(role)
@@ -199,6 +203,15 @@ export default function SettingsPage() {
       <section className="mb-8">
         <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
           <h2 className="text-xl font-bold text-white mb-6">Кастомизация интерфейса</h2>
+
+          <p className="text-white/50 text-sm mb-3">Предпочитаемая валюта</p>
+          <p className="text-white/40 text-xs mb-4">
+            Все цены в маркетплейсе и на страницах каналов будут показаны в этой валюте.
+            Исходная цена канала в базе данных не меняется.
+          </p>
+          <div className="mb-8">
+            <CurrencySelector value={preferredCurrency} onChange={setPreferredCurrency} />
+          </div>
 
           <p className="text-white/50 text-sm mb-1">Цвет акцента</p>
           <p className="text-white/40 text-xs mb-0">

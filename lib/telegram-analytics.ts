@@ -109,14 +109,29 @@ export function getAnalyticsCollectionState(input: {
 }
 
 export function formatMetricPercent(value: number | null): string | null {
-  if (value === null) return null
-  return `${value}%`
+  if (value === null || !Number.isFinite(value)) return null
+  return `${Math.round(value * 10) / 10}%`
+}
+
+/** Compact count: 1234 → 1.2K, 25400 → 25.4K, 1400000 → 1.4M. Null stays null. */
+export function formatCompactNumber(value: number | null | undefined): string | null {
+  if (value == null || !Number.isFinite(value)) return null
+  if (value >= 1_000_000) {
+    const scaled = value / 1_000_000
+    if (scaled >= 100) return `${Math.round(scaled)}M`
+    return `${Math.round(scaled * 10) / 10}M`
+  }
+  if (value >= 1000) {
+    const scaled = value / 1000
+    if (scaled >= 100) return `${Math.round(scaled)}K`
+    return `${Math.round(scaled * 10) / 10}K`
+  }
+  return String(Math.round(value))
 }
 
 export function formatMetricCpm(value: number | null, currency = ''): string | null {
-  if (value === null) return null
-  const prefix = currency ? `${currency} ` : ''
-  return `${prefix}${value.toFixed(2)}`
+  if (value === null || !Number.isFinite(value)) return null
+  return currency ? `${currency}${value.toFixed(2)}` : value.toFixed(2)
 }
 
 export function errMetric(subscribers: number, avgViews: number | null): MetricValue {

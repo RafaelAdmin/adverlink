@@ -25,24 +25,12 @@ export default function ChannelCard({
     formatConvertedPrice(price, fromCurrency, displayCurrency, rates, 'По запросу')
 
   const isTelegram = channel.platform === 'telegram' || !channel.platform
-  const marketplaceMetrics = isTelegram ? getMarketplaceMetrics(channel) : null
+  const marketplaceMetrics = isTelegram
+    ? getMarketplaceMetrics(channel, { displayCurrency, rates })
+    : null
   const engagementLabel = marketplaceMetrics
-    ? marketplaceMetrics.mode === 'unavailable' || marketplaceMetrics.mode === 'collecting'
-      ? null
-      : marketplaceMetrics.engagement.value
+    ? null
     : formatEngagementRate(channel.subscriber_count, channel.avg_views)
-  const thirdMetricValue = marketplaceMetrics
-    ? marketplaceMetrics.mode === 'unavailable' || marketplaceMetrics.mode === 'collecting'
-      ? '—'
-      : marketplaceMetrics.price.value
-    : engagementLabel
-  const thirdMetricLabel = marketplaceMetrics
-    ? marketplaceMetrics.mode === 'unavailable'
-      ? 'аналитика'
-      : marketplaceMetrics.mode === 'collecting'
-        ? 'CPM'
-        : marketplaceMetrics.price.label || 'CPM'
-    : 'ER'
 
   return (
     <Link
@@ -134,25 +122,35 @@ export default function ChannelCard({
                   : channel.subscriber_count}
             </div>
             <div className="text-white/40 text-xs">
-              {marketplaceMetrics ? marketplaceMetrics.subscribers.label : 'подписчиков'}
+              {marketplaceMetrics ? marketplaceMetrics.subscribers.metricLabel : 'подписчиков'}
             </div>
           </div>
           <div className="bg-white/5 rounded-xl p-2 text-center">
-            {marketplaceMetrics && (marketplaceMetrics.mode === 'collecting' || marketplaceMetrics.mode === 'unavailable') ? (
+            {marketplaceMetrics ? (
               <>
-                <div className="text-white/50 text-sm font-semibold">{marketplaceMetrics.engagement.value}</div>
-                <div className="text-white/40 text-xs">{marketplaceMetrics.engagement.label}</div>
-              </>
-            ) : marketplaceMetrics && (marketplaceMetrics.mode === 'err24' || marketplaceMetrics.mode === 'err') ? (
-              <>
-                <div className="text-white text-sm font-semibold">{marketplaceMetrics.engagement.value}</div>
+                <div
+                  className={
+                    marketplaceMetrics.engagement.value === '—'
+                      ? 'text-white/50 text-sm font-semibold'
+                      : 'text-white text-sm font-semibold'
+                  }
+                >
+                  {marketplaceMetrics.engagement.value}
+                </div>
                 <div className="text-white/40 text-xs">{marketplaceMetrics.engagement.metricLabel}</div>
+              </>
+            ) : channel.avg_views != null && channel.avg_views > 0 ? (
+              <>
+                <div className="text-white text-sm font-semibold">
+                  {channel.avg_views >= 1000
+                    ? `${(channel.avg_views / 1000).toFixed(1)}K`
+                    : channel.avg_views}
+                </div>
+                <div className="text-white/40 text-xs">охваты</div>
               </>
             ) : (
               <>
-                <div className="text-white text-sm font-semibold">
-                  {channel.avg_views >= 1000 ? `${(channel.avg_views / 1000).toFixed(1)}K` : channel.avg_views}
-                </div>
+                <div className="text-white/30 text-sm font-semibold">—</div>
                 <div className="text-white/40 text-xs">охваты</div>
               </>
             )}
@@ -161,14 +159,14 @@ export default function ChannelCard({
             <div className="bg-white/5 rounded-xl p-2 text-center">
               <div
                 className={
-                  marketplaceMetrics.mode === 'collecting' || marketplaceMetrics.mode === 'unavailable'
+                  marketplaceMetrics.price.value === '—'
                     ? 'text-white/50 text-sm font-semibold'
                     : 'text-white text-sm font-semibold'
                 }
               >
-                {thirdMetricValue}
+                {marketplaceMetrics.price.value}
               </div>
-              <div className="text-white/40 text-xs">{thirdMetricLabel}</div>
+              <div className="text-white/40 text-xs">{marketplaceMetrics.price.metricLabel}</div>
             </div>
           ) : engagementLabel ? (
             <div className="bg-white/5 rounded-xl p-2 text-center">

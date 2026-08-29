@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from '../layout'
 import { CurrencyCode, getExchangeRates } from '@/lib/currency'
+import { usePreferredCurrency } from '@/lib/usePreferredCurrency'
 import AdvertiserView from '../components/marketplace/AdvertiserView'
 import CreatorView from '../components/marketplace/CreatorView'
 import {
@@ -51,7 +52,7 @@ export default function DashboardMarketplacePage() {
   const [sortBy, setSortBy] = useState('newest')
   const [showFilters, setShowFilters] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
-  const [displayCurrency, setDisplayCurrency] = useState<CurrencyCode>('USD')
+  const [displayCurrency, setDisplayCurrency] = usePreferredCurrency()
   const [rates, setRates] = useState<Record<string, number>>({})
 
   const creatorChannelMap = Object.fromEntries(userChannels.map((c) => [c.id, c]))
