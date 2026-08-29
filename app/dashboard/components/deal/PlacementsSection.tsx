@@ -10,6 +10,7 @@ import {
   postInitializePlacements,
   postPublishPlacement,
   postReportPlacementIssue,
+  postResolvePlacementIssue,
 } from '@/lib/deal-api-client'
 import {
   canInitializePlacements,
@@ -57,6 +58,8 @@ export default function PlacementsSection({
   const [publishError, setPublishError] = useState<string | null>(null)
   const [reportingIndex, setReportingIndex] = useState<number | null>(null)
   const [reportError, setReportError] = useState<string | null>(null)
+  const [resolvingIndex, setResolvingIndex] = useState<number | null>(null)
+  const [resolveError, setResolveError] = useState<string | null>(null)
   const autoInitAttempted = useRef(false)
 
   const visible = shouldUsePlacementsWorkflow(request, placements)
@@ -71,10 +74,7 @@ export default function PlacementsSection({
     if (isConcurrentMutationError(result)) return 'conflict' as const
     const error = getDealApiError(result)
     if (error) return error
-    applyDealApiPatch(onDealUpdate, result)
-    if (result.ok && Array.isArray(result.placements)) {
-      onPlacementsUpdate(coercePlacements(result.placements))
-    }
+    applyDealApiPatch(onDealUpdate, result, { onPlacementsUpdate: onPlacementsUpdate })
     return null
   }
 
@@ -139,6 +139,22 @@ export default function PlacementsSection({
       await onRefresh()
     }
     setReportingIndex(null)
+  }
+
+  const handleResolveIssue = async (placementIndex: number, proofUrl: string) => {
+    setResolvingIndex(placementIndex)
+    setResolveError(null)
+    const result = await postResolvePlacementIssue(dealId, placementIndex, proofUrl)
+    const outcome = applyActionResult(result)
+    if (outcome === 'conflict') {
+      await onRefresh()
+      setResolveError(PLACEMENT_CONFLICT_MESSAGE)
+    } else if (typeof outcome === 'string') {
+      setResolveError(outcome)
+    } else {
+      await onRefresh()
+    }
+    setResolvingIndex(null)
   }
 
   return (
@@ -210,14 +226,19 @@ export default function PlacementsSection({
                 }
                 publishing={publishingIndex === placement.placement_index}
                 reporting={reportingIndex === placement.placement_index}
+                resolving={resolvingIndex === placement.placement_index}
                 publishError={
                   publishingIndex === placement.placement_index ? publishError : null
                 }
                 reportError={
                   reportingIndex === placement.placement_index ? reportError : null
                 }
+                resolveError={
+                  resolvingIndex === placement.placement_index ? resolveError : null
+                }
                 onPublish={handlePublish}
                 onReportIssue={handleReportIssue}
+                onResolveIssue={handleResolveIssue}
               />
             ))}
           </div>

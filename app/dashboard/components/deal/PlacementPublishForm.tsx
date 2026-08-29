@@ -7,12 +7,18 @@ type PlacementPublishFormProps = {
   submitting: boolean
   error: string | null
   onSubmit: (proofUrl: string) => void
+  submitLabel?: string
+  label?: string
+  showBorder?: boolean
 }
 
 export default function PlacementPublishForm({
   submitting,
   error,
   onSubmit,
+  submitLabel,
+  label = 'Добавить доказательство публикации',
+  showBorder = true,
 }: PlacementPublishFormProps) {
   const [proofUrl, setProofUrl] = useState('')
 
@@ -23,8 +29,8 @@ export default function PlacementPublishForm({
   }
 
   return (
-    <div className="mt-3 pt-3 border-t border-white/10 space-y-3">
-      <div className="text-white/50 text-xs">Добавить доказательство публикации</div>
+    <div className={showBorder ? 'mt-3 pt-3 border-t border-white/10 space-y-3' : 'space-y-3'}>
+      <div className="text-white/50 text-xs">{label}</div>
       <input
         type="url"
         value={proofUrl}
@@ -40,7 +46,7 @@ export default function PlacementPublishForm({
         style={{ ...dealBtn.submit, opacity: submitting || !proofUrl.trim() ? 0.6 : 1 }}
         onClick={handleSubmit}
       >
-        {submitting ? 'Публикация…' : 'Отметить как опубликованное'}
+        {submitting ? 'Отправка…' : submitLabel ?? 'Отметить как опубликованное'}
       </button>
     </div>
   )

@@ -8,7 +8,7 @@ export function SplitPaymentSummary({ budget, commissionPercent = 10 }: { budget
   return (
     <div style={{ marginTop: '16px' }}>
       <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginBottom: '10px', textAlign: 'center' }}>
-        Планируемое распределение после запуска Safe Deal (Beta)
+        Ориентировочное распределение (без онлайн-оплаты)
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
       <div style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.25)', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
@@ -55,7 +55,7 @@ export function AutoCompleteCountdown({ updatedAt }: { updatedAt: string | null 
 export function PaymentReservedBadge() {
   return (
     <span style={{ background: 'rgba(234,179,8,0.2)', color: '#fbbf24', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', display: 'inline-block' }}>
-      Beta: оплата согласуется напрямую
+      Онлайн-оплата пока недоступна
     </span>
   )
 }

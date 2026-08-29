@@ -6,6 +6,7 @@ import {
   canProposeTerms,
   canPublishPlacement,
   canReportPlacementIssue,
+  canResolvePlacementIssue,
   canRequestContentChanges,
   canStartFinalReview,
   canSubmitCreatorContent,
@@ -462,6 +463,71 @@ export async function publishPlacementProof(
   }
 
   return refreshed
+}
+
+export async function resolvePlacementIssue(
+  dealId: string,
+  userId: string,
+  placementIndex: number,
+  proofUrl: string,
+) {
+  const trimmedProof = proofUrl.trim()
+  if (!trimmedProof) {
+    throw new DealActionError('proofUrl required', 400)
+  }
+
+  const bundle = await reloadDealBundle(dealId)
+  if (!canResolvePlacementIssue(bundle.lifecycle, placementIndex)) {
+    throw new DealActionError('Cannot resolve issue for this placement', 400)
+  }
+
+  const placement = bundle.placements.find((p) => p.placement_index === placementIndex)
+  if (!placement) {
+    throw new DealActionError('Placement not found', 404)
+  }
+
+  let telegramPostId: string | null = null
+  let telegramMessageId: number | null = null
+
+  if (trimmedProof.includes('t.me/') || trimmedProof.includes('telegram.me/')) {
+    const assoc = await associateTelegramProof({
+      dealId,
+      postUrl: trimmedProof,
+      userId,
+      requireCreator: true,
+    })
+    telegramPostId = assoc.postId
+    telegramMessageId = assoc.messageId
+    assertTelegramPostNotLinkedElsewhere(bundle.placements, telegramPostId, placementIndex)
+  }
+
+  const now = new Date().toISOString()
+  const resolved = await conditionalPlacementUpdate(
+    placement.id,
+    {
+      status: 'published',
+      proof_url: trimmedProof,
+      published_at: now,
+      telegram_post_id: telegramPostId,
+      telegram_message_id: telegramMessageId,
+      issue_reported_at: null,
+      issue_reported_by: null,
+      issue_comment: null,
+      updated_at: now,
+    },
+    (q) => q.eq('status', 'issue_reported'),
+  )
+
+  if (!resolved) {
+    const refreshed = await reloadDealBundle(dealId)
+    const current = refreshed.placements.find((p) => p.placement_index === placementIndex)
+    if (current?.status === 'published') {
+      return tryStartFinalReview(dealId)
+    }
+    throw new DealActionError('Placement state changed; refresh and retry', 409)
+  }
+
+  return tryStartFinalReview(dealId)
 }
 
 export async function reportPlacementIssue(

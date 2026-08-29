@@ -5,6 +5,7 @@ import type { AdRequest, DealPlacement } from '@/lib/database.types'
 import {
   canAdvertiserReportIssue,
   canCreatorPublishPlacement,
+  canCreatorResolveIssue,
   formatPlacementViews,
   getPlacementStatusLabel,
   getPlacementStatusTone,
@@ -23,10 +24,13 @@ type PlacementCardProps = {
   telegramAnalytics: PlacementTelegramAnalytics | null
   publishing: boolean
   reporting: boolean
+  resolving: boolean
   publishError: string | null
   reportError: string | null
+  resolveError: string | null
   onPublish: (placementIndex: number, proofUrl: string) => void
   onReportIssue: (placementIndex: number, comment: string) => void
+  onResolveIssue: (placementIndex: number, proofUrl: string) => void
 }
 
 function formatDate(value: string | null): string | null {
@@ -44,10 +48,13 @@ export default function PlacementCard({
   telegramAnalytics,
   publishing,
   reporting,
+  resolving,
   publishError,
   reportError,
+  resolveError,
   onPublish,
   onReportIssue,
+  onResolveIssue,
 }: PlacementCardProps) {
   const [showReportForm, setShowReportForm] = useState(false)
   const [issueComment, setIssueComment] = useState('')
@@ -62,6 +69,9 @@ export default function PlacementCard({
   const showReport =
     role === 'advertiser' &&
     canAdvertiserReportIssue(request, placements, placement.placement_index)
+  const showResolve =
+    role === 'creator' &&
+    canCreatorResolveIssue(request, placements, placement.placement_index)
 
   const currentViews = formatPlacementViews(telegramAnalytics?.currentViews)
   const views24h = formatPlacementViews(telegramAnalytics?.views24h)
@@ -135,6 +145,19 @@ export default function PlacementCard({
           error={publishError}
           onSubmit={(proofUrl) => onPublish(placement.placement_index, proofUrl)}
         />
+      )}
+
+      {showResolve && (
+        <div className="mt-3 pt-3 border-t border-white/10">
+          <PlacementPublishForm
+            submitting={resolving}
+            error={resolveError}
+            showBorder={false}
+            label="Ссылка на исправленную публикацию"
+            submitLabel={resolving ? 'Отправка…' : 'Отправить исправление'}
+            onSubmit={(proofUrl) => onResolveIssue(placement.placement_index, proofUrl)}
+          />
+        </div>
       )}
 
       {showReport && !showReportForm && (

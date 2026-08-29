@@ -110,6 +110,10 @@ export async function postReportPlacementIssue(dealId: string, placementIndex: n
   return postJson<ApiResult>(`/api/deals/${dealId}/placements/report-issue`, { placementIndex, issueComment })
 }
 
+export async function postResolvePlacementIssue(dealId: string, placementIndex: number, proofUrl: string) {
+  return postJson<ApiResult>(`/api/deals/${dealId}/placements/resolve-issue`, { placementIndex, proofUrl })
+}
+
 export async function postResolveDispute(dealId: string, toStatus: Extract<DealStatus, 'resolved_creator' | 'resolved_advertiser'>) {
   return postJson<ApiResult>(`/api/deals/${dealId}/admin/resolve`, { toStatus })
 }

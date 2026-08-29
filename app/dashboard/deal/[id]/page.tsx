@@ -7,14 +7,15 @@ import { createClient } from '@/lib/supabase'
 import {
   AdvertiserDealActions,
   CreatorDealActions,
-  DealStatusPill,
   DealTimeline,
 } from '../../components/DealManagement'
 import { formatAmdWithUsd } from '@/lib/currency'
-import { glassDealCard } from '@/lib/deals'
+import { glassDealCard, normalizeDealStatus } from '@/lib/deals'
 import FinalTermsSection from '@/app/dashboard/components/deal/FinalTermsSection'
 import DealContentSection from '@/app/dashboard/components/deal/DealContentSection'
 import PlacementsSection from '@/app/dashboard/components/deal/PlacementsSection'
+import FinalReviewSection from '@/app/dashboard/components/deal/FinalReviewSection'
+import DealNextAction from '@/app/dashboard/components/deal/DealNextAction'
 import DealChat from '@/app/dashboard/components/DealChat'
 import { markDealViewed } from '@/lib/notifications'
 import type { AdRequest, Channel, DealMaterial, DealPlacement } from '@/lib/database.types'
@@ -158,8 +159,12 @@ export default function DealDetailPage() {
     return <div className="text-white/50">Загрузка...</div>
   }
 
-  const status = request.status
+  const status = normalizeDealStatus(request.status)
   const usePlacementsWorkflow = shouldUsePlacementsWorkflow(request, placements)
+  const showActionsPanel =
+    !usePlacementsWorkflow ||
+    status === 'completed' ||
+    ['new', 'payment_pending'].includes(status)
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -170,10 +175,16 @@ export default function DealDetailPage() {
         ← Назад
       </Link>
 
-      <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-white">Заказ #{request.id.slice(0, 8)}</h1>
-        <DealStatusPill status={status} large />
       </div>
+
+      <DealNextAction
+        request={request}
+        placements={placements}
+        material={material}
+        role={role}
+      />
 
       <div style={{ ...glassDealCard, padding: '24px', marginBottom: '16px' }}>
         <h2 className="text-white font-semibold mb-4">Информация о заказе</h2>
@@ -259,6 +270,22 @@ export default function DealDetailPage() {
         onRefresh={refreshDealState}
       />
 
+      <FinalReviewSection
+        dealId={dealId}
+        request={request}
+        placements={placements}
+        role={role}
+        onDealUpdate={handleUpdate}
+        onPlacementsUpdate={setPlacements}
+        onRefresh={refreshDealState}
+      />
+
+      {userId && request && (
+        <div style={{ marginTop: '0', marginBottom: '16px' }}>
+          <DealChat dealId={request.id} currentUserId={userId} />
+        </div>
+      )}
+
       <div style={{ ...glassDealCard, padding: '24px', marginBottom: '16px' }}>
         <h2 className="text-white font-semibold mb-4">История</h2>
         <DealTimeline request={request} />
@@ -297,31 +324,29 @@ export default function DealDetailPage() {
         </div>
       )}
 
-      <div style={{ ...glassDealCard, padding: '24px' }}>
-        <h2 className="text-white font-semibold mb-4">Действия</h2>
-        {role === 'creator' ? (
-          <CreatorDealActions
-            request={request}
-            channel={channel}
-            userId={userId}
-            onUpdate={handleUpdate}
-            showDetails={false}
-            hideLegacyProofSubmit={usePlacementsWorkflow}
-          />
-        ) : (
-          <AdvertiserDealActions
-            request={request}
-            channel={channel}
-            userId={userId}
-            onUpdate={handleUpdate}
-            showDetails={false}
-          />
-        )}
-      </div>
-
-      {userId && request && (
-        <div style={{ marginTop: '24px' }}>
-          <DealChat dealId={request.id} currentUserId={userId} />
+      {showActionsPanel && (
+        <div style={{ ...glassDealCard, padding: '24px' }}>
+          <h2 className="text-white font-semibold mb-4">Действия</h2>
+          {role === 'creator' ? (
+            <CreatorDealActions
+              request={request}
+              channel={channel}
+              userId={userId}
+              onUpdate={handleUpdate}
+              showDetails={false}
+              hideLegacyProofSubmit={usePlacementsWorkflow}
+              useNewLifecycleWorkflow={usePlacementsWorkflow}
+            />
+          ) : (
+            <AdvertiserDealActions
+              request={request}
+              channel={channel}
+              userId={userId}
+              onUpdate={handleUpdate}
+              showDetails={false}
+              useNewLifecycleWorkflow={usePlacementsWorkflow}
+            />
+          )}
         </div>
       )}
     </div>

@@ -150,6 +150,7 @@ export function CreatorDealActions({
   onUpdate,
   showDetails = true,
   hideLegacyProofSubmit = false,
+  useNewLifecycleWorkflow = false,
 }: {
   request: any
   channel?: any
@@ -157,6 +158,7 @@ export function CreatorDealActions({
   onUpdate: (patch: Record<string, unknown>) => void
   showDetails?: boolean
   hideLegacyProofSubmit?: boolean
+  useNewLifecycleWorkflow?: boolean
 }) {
   const supabase = createClient()
   const [saving, setSaving] = useState(false)
@@ -421,7 +423,7 @@ export function CreatorDealActions({
         </div>
       )}
 
-      {status === 'submitted' && (
+      {status === 'submitted' && !useNewLifecycleWorkflow && (
         <div>
           <span style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa', padding: '6px 12px', borderRadius: '20px', fontSize: '13px' }}>
             Отправлено на проверку ⏳
@@ -438,7 +440,7 @@ export function CreatorDealActions({
         </div>
       )}
 
-      {status === 'disputed' && (
+      {status === 'disputed' && !useNewLifecycleWorkflow && (
         <div>
           <DealStatusPill status="disputed" large />
           <p className="text-white/50 text-sm mt-3">Спор открыт. Ожидаем решения администратора.</p>
@@ -454,14 +456,18 @@ export function CreatorDealActions({
       {status === 'resolved_creator' && (
         <div>
           <DealStatusPill status="resolved_creator" large />
-          <SplitPaymentSummary budget={request.budget} commissionPercent={request.platform_commission || 10} />
+          <p className="text-white/60 text-sm mt-3">Спор решён в пользу автора</p>
+          {!useNewLifecycleWorkflow && (
+            <SplitPaymentSummary budget={request.budget} commissionPercent={request.platform_commission || 10} />
+          )}
         </div>
       )}
 
       {status === 'resolved_advertiser' && (
         <div>
           <DealStatusPill status="resolved_advertiser" large />
-          <RefundSummary budget={request.budget} />
+          <p className="text-white/60 text-sm mt-3">Спор решён в пользу рекламодателя</p>
+          {!useNewLifecycleWorkflow && <RefundSummary budget={request.budget} />}
         </div>
       )}
 
@@ -478,7 +484,9 @@ export function CreatorDealActions({
               {new Date(request.completed_at).toLocaleString('ru-RU')}
             </p>
           )}
-          <SplitPaymentSummary budget={request.budget} commissionPercent={request.platform_commission || 10} />
+          {!useNewLifecycleWorkflow && (
+            <SplitPaymentSummary budget={request.budget} commissionPercent={request.platform_commission || 10} />
+          )}
           <ProofLinksList links={request.proof_links} />
           {!reviewDone && !showReview && (
             <button
@@ -552,12 +560,14 @@ export function AdvertiserDealActions({
   userId,
   onUpdate,
   showDetails = true,
+  useNewLifecycleWorkflow = false,
 }: {
   request: any
   channel?: any
   userId: string
   onUpdate: (patch: Record<string, unknown>) => void
   showDetails?: boolean
+  useNewLifecycleWorkflow?: boolean
 }) {
   const supabase = createClient()
   const [saving, setSaving] = useState(false)
@@ -770,7 +780,7 @@ export function AdvertiserDealActions({
         </p>
       )}
 
-      {status === 'submitted' && (
+      {status === 'submitted' && !useNewLifecycleWorkflow && (
         <div>
           <span style={{ background: 'rgba(147,51,234,0.15)', color: '#a78bfa', padding: '6px 12px', borderRadius: '20px', fontSize: '13px' }}>
             На проверке 👀
@@ -876,7 +886,9 @@ export function AdvertiserDealActions({
               {new Date(request.completed_at).toLocaleString('ru-RU')}
             </p>
           )}
-          <SplitPaymentSummary budget={request.budget} commissionPercent={request.platform_commission || 10} />
+          {!useNewLifecycleWorkflow && (
+            <SplitPaymentSummary budget={request.budget} commissionPercent={request.platform_commission || 10} />
+          )}
           <ProofLinksList links={request.proof_links} />
           {!reviewDone && !showReview && (
             <button
@@ -894,7 +906,7 @@ export function AdvertiserDealActions({
         </div>
       )}
 
-      {status === 'disputed' && (
+      {status === 'disputed' && !useNewLifecycleWorkflow && (
         <div>
           <DealStatusPill status="disputed" large />
           <p className="text-white/50 text-sm mt-3">Спор открыт. Ожидаем решения администратора.</p>
@@ -910,14 +922,18 @@ export function AdvertiserDealActions({
       {status === 'resolved_creator' && (
         <div>
           <DealStatusPill status="resolved_creator" large />
-          <SplitPaymentSummary budget={request.budget} commissionPercent={request.platform_commission || 10} />
+          <p className="text-white/60 text-sm mt-3">Спор решён в пользу автора</p>
+          {!useNewLifecycleWorkflow && (
+            <SplitPaymentSummary budget={request.budget} commissionPercent={request.platform_commission || 10} />
+          )}
         </div>
       )}
 
       {status === 'resolved_advertiser' && (
         <div>
           <DealStatusPill status="resolved_advertiser" large />
-          <RefundSummary budget={request.budget} />
+          <p className="text-white/60 text-sm mt-3">Спор решён в пользу рекламодателя</p>
+          {!useNewLifecycleWorkflow && <RefundSummary budget={request.budget} />}
         </div>
       )}
 

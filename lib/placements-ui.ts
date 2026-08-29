@@ -2,6 +2,7 @@ import type { AdRequest, DealPlacement } from '@/lib/database.types'
 import {
   canPublishPlacement,
   canReportPlacementIssue,
+  canResolvePlacementIssue,
   canStartFinalReview,
   countPublishedPlacements,
   getExpectedPlacementsCount,
@@ -164,6 +165,22 @@ export function canAdvertiserReportIssue(
 ): boolean {
   const ctx = buildLifecycleContextFromAdRequest(request, placements)
   return canReportPlacementIssue(ctx, placementIndex)
+}
+
+export function canCreatorResolveIssue(
+  request: AdRequest,
+  placements: DealPlacement[],
+  placementIndex: number,
+): boolean {
+  const ctx = buildLifecycleContextFromAdRequest(request, placements)
+  return canResolvePlacementIssue(ctx, placementIndex)
+}
+
+export function getIssueReportedPlacementIndexes(placements: DealPlacement[]): number[] {
+  return placements
+    .filter((p) => p.status === 'issue_reported')
+    .map((p) => p.placement_index)
+    .sort((a, b) => a - b)
 }
 
 export function getPlacementStatusLabel(status: PlacementStatus): string {

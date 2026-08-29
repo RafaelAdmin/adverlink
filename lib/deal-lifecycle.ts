@@ -203,7 +203,7 @@ export const PLACEMENT_STATUS_TRANSITIONS: Readonly<
   scheduled: ['awaiting_publication', 'published'],
   awaiting_publication: ['published', 'scheduled'],
   published: ['issue_reported'],
-  issue_reported: [],
+  issue_reported: ['published'],
 }
 
 export function canTransitionTermsStatus(from: TermsStatus, to: TermsStatus): boolean {
@@ -338,6 +338,27 @@ export function canReportPlacementIssue(ctx: DealLifecycleContext, placementInde
   const placement = findPlacement(ctx, placementIndex)
   if (!placement) return false
   return placement.status === 'published'
+}
+
+/** Creator submits corrected proof after advertiser reported an issue. */
+export function canResolvePlacementIssue(
+  ctx: DealLifecycleContext,
+  placementIndex: number,
+): boolean {
+  if (isLegacyLifecycleDeal(ctx)) return false
+  const placement = findPlacement(ctx, placementIndex)
+  if (!placement || placement.status !== 'issue_reported') return false
+  if (!areTermsReadyForExecution(ctx)) return false
+  const dealStatus = normalizeDealStatus(ctx.status)
+  if (['completed', 'disputed', 'cancelled', 'rejected'].includes(dealStatus)) {
+    return false
+  }
+  return true
+}
+
+export function findIssueReportedPlacementIndex(ctx: DealLifecycleContext): number | null {
+  const issue = ctx.placements.find((p) => p.status === 'issue_reported')
+  return issue?.placementIndex ?? null
 }
 
 /** No per-placement advertiser approval exists in the product model. */

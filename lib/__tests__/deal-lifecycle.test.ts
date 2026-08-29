@@ -246,6 +246,7 @@ describe('placement workflow', () => {
     expect(canTransitionPlacementStatus('scheduled', 'awaiting_publication')).toBe(true)
     expect(canTransitionPlacementStatus('awaiting_publication', 'published')).toBe(true)
     expect(canTransitionPlacementStatus('published', 'issue_reported')).toBe(true)
+    expect(canTransitionPlacementStatus('issue_reported', 'published')).toBe(true)
   })
 
   it('does not support per-placement advertiser approval', () => {
