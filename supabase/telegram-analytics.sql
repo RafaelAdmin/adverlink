@@ -13,6 +13,10 @@ alter table public.channels
   add column if not exists analytics_avg_views_24h integer,
   add column if not exists analytics_err24_eligible_count integer default 0;
 
+alter table public.channels drop constraint if exists channels_analytics_status_check;
+alter table public.channels add constraint channels_analytics_status_check
+  check (analytics_status in ('disconnected', 'connected', 'collecting', 'active', 'error'));
+
 create index if not exists channels_analytics_status_idx
   on public.channels (analytics_status)
   where analytics_status in ('connected', 'collecting', 'active');
@@ -72,6 +76,9 @@ create index if not exists telegram_post_snapshots_due_idx
 
 -- ============================================================
 -- RLS
+-- Writes to telegram_posts / telegram_post_snapshots are intended
+-- only via service_role (webhook, cron) or SECURITY DEFINER RPCs.
+-- Authenticated owners/admins get SELECT only (admins: full via admin policy).
 -- ============================================================
 alter table public.telegram_posts enable row level security;
 alter table public.telegram_post_snapshots enable row level security;
@@ -116,19 +123,42 @@ create policy "telegram_post_snapshots_admin_all" on public.telegram_post_snapsh
   );
 
 -- ============================================================
--- PROTECT CHANNEL ANALYTICS COLUMNS
+-- PROTECT PRIVILEGED CHANNEL COLUMNS (field-scoped bypasses)
+-- app.allow_verify       -> verification_status, is_verified only
+-- app.allow_analytics_sync -> analytics/metrics fields only
+-- is_featured, rating    -> admin only (never flag-bypassed)
 -- ============================================================
 create or replace function public.protect_channel_columns()
 returns trigger
 language plpgsql
 as $$
+declare
+  v_is_admin boolean;
 begin
+  v_is_admin := exists (
+    select 1 from public.profiles where id = auth.uid() and is_admin = true
+  );
+
   if (
     new.verification_status is distinct from old.verification_status
     or new.is_verified is distinct from old.is_verified
-    or new.is_featured is distinct from old.is_featured
+  ) then
+    if current_setting('app.allow_verify', true) <> '1' and not v_is_admin then
+      raise exception 'Cannot modify verification fields directly';
+    end if;
+  end if;
+
+  if (
+    new.is_featured is distinct from old.is_featured
     or new.rating is distinct from old.rating
-    or new.subscriber_count is distinct from old.subscriber_count
+  ) then
+    if not v_is_admin then
+      raise exception 'Cannot modify privileged channel fields directly';
+    end if;
+  end if;
+
+  if (
+    new.subscriber_count is distinct from old.subscriber_count
     or new.avg_views is distinct from old.avg_views
     or new.engagement_rate is distinct from old.engagement_rate
     or new.analytics_status is distinct from old.analytics_status
@@ -139,18 +169,11 @@ begin
     or new.analytics_err24_eligible_count is distinct from old.analytics_err24_eligible_count
     or new.telegram_chat_id is distinct from old.telegram_chat_id
   ) then
-    if current_setting('app.allow_verify', true) = '1' then
-      return new;
-    end if;
-    if current_setting('app.allow_analytics_sync', true) = '1' then
-      return new;
-    end if;
-    if not exists (
-      select 1 from public.profiles where id = auth.uid() and is_admin = true
-    ) then
-      raise exception 'Cannot modify privileged channel fields directly';
+    if current_setting('app.allow_analytics_sync', true) <> '1' and not v_is_admin then
+      raise exception 'Cannot modify analytics fields directly';
     end if;
   end if;
+
   return new;
 end;
 $$;
@@ -168,6 +191,10 @@ security definer
 set search_path = public
 as $$
 begin
+  if auth.uid() is null then
+    raise exception 'Not authenticated';
+  end if;
+
   if not exists (
     select 1 from public.channels
     where id = p_channel_id
@@ -189,10 +216,11 @@ begin
 end;
 $$;
 
+revoke all on function public.connect_telegram_analytics(uuid, bigint) from public;
 grant execute on function public.connect_telegram_analytics(uuid, bigint) to authenticated;
 
 -- ============================================================
--- RPC: SYNC CHANNEL ANALYTICS (service / cron via service role)
+-- RPC: SYNC CHANNEL ANALYTICS (service role / cron only)
 -- ============================================================
 create or replace function public.sync_channel_analytics_metrics(
   p_channel_id uuid,
@@ -210,6 +238,12 @@ security definer
 set search_path = public
 as $$
 begin
+  if p_analytics_status is not null
+    and p_analytics_status not in ('disconnected', 'connected', 'collecting', 'active', 'error')
+  then
+    raise exception 'Invalid analytics_status';
+  end if;
+
   perform set_config('app.allow_analytics_sync', '1', true);
 
   update public.channels
@@ -230,7 +264,7 @@ revoke all on function public.sync_channel_analytics_metrics(uuid, integer, inte
 grant execute on function public.sync_channel_analytics_metrics(uuid, integer, integer, decimal, text, integer, integer, integer) to service_role;
 
 -- ============================================================
--- RPC: ASSOCIATE DEAL POST (creator on deal)
+-- RPC: ASSOCIATE DEAL POST (creator on deal; post must exist)
 -- ============================================================
 create or replace function public.associate_telegram_post_deal(
   p_channel_id uuid,
@@ -246,6 +280,10 @@ as $$
 declare
   v_post_id uuid;
 begin
+  if auth.uid() is null then
+    raise exception 'Not authenticated';
+  end if;
+
   if not exists (
     select 1 from public.channels ch
     join public.ad_requests ar on ar.channel_id = ch.id
@@ -261,32 +299,16 @@ begin
   where channel_id = p_channel_id and telegram_message_id = p_message_id;
 
   if v_post_id is null then
-    insert into public.telegram_posts (
-      channel_id,
-      telegram_chat_id,
-      telegram_message_id,
-      published_at,
-      ad_request_id,
-      deal_price
-    )
-    select
-      p_channel_id,
-      coalesce(ch.telegram_chat_id, 0),
-      p_message_id,
-      now(),
-      p_ad_request_id,
-      p_deal_price
-    from public.channels ch
-    where ch.id = p_channel_id
-    returning id into v_post_id;
-  else
-    update public.telegram_posts
-    set ad_request_id = p_ad_request_id, deal_price = p_deal_price
-    where id = v_post_id;
+    raise exception 'Telegram post has not been observed by analytics yet';
   end if;
+
+  update public.telegram_posts
+  set ad_request_id = p_ad_request_id, deal_price = p_deal_price
+  where id = v_post_id;
 
   return v_post_id;
 end;
 $$;
 
+revoke all on function public.associate_telegram_post_deal(uuid, bigint, uuid, decimal) from public;
 grant execute on function public.associate_telegram_post_deal(uuid, bigint, uuid, decimal) to authenticated;

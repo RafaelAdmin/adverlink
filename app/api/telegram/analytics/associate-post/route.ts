@@ -87,6 +87,12 @@ export async function POST(request: NextRequest) {
   })
 
   if (rpcError) {
+    if (rpcError.message.includes('not been observed by analytics yet')) {
+      return NextResponse.json(
+        { ok: false, error: 'Telegram post has not been observed by analytics yet' },
+        { status: 400 },
+      )
+    }
     console.error('[associate-post] RPC error:', rpcError.message)
     return NextResponse.json({ ok: false, error: 'Association failed' }, { status: 500 })
   }
