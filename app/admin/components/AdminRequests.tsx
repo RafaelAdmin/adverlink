@@ -9,7 +9,6 @@ type AdminRequestsProps = {
   onSearchChange: (value: string) => void
   onStatusFilterChange: (value: string) => void
   onExpandRequest: (id: string | null) => void
-  onApprove: (id: string) => void
   onDelete: (id: string) => void
 }
 
@@ -21,7 +20,6 @@ export default function AdminRequests({
   onSearchChange,
   onStatusFilterChange,
   onExpandRequest,
-  onApprove,
   onDelete,
 }: AdminRequestsProps) {
   return (
@@ -98,13 +96,6 @@ export default function AdminRequests({
                         className="bg-white/5 text-white/50 hover:bg-white/10 border border-white/10 rounded-lg px-2 py-1 text-xs"
                       >
                         👁
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onApprove(r.id)}
-                        className="bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/20 rounded-lg px-2 py-1 text-xs"
-                      >
-                        ✓
                       </button>
                       <button
                         type="button"

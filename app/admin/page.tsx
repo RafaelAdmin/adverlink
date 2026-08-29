@@ -388,12 +388,6 @@ export default function AdminPanel() {
     showToast('Кампания удалена')
   }
 
-  const approveRequest = async (id: string) => {
-    await supabase.from('ad_requests').update({ status: 'replied' }).eq('id', id)
-    setAdRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'replied' } : r)))
-    showToast('Запрос одобрен')
-  }
-
   const deleteReview = async (id: string) => {
     if (!window.confirm('Удалить отзыв?')) return
     await supabase.from('reviews').delete().eq('id', id)
@@ -731,7 +725,6 @@ export default function AdminPanel() {
             onSearchChange={setRequestSearch}
             onStatusFilterChange={setRequestStatusFilter}
             onExpandRequest={setExpandedRequest}
-            onApprove={approveRequest}
             onDelete={(id) => deleteRequest(id)}
           />
         )}

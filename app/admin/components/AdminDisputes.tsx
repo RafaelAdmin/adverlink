@@ -56,12 +56,10 @@ export default function AdminDisputes({
   }
 
   const resolve = async (id: string, status: 'resolved_creator' | 'resolved_advertiser') => {
-    const { error } = await supabase
-      .from('ad_requests')
-      .update({ status, completed_at: new Date().toISOString() })
-      .eq('id', id)
-    if (error) {
-      onToast(error.message, 'error')
+    const { postResolveDispute } = await import('@/lib/deal-api-client')
+    const result = await postResolveDispute(id, status)
+    if (!result.ok) {
+      onToast(result.error, 'error')
       return
     }
     onToast('Решение сохранено', 'success')

@@ -16,8 +16,14 @@ import { formatAmdWithUsd } from '@/lib/currency'
 import DealChat from './DealChat'
 import BetaPaymentNoticeModal from './BetaPaymentNoticeModal'
 import { AutoCompleteCountdown, PaymentReservedBadge, RefundSummary, SplitPaymentSummary } from './DealExtras'
-import { incrementCampaignSlots } from '@/lib/campaigns'
 import { markDealViewed } from '@/lib/notifications'
+import {
+  applyDealApiPatch,
+  postConfirmCompletion,
+  postDealDispute,
+  postDealTransition,
+  postRequestRevision,
+} from '@/lib/deal-api-client'
 
 export function DealStatusPill({ status, large }: { status: string; large?: boolean }) {
   const badge = getDealStatusBadge(status)
@@ -183,12 +189,23 @@ export function CreatorDealActions({
 
   const patch = async (data: Record<string, unknown>) => {
     setSaving(true)
-    const payload = { ...data, updated_at: new Date().toISOString() }
-    const { error } = await supabase.from('ad_requests').update(payload).eq('id', request.id)
+    let ok = false
+
+    if (typeof data.status === 'string') {
+      const result = await postDealTransition(request.id, {
+        toStatus: data.status as never,
+        postsCount: typeof data.posts_count === 'number' ? data.posts_count : undefined,
+        proofLinks: Array.isArray(data.proof_links) ? (data.proof_links as string[]) : undefined,
+        creatorNote: typeof data.creator_note === 'string' ? data.creator_note : undefined,
+        paymentStatus: typeof data.payment_status === 'string' ? data.payment_status : undefined,
+      })
+      ok = applyDealApiPatch(onUpdate, result)
+    } else {
+      ok = false
+    }
+
     setSaving(false)
-    if (error) return false
-    onUpdate(payload)
-    return true
+    return ok
   }
 
   const submitReview = async (rating: number, comment: string) => {
@@ -551,16 +568,32 @@ export function AdvertiserDealActions({
 
   const patch = async (data: Record<string, unknown>) => {
     setSaving(true)
-    const payload = { ...data, updated_at: new Date().toISOString() }
-    const { error } = await supabase
-      .from('ad_requests')
-      .update(payload)
-      .eq('id', request.id)
-      .eq('advertiser_id', userId)
+    let ok = false
+
+    if (typeof data.status === 'string') {
+      const status = data.status as string
+      if (status === 'completed') {
+        const result = await postConfirmCompletion(request.id)
+        ok = applyDealApiPatch(onUpdate, result)
+      } else if (status === 'disputed') {
+        const result = await postDealDispute(request.id, String(data.dispute_reason || ''))
+        ok = applyDealApiPatch(onUpdate, result)
+      } else if (status === 'in_progress' && data.advertiser_note) {
+        const result = await postRequestRevision(request.id, String(data.advertiser_note))
+        ok = applyDealApiPatch(onUpdate, result)
+      } else {
+        const result = await postDealTransition(request.id, {
+          toStatus: status as never,
+          paymentStatus: typeof data.payment_status === 'string' ? data.payment_status : undefined,
+        })
+        ok = applyDealApiPatch(onUpdate, result)
+      }
+    } else {
+      ok = false
+    }
+
     setSaving(false)
-    if (error) return false
-    onUpdate(payload)
-    return true
+    return ok
   }
 
   const submitReview = async (rating: number, comment: string) => {
@@ -586,7 +619,10 @@ export function AdvertiserDealActions({
   }
 
   const confirmPayment = async () => {
-    const ok = await patch({ status: 'completed', completed_at: new Date().toISOString() })
+    setSaving(true)
+    const result = await postConfirmCompletion(request.id)
+    const ok = applyDealApiPatch(onUpdate, result)
+    setSaving(false)
     if (ok) {
       try {
         await fetch('/api/notify', {
@@ -675,10 +711,7 @@ export function AdvertiserDealActions({
             disabled={saving}
             style={{ ...dealBtn.accept, opacity: saving ? 0.6 : 1 }}
             onClick={async () => {
-              const ok = await patch({ status: 'accepted', accepted_at: new Date().toISOString() })
-              if (ok && request.campaign_id) {
-                await incrementCampaignSlots(supabase, request.campaign_id)
-              }
+              await patch({ status: 'accepted' })
             }}
           >
             ✓ Принять отклик
