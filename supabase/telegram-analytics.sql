@@ -220,6 +220,8 @@ end;
 $$;
 
 revoke all on function public.connect_telegram_analytics(uuid, bigint, uuid) from public;
+revoke all on function public.connect_telegram_analytics(uuid, bigint, uuid) from anon;
+revoke all on function public.connect_telegram_analytics(uuid, bigint, uuid) from authenticated;
 grant execute on function public.connect_telegram_analytics(uuid, bigint, uuid) to service_role;
 
 -- ============================================================
@@ -264,6 +266,8 @@ end;
 $$;
 
 revoke all on function public.sync_channel_analytics_metrics(uuid, integer, integer, decimal, text, integer, integer, integer) from public;
+revoke all on function public.sync_channel_analytics_metrics(uuid, integer, integer, decimal, text, integer, integer, integer) from anon;
+revoke all on function public.sync_channel_analytics_metrics(uuid, integer, integer, decimal, text, integer, integer, integer) from authenticated;
 grant execute on function public.sync_channel_analytics_metrics(uuid, integer, integer, decimal, text, integer, integer, integer) to service_role;
 
 -- ============================================================
@@ -314,4 +318,6 @@ end;
 $$;
 
 revoke all on function public.associate_telegram_post_deal(uuid, bigint, uuid, decimal) from public;
+revoke all on function public.associate_telegram_post_deal(uuid, bigint, uuid, decimal) from anon;
 grant execute on function public.associate_telegram_post_deal(uuid, bigint, uuid, decimal) to authenticated;
+grant execute on function public.associate_telegram_post_deal(uuid, bigint, uuid, decimal) to service_role;
