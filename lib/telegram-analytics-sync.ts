@@ -7,6 +7,37 @@ import {
   getAnalyticsCollectionState,
 } from '@/lib/telegram-analytics'
 import { getScheduledSnapshots } from '@/lib/telegram-snapshot-schedule'
+import {
+  acceptMonotonicViewUpdate,
+  fetchChannelPreview,
+  fetchPostPreviewFallback,
+  isSnapshotRetryExpired,
+  normalizePublicUsername,
+  parseChannelPreviewHtml,
+} from '@/lib/telegram-web-preview'
+
+export type DueSnapshotRow = {
+  snapshotId: string
+  postId: string
+  checkpoint: string
+  scheduledAt: string
+  messageId: number
+  currentViews: number | null
+  channelId: string
+  telegramChatId: number
+  telegramUsername: string
+}
+
+export type ProcessDueSnapshotsResult = {
+  checked: number
+  updated: number
+  failed: number
+  previewChannelsFetched: number
+  previewFetchFailed: number
+  viewsResolved: number
+  viewsUnavailable: number
+  leftPending: number
+}
 
 export async function ingestChannelPost(
   supabase: SupabaseClient,
@@ -24,17 +55,21 @@ export async function ingestChannelPost(
   if (isEdit) {
     const { data: existing } = await supabase
       .from('telegram_posts')
-      .select('id')
+      .select('id, current_views')
       .eq('channel_id', channelId)
       .eq('telegram_message_id', messageId)
       .maybeSingle()
 
     if (existing?.id) {
+      const nextViews =
+        views !== null && acceptMonotonicViewUpdate(existing.current_views, views)
+          ? views
+          : existing.current_views
       await supabase
         .from('telegram_posts')
         .update({
           edited_at: message.edit_date ? new Date(message.edit_date * 1000).toISOString() : now,
-          current_views: views,
+          current_views: nextViews,
           last_analytics_update: now,
         })
         .eq('id', existing.id)
@@ -69,7 +104,7 @@ export async function ingestChannelPost(
     post_id: post.id,
     checkpoint: s.checkpoint,
     scheduled_at: s.scheduledAt.toISOString(),
-    status: s.checkpoint === 'publication' ? 'pending' : 'pending',
+    status: 'pending' as const,
     views_unavailable: false,
   }))
 
@@ -79,7 +114,7 @@ export async function ingestChannelPost(
   })
 
   if (snapshots.some((s) => s.checkpoint === 'publication')) {
-    await captureSnapshot(supabase, post.id, 'publication', subscriberCount, views)
+    await captureSnapshot(supabase, post.id, 'publication', subscriberCount, views, null)
   }
 
   return { ok: true, postId: post.id }
@@ -91,13 +126,16 @@ export async function captureSnapshot(
   checkpoint: string,
   subscriberCount: number | null,
   views: number | null,
+  currentViewsForMonotonic: number | null | undefined,
 ): Promise<void> {
   const viewsUnavailable = views === null
+  const now = new Date().toISOString()
+
   await supabase
     .from('telegram_post_snapshots')
     .update({
       status: 'captured',
-      captured_at: new Date().toISOString(),
+      captured_at: now,
       subscriber_count: subscriberCount,
       views: viewsUnavailable ? null : views,
       views_unavailable: viewsUnavailable,
@@ -105,6 +143,16 @@ export async function captureSnapshot(
     .eq('post_id', postId)
     .eq('checkpoint', checkpoint)
     .eq('status', 'pending')
+
+  const postUpdate: { last_analytics_update: string; current_views?: number } = {
+    last_analytics_update: now,
+  }
+
+  if (!viewsUnavailable && views !== null && acceptMonotonicViewUpdate(currentViewsForMonotonic, views)) {
+    postUpdate.current_views = views
+  }
+
+  await supabase.from('telegram_posts').update(postUpdate).eq('id', postId)
 }
 
 export async function recalculateChannelMetrics(
@@ -187,46 +235,180 @@ export async function recalculateChannelMetrics(
   })
 }
 
-export async function processDueSnapshots(
+async function loadDueSnapshotRows(
   supabase: SupabaseClient,
   batchSize: number,
-): Promise<{ checked: number; updated: number; failed: number }> {
+): Promise<DueSnapshotRow[]> {
   const now = new Date().toISOString()
   const { data: due } = await supabase
     .from('telegram_post_snapshots')
-    .select('id, post_id, checkpoint')
+    .select('id, post_id, checkpoint, scheduled_at')
     .eq('status', 'pending')
     .lte('scheduled_at', now)
     .limit(batchSize)
 
-  let updated = 0
-  let failed = 0
+  if (!due?.length) return []
+
+  const postIds = [...new Set(due.map((row) => row.post_id))]
+  const { data: posts } = await supabase
+    .from('telegram_posts')
+    .select('id, channel_id, telegram_chat_id, telegram_message_id, current_views, channels(telegram_username)')
+    .in('id', postIds)
+
+  const postById = new Map(
+    (posts || []).map((post) => {
+      const channelRaw = post.channels as { telegram_username?: string } | { telegram_username?: string }[] | null
+      const channel = Array.isArray(channelRaw) ? channelRaw[0] : channelRaw
+      return [
+        post.id,
+        {
+          channelId: post.channel_id as string,
+          telegramChatId: post.telegram_chat_id as number,
+          telegramUsername: channel?.telegram_username ?? null,
+          messageId: post.telegram_message_id as number,
+          currentViews: post.current_views as number | null,
+        },
+      ]
+    }),
+  )
+
+  const rows: DueSnapshotRow[] = []
+  for (const snap of due) {
+    const post = postById.get(snap.post_id)
+    if (!post?.telegramUsername) continue
+    const normalized = normalizePublicUsername(post.telegramUsername)
+    if (!normalized) continue
+
+    rows.push({
+      snapshotId: snap.id,
+      postId: snap.post_id,
+      checkpoint: snap.checkpoint,
+      scheduledAt: snap.scheduled_at,
+      messageId: post.messageId,
+      currentViews: post.currentViews,
+      channelId: post.channelId,
+      telegramChatId: post.telegramChatId,
+      telegramUsername: normalized,
+    })
+  }
+
+  return rows
+}
+
+function groupDueSnapshotsByUsername(rows: DueSnapshotRow[]): Map<string, DueSnapshotRow[]> {
+  const groups = new Map<string, DueSnapshotRow[]>()
+  for (const row of rows) {
+    const key = row.telegramUsername.toLowerCase()
+    const list = groups.get(key) ?? []
+    list.push(row)
+    groups.set(key, list)
+  }
+  return groups
+}
+
+async function resolveViewsForSnapshot(
+  row: DueSnapshotRow,
+  channelPreviewHtml: string | null,
+  channelFetchFailed: boolean,
+): Promise<number | null> {
+  if (channelPreviewHtml) {
+    const fromChannel = parseChannelPreviewHtml(channelPreviewHtml, row.telegramUsername).get(row.messageId)
+    if (fromChannel !== undefined) return fromChannel
+  }
+
+  if (channelFetchFailed) return null
+
+  const fallback = await fetchPostPreviewFallback(row.telegramUsername, row.messageId)
+  if (!fallback.ok || !fallback.html) return null
+
+  return parseChannelPreviewHtml(fallback.html, row.telegramUsername).get(row.messageId) ?? null
+}
+
+export async function processDueSnapshots(
+  supabase: SupabaseClient,
+  batchSize: number,
+): Promise<ProcessDueSnapshotsResult> {
+  const result: ProcessDueSnapshotsResult = {
+    checked: 0,
+    updated: 0,
+    failed: 0,
+    previewChannelsFetched: 0,
+    previewFetchFailed: 0,
+    viewsResolved: 0,
+    viewsUnavailable: 0,
+    leftPending: 0,
+  }
+
+  const now = new Date()
+  const dueRows = await loadDueSnapshotRows(supabase, batchSize)
+  result.checked = dueRows.length
+
+  if (!dueRows.length) return result
+
   const touchedChannels = new Set<string>()
+  const groups = groupDueSnapshotsByUsername(dueRows)
 
-  for (const row of due || []) {
+  for (const [, snapshots] of groups) {
+    const username = snapshots[0].telegramUsername
+
     try {
-      const { data: post } = await supabase
-        .from('telegram_posts')
-        .select('channel_id, telegram_chat_id')
-        .eq('id', row.post_id)
-        .single()
+      const preview = await fetchChannelPreview(username)
+      const channelFetchFailed = !preview.ok || !preview.html
 
-      if (!post) {
-        failed += 1
-        continue
+      if (channelFetchFailed) {
+        result.previewFetchFailed += 1
+      } else {
+        result.previewChannelsFetched += 1
       }
 
-      const subscriberCount = await getChatMemberCount(post.telegram_chat_id)
-      // Bot API cannot refresh post views — always null after publication checkpoint
-      await captureSnapshot(supabase, row.post_id, row.checkpoint, subscriberCount, null)
-      updated += 1
-      touchedChannels.add(post.channel_id)
+      const channelHtml = channelFetchFailed ? null : preview.html
+
+      for (const row of snapshots) {
+        try {
+          const subscriberCount = await getChatMemberCount(row.telegramChatId)
+          let parsedViews: number | null = null
+
+          if (!channelFetchFailed || !isSnapshotRetryExpired(row.checkpoint, row.scheduledAt, now)) {
+            parsedViews = await resolveViewsForSnapshot(row, channelHtml, channelFetchFailed)
+          }
+
+          if (parsedViews !== null) {
+            await captureSnapshot(
+              supabase,
+              row.postId,
+              row.checkpoint,
+              subscriberCount,
+              parsedViews,
+              row.currentViews,
+            )
+            result.updated += 1
+            result.viewsResolved += 1
+            touchedChannels.add(row.channelId)
+            continue
+          }
+
+          if (isSnapshotRetryExpired(row.checkpoint, row.scheduledAt, now)) {
+            await captureSnapshot(
+              supabase,
+              row.postId,
+              row.checkpoint,
+              subscriberCount,
+              null,
+              row.currentViews,
+            )
+            result.updated += 1
+            result.viewsUnavailable += 1
+            touchedChannels.add(row.channelId)
+          } else {
+            result.leftPending += 1
+          }
+        } catch {
+          result.failed += 1
+        }
+      }
     } catch {
-      failed += 1
-      await supabase
-        .from('telegram_post_snapshots')
-        .update({ status: 'failed' })
-        .eq('id', row.id)
+      result.previewFetchFailed += 1
+      result.failed += snapshots.length
     }
   }
 
@@ -234,7 +416,7 @@ export async function processDueSnapshots(
     await recalculateChannelMetrics(supabase, channelId)
   }
 
-  return { checked: due?.length ?? 0, updated, failed }
+  return result
 }
 
 export async function refreshChannelSubscribers(
@@ -259,7 +441,6 @@ export async function refreshChannelSubscribers(
   return count
 }
 
-/** Refresh subscriber count for verified channels without optional bot analytics. */
 export async function refreshVerifiedChannelSubscribersByUsername(
   supabase: SupabaseClient,
   channelId: string,
@@ -270,4 +451,4 @@ export async function refreshVerifiedChannelSubscribersByUsername(
   return refreshChannelSubscribers(supabase, channelId, `@${clean}`)
 }
 
-export { ANALYTICS_MIN_POSTS }
+export { ANALYTICS_MIN_POSTS, acceptMonotonicViewUpdate }

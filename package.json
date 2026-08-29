@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:telegram-preview": "node --experimental-strip-types scripts/test-telegram-preview.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

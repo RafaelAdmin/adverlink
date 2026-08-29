@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { validateCronRequest } from '@/lib/cron-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
-import { processDueSnapshots, recalculateChannelMetrics, refreshChannelSubscribers, refreshVerifiedChannelSubscribersByUsername } from '@/lib/telegram-analytics-sync'
+import { processDueSnapshots, recalculateChannelMetrics, refreshChannelSubscribers, refreshVerifiedChannelSubscribersByUsername, type ProcessDueSnapshotsResult } from '@/lib/telegram-analytics-sync'
 
 const BATCH_SIZE = 30
 const CHANNEL_BATCH = 20
@@ -17,7 +17,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: authResult.error }, { status: authResult.status })
   }
 
-  let snapshots = { checked: 0, updated: 0, failed: 0 }
+  let snapshots: ProcessDueSnapshotsResult = {
+    checked: 0,
+    updated: 0,
+    failed: 0,
+    previewChannelsFetched: 0,
+    previewFetchFailed: 0,
+    viewsResolved: 0,
+    viewsUnavailable: 0,
+    leftPending: 0,
+  }
   let channelsRefreshed = 0
   let channelsFailed = 0
   let basicRefreshed = 0
@@ -71,6 +80,13 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       snapshots,
+      preview: {
+        channelsFetched: snapshots.previewChannelsFetched,
+        fetchFailed: snapshots.previewFetchFailed,
+        viewsResolved: snapshots.viewsResolved,
+        viewsUnavailable: snapshots.viewsUnavailable,
+        leftPending: snapshots.leftPending,
+      },
       channels: { refreshed: channelsRefreshed, failed: channelsFailed },
       basicSubscribers: { refreshed: basicRefreshed, failed: basicFailed },
     })
