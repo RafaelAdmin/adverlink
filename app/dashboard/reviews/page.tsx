@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import UserAvatar from '../components/UserAvatar'
+import PageHeader from '@/components/ui/PageHeader'
+import Surface from '@/components/ui/Surface'
+import Button from '@/components/ui/Button'
 
 type Tab = 'about' | 'mine'
 
@@ -54,30 +57,25 @@ function ReviewEditForm({
   const [comment, setComment] = useState(initialComment)
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-4 mt-4">
+    <Surface padding="sm" className="mt-4">
       <StarRatingInput rating={rating} onChange={setRating} />
       <textarea
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         rows={3}
         placeholder="Комментарий..."
-        className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-sm w-full mb-3 resize-none outline-none focus-accent"
+        className="ui-input ui-textarea w-full mb-3"
       />
       {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
       <div className="flex gap-2">
-        <button
-          type="button"
-          disabled={saving}
-          onClick={() => onSave(rating, comment)}
-          className="btn-accent text-white rounded-full px-4 py-2 text-sm disabled:opacity-50"
-        >
+        <Button type="button" size="sm" disabled={saving} onClick={() => onSave(rating, comment)}>
           {saving ? 'Сохранение...' : 'Сохранить'}
-        </button>
-        <button type="button" onClick={onCancel} className="border border-white/20 text-white/60 rounded-full px-4 py-2 text-sm">
+        </Button>
+        <Button type="button" variant="secondary" size="sm" onClick={onCancel}>
           Отмена
-        </button>
+        </Button>
       </div>
-    </div>
+    </Surface>
   )
 }
 
@@ -110,7 +108,7 @@ function ReviewCard({
   const isEditing = editingId === review.id
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+    <Surface padding="md">
       <div className="flex items-start justify-between gap-4 mb-3">
         <div className="flex items-center gap-3 min-w-0">
           <UserAvatar
@@ -119,9 +117,9 @@ function ReviewCard({
             size={40}
             frameColor={profile?.avatar_frame_color}
           />
-          <div className="text-white font-medium truncate">{label}</div>
+          <div className="ui-card-title truncate">{label}</div>
         </div>
-        <div className="text-white/40 text-xs flex-shrink-0">
+        <div className="ui-meta text-xs flex-shrink-0">
           {new Date(review.created_at).toLocaleDateString('ru-RU')}
         </div>
       </div>
@@ -130,24 +128,16 @@ function ReviewCard({
         <>
           <StarRatingDisplay rating={review.rating} />
           {review.comment && (
-            <p className="text-white/70 text-sm mt-4 leading-relaxed">{review.comment}</p>
+            <p className="ui-body mt-4 leading-relaxed">{review.comment}</p>
           )}
           {tab === 'mine' && onStartEdit && onDelete && (
-            <div className="flex gap-2 mt-4 pt-4 border-t border-white/10">
-              <button
-                type="button"
-                onClick={() => onStartEdit(review.id)}
-                className="border border-white/20 text-white/70 hover:text-white rounded-full px-4 py-1.5 text-sm transition"
-              >
+            <div className="flex gap-2 mt-4 pt-4" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+              <Button type="button" variant="secondary" size="sm" onClick={() => onStartEdit(review.id)}>
                 Редактировать
-              </button>
-              <button
-                type="button"
-                onClick={() => onDelete(review.id)}
-                className="border border-red-500/30 text-red-400 hover:bg-red-500/10 rounded-full px-4 py-1.5 text-sm transition"
-              >
+              </Button>
+              <Button type="button" variant="danger" size="sm" onClick={() => onDelete(review.id)}>
                 Удалить
-              </button>
+              </Button>
             </div>
           )}
         </>
@@ -163,7 +153,7 @@ function ReviewCard({
           error={editError}
         />
       )}
-    </div>
+    </Surface>
   )
 }
 
@@ -252,39 +242,34 @@ export default function ReviewsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white mb-2">Отзывы</h1>
-      <p className="text-white/50 mb-6">Отзывы о вас и отзывы, которые вы оставили</p>
+      <PageHeader title="Отзывы" description="Отзывы о вас и отзывы, которые вы оставили" />
 
       <div className="flex gap-2 mb-8">
         <button
           onClick={() => setTab('about')}
-          className={`rounded-full px-4 py-2 text-sm transition ${
-            tab === 'about' ? 'tab-pill-active' : 'border border-white/20 text-white/70'
-          }`}
+          className={`ui-btn ui-btn--sm ${tab === 'about' ? 'ui-btn--primary' : 'ui-btn--secondary'}`}
         >
           Обо мне
         </button>
         <button
           onClick={() => setTab('mine')}
-          className={`rounded-full px-4 py-2 text-sm transition ${
-            tab === 'mine' ? 'tab-pill-active' : 'border border-white/20 text-white/70'
-          }`}
+          className={`ui-btn ui-btn--sm ${tab === 'mine' ? 'ui-btn--primary' : 'ui-btn--secondary'}`}
         >
           Мои отзывы
         </button>
       </div>
 
       {loading ? (
-        <div className="text-white/50 text-center py-24">Загрузка...</div>
+        <div className="ui-meta text-center py-24">Загрузка...</div>
       ) : reviews.length === 0 ? (
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
-          <i className="ti ti-star" style={{ fontSize: '32px', color: 'rgba(255,255,255,0.3)' }} />
-          <p className="text-white/50 text-sm mt-4">
+        <Surface padding="lg" className="ui-empty">
+          <i className="ti ti-star ui-empty__icon" />
+          <p className="ui-empty__text">
             {tab === 'about'
               ? 'Отзывов пока нет. Завершите первую сделку чтобы получить отзыв.'
               : 'Вы ещё не оставляли отзывов.'}
           </p>
-        </div>
+        </Surface>
       ) : (
         <div className="flex flex-col gap-4">
           {reviews.map((review) => (

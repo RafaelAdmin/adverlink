@@ -115,7 +115,7 @@ function DealReviewForm({
   const [comment, setComment] = useState('')
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-4 mt-4">
+    <div className="ui-surface ui-surface--pad-sm mt-4">
       <div className="flex gap-1 mb-3">
         {[1, 2, 3, 4, 5].map((s) => (
           <button key={s} type="button" onClick={() => setRating(s)} className={`text-xl ${s <= rating ? 'text-yellow-400' : 'text-white/20'}`}>
@@ -128,14 +128,14 @@ function DealReviewForm({
         onChange={(e) => setComment(e.target.value)}
         rows={3}
         placeholder="Комментарий..."
-        className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-sm w-full mb-3 resize-none outline-none focus-accent"
+        className="ui-input ui-textarea w-full mb-3"
       />
       {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
       <div className="flex gap-2">
-        <button type="button" onClick={() => onSubmit(rating, comment)} className="btn-accent text-white rounded-full px-4 py-2 text-sm">
+        <button type="button" onClick={() => onSubmit(rating, comment)} className="ui-btn ui-btn--primary ui-btn--sm">
           Отправить
         </button>
-        <button type="button" onClick={onCancel} className="border border-white/20 text-white/60 rounded-full px-4 py-2 text-sm">
+        <button type="button" onClick={onCancel} className="ui-btn ui-btn--ghost ui-btn--sm">
           Отмена
         </button>
       </div>
@@ -334,13 +334,13 @@ export function CreatorDealActions({
               min={1}
               value={postsCount}
               onChange={(e) => setPostsCount(Number(e.target.value) || 1)}
-              className="bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white text-sm w-full outline-none focus-accent"
+              className="ui-input w-full"
             />
           </label>
           <button
             type="button"
             disabled={saving}
-            className="btn-accent w-full mt-4 text-white rounded-xl py-3 text-sm font-medium disabled:opacity-50"
+            className="ui-btn ui-btn--primary w-full mt-4 disabled:opacity-50"
             onClick={async () => {
               await patch({ status: 'in_progress', posts_count: postsCount })
             }}
@@ -376,7 +376,7 @@ export function CreatorDealActions({
               onChange={(e) => setProofLinks(e.target.value)}
               placeholder="Вставьте ссылки на опубликованные посты (каждая с новой строки)"
               rows={4}
-              className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm w-full outline-none focus-accent resize-none"
+              className="ui-input ui-textarea w-full"
             />
           </label>
           <label className="block mt-3">
@@ -386,7 +386,7 @@ export function CreatorDealActions({
               onChange={(e) => setCreatorNote(e.target.value)}
               placeholder="Комментарий для рекламодателя (необязательно)"
               rows={2}
-              className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm w-full outline-none focus-accent resize-none"
+              className="ui-input ui-textarea w-full"
             />
           </label>
           <button
@@ -817,7 +817,7 @@ export function AdvertiserDealActions({
                 onChange={(e) => setDisputeReason(e.target.value)}
                 placeholder="Опишите причину спора..."
                 rows={3}
-                className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm w-full outline-none focus-accent resize-none mb-3"
+                className="ui-input ui-textarea w-full mb-3"
               />
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button
@@ -843,7 +843,7 @@ export function AdvertiserDealActions({
                 onChange={(e) => setAdvertiserNote(e.target.value)}
                 placeholder="Опишите замечания..."
                 rows={3}
-                className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 text-sm w-full outline-none focus-accent resize-none mb-3"
+                className="ui-input ui-textarea w-full mb-3"
               />
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button

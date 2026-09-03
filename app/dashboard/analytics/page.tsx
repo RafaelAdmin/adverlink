@@ -13,6 +13,7 @@ import {
   parseReportRange,
 } from '@/lib/subscriptions'
 import { formatEngagementRate } from '@/lib/channel-metrics'
+import Surface from '@/components/ui/Surface'
 
 async function generateExcel(data: any) {
   const XLSX = await import('xlsx')
@@ -364,16 +365,9 @@ const ADVERTISER_INCLUDES = [
 
 function MetricCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div
-      style={{
-        background: 'rgba(255,255,255,0.05)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '16px',
-        padding: '20px',
-      }}
-    >
-      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginBottom: '8px' }}>{label}</div>
-      <div style={{ color: 'white', fontSize: '24px', fontWeight: '700' }}>{value}</div>
+    <div className="dashboard-stat-card">
+      <div className="dashboard-stat-card__label">{label}</div>
+      <div className="dashboard-stat-card__value">{value}</div>
     </div>
   )
 }
@@ -397,33 +391,80 @@ function DownloadSection({
   dateTo: string
   onDateChange: (from: string, to: string) => void
 }) {
-  return (
-    <div
-      style={{
-        background: 'rgba(255,255,255,0.05)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '20px',
-        padding: '32px',
-        textAlign: 'center',
-        marginTop: '24px',
-      }}
-    >
-      <i className="ti ti-chart-dots" style={{ fontSize: '48px', color: 'var(--accent-primary, #9333ea)', display: 'block', marginBottom: '16px' }} />
-      <h2 style={{ color: 'white', fontSize: '22px', fontWeight: '700', marginBottom: '8px' }}>{title}</h2>
-      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', margin: 0 }}>{description}</p>
+  const downloadActions = (
+    <>
+      <button
+        type="button"
+        onClick={() => onDownload('excel')}
+        disabled={generating}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          backgroundColor: '#16a34a',
+          color: 'white',
+          border: 'none',
+          borderRadius: '14px',
+          padding: '10px 20px',
+          fontSize: '14px',
+          fontWeight: '600',
+          cursor: generating ? 'not-allowed' : 'pointer',
+          opacity: generating ? 0.7 : 1,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <i className="ti ti-file-spreadsheet" style={{ fontSize: '18px' }} />
+        Скачать Excel
+      </button>
+      <button
+        type="button"
+        onClick={() => onDownload('pdf')}
+        disabled={generating}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          backgroundColor: 'var(--accent-primary, #9333ea)',
+          color: 'white',
+          border: 'none',
+          borderRadius: '14px',
+          padding: '10px 20px',
+          fontSize: '14px',
+          fontWeight: '600',
+          cursor: generating ? 'not-allowed' : 'pointer',
+          opacity: generating ? 0.7 : 1,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <i className="ti ti-file-type-pdf" style={{ fontSize: '18px' }} />
+        Скачать PDF
+      </button>
+    </>
+  )
 
-      <div style={{ maxWidth: '480px', margin: '0 auto', textAlign: 'left' }}>
-        <DateRangePicker from={dateFrom} to={dateTo} onChange={onDateChange} disabled={generating} />
+  return (
+    <div className="dashboard-panel" style={{ padding: '24px', marginTop: '24px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <i className="ti ti-chart-dots" style={{ fontSize: '48px', color: 'var(--accent-primary)', display: 'block', marginBottom: '16px' }} />
+        <h2 className="ui-section-title" style={{ marginBottom: '8px' }}>{title}</h2>
+        <p className="ui-meta" style={{ margin: 0 }}>{description}</p>
       </div>
+
+      <DateRangePicker
+        from={dateFrom}
+        to={dateTo}
+        onChange={onDateChange}
+        disabled={generating}
+        actions={downloadActions}
+        style={{ marginBottom: '20px' }}
+      />
 
       <div
         style={{
           display: 'flex',
           flexDirection: 'column',
           gap: '8px',
-          margin: '24px auto',
-          maxWidth: '360px',
-          textAlign: 'left',
+          maxWidth: '480px',
         }}
       >
         {includes.map((item) => (
@@ -432,60 +473,13 @@ function DownloadSection({
               <circle cx="12" cy="12" r="10" fill="rgba(34,197,94,0.15)" />
               <path d="M8 12l3 3 5-5" />
             </svg>
-            <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px' }}>{item}</span>
+            <span className="ui-body">{item}</span>
           </div>
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-        <button
-          type="button"
-          onClick={() => onDownload('excel')}
-          disabled={generating}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            backgroundColor: '#16a34a',
-            color: 'white',
-            border: 'none',
-            borderRadius: '14px',
-            padding: '14px 28px',
-            fontSize: '15px',
-            fontWeight: '600',
-            cursor: generating ? 'not-allowed' : 'pointer',
-            opacity: generating ? 0.7 : 1,
-          }}
-        >
-          <i className="ti ti-file-spreadsheet" style={{ fontSize: '18px' }} />
-          Скачать Excel
-        </button>
-        <button
-          type="button"
-          onClick={() => onDownload('pdf')}
-          disabled={generating}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            backgroundColor: 'var(--accent-primary, #9333ea)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '14px',
-            padding: '14px 28px',
-            fontSize: '15px',
-            fontWeight: '600',
-            cursor: generating ? 'not-allowed' : 'pointer',
-            opacity: generating ? 0.7 : 1,
-          }}
-        >
-          <i className="ti ti-file-type-pdf" style={{ fontSize: '18px' }} />
-          Скачать PDF
-        </button>
-      </div>
-
       {generating && (
-        <p style={{ color: 'rgba(255,255,255,0.4)', marginTop: '16px', fontSize: '13px', marginBottom: 0 }}>
+        <p className="ui-meta" style={{ marginTop: '16px', marginBottom: 0, textAlign: 'center' }}>
           Генерация отчёта...
         </p>
       )}
@@ -693,9 +687,9 @@ export default function AnalyticsPage() {
         <div>
           <h1 className="text-2xl font-bold text-white mb-2">Аналитика</h1>
           <p className="text-white/50 mb-8">Детальные отчёты по вашим каналам</p>
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center text-white/50">
+          <Surface padding="md" className="ui-empty text-center">
             У вас пока нет каналов для анализа
-          </div>
+          </Surface>
         </div>
       )
     }
@@ -706,8 +700,8 @@ export default function AnalyticsPage() {
         <p className="text-white/50 mb-8">Детальные отчёты по вашим каналам</p>
 
         {channels.length > 1 && (
-          <div style={{ marginBottom: '24px', maxWidth: '420px' }}>
-            <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '8px' }}>
+          <div style={{ marginBottom: '24px', maxWidth: '360px' }}>
+            <label className="ui-field__label" style={{ display: 'block', marginBottom: '8px' }}>
               Канал для анализа
             </label>
             <FilterDropdown
@@ -757,24 +751,13 @@ export default function AnalyticsPage() {
         />
 
         <div style={{ marginTop: '32px' }}>
-          <h2 style={{ color: 'white', fontSize: '18px', fontWeight: '700', marginBottom: '16px' }}>Последние сделки</h2>
-          <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', overflow: 'hidden' }}>
+          <h2 className="ui-section-title" style={{ marginBottom: '16px' }}>Последние сделки</h2>
+          <div className="dashboard-data-table">
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                <tr>
                   {['Дата', 'Рекламодатель', 'Бюджет', 'Статус'].map((col) => (
-                    <th
-                      key={col}
-                      style={{
-                        textAlign: 'left',
-                        padding: '12px 16px',
-                        color: 'rgba(255,255,255,0.4)',
-                        fontSize: '11px',
-                        fontWeight: '600',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                      }}
-                    >
+                    <th key={col} style={{ textAlign: 'left', padding: '12px 16px' }}>
                       {col}
                     </th>
                   ))}
@@ -783,7 +766,7 @@ export default function AnalyticsPage() {
               <tbody>
                 {recentDeals.length === 0 ? (
                   <tr>
-                    <td colSpan={4} style={{ padding: '24px', textAlign: 'center', color: 'rgba(255,255,255,0.35)' }}>
+                    <td colSpan={4} className="ui-meta" style={{ padding: '24px', textAlign: 'center' }}>
                       За период сделок не было
                     </td>
                   </tr>
@@ -791,8 +774,8 @@ export default function AnalyticsPage() {
                   recentDeals.map((deal) => {
                     const status = dealStatusLabel(deal.status)
                     return (
-                      <tr key={deal.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                        <td style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.7)' }}>
+                      <tr key={deal.id}>
+                        <td style={{ padding: '12px 16px' }}>
                           {new Date(deal.created_at).toLocaleDateString('ru-RU')}
                         </td>
                         <td style={{ padding: '12px 16px', color: 'white' }}>{deal.advertiser_name || '—'}</td>
@@ -837,25 +820,15 @@ export default function AnalyticsPage() {
       />
 
       <div style={{ marginTop: '32px' }}>
-        <h2 style={{ color: 'white', fontSize: '18px', fontWeight: '700', marginBottom: '16px' }}>
+        <h2 className="ui-section-title" style={{ marginBottom: '16px' }}>
           Сделки за период ({periodLabel})
         </h2>
-        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', overflow: 'hidden' }}>
+        <div className="dashboard-data-table">
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+              <tr>
                 {['Дата', 'Канал', 'Бюджет', 'Статус'].map((col) => (
-                  <th
-                    key={col}
-                    style={{
-                      textAlign: 'left',
-                      padding: '12px 16px',
-                      color: 'rgba(255,255,255,0.4)',
-                      fontSize: '11px',
-                      fontWeight: '600',
-                      textTransform: 'uppercase',
-                    }}
-                  >
+                  <th key={col} style={{ textAlign: 'left', padding: '12px 16px' }}>
                     {col}
                   </th>
                 ))}
@@ -864,7 +837,7 @@ export default function AnalyticsPage() {
             <tbody>
               {filteredAdvertiserRequests.length === 0 ? (
                 <tr>
-                  <td colSpan={4} style={{ padding: '24px', textAlign: 'center', color: 'rgba(255,255,255,0.35)' }}>
+                  <td colSpan={4} className="ui-meta" style={{ padding: '24px', textAlign: 'center' }}>
                     За выбранный период сделок не было
                   </td>
                 </tr>
@@ -872,8 +845,8 @@ export default function AnalyticsPage() {
                 filteredAdvertiserRequests.slice(0, 10).map((deal) => {
                   const status = dealStatusLabel(deal.status)
                   return (
-                    <tr key={deal.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                      <td style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.7)' }}>
+                    <tr key={deal.id}>
+                      <td style={{ padding: '12px 16px' }}>
                         {new Date(deal.created_at).toLocaleDateString('ru-RU')}
                       </td>
                       <td style={{ padding: '12px 16px', color: 'white' }}>{deal.channel_name || '—'}</td>

@@ -1,21 +1,11 @@
 export function FilterLabel({ children }: { children: React.ReactNode }) {
-  return <span className="text-white/50 text-xs mb-1 block">{children}</span>
+  return <span className="ui-field__label mb-1 block">{children}</span>
 }
 
 export function FilterInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      {...props}
-      className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-sm w-full outline-none focus-accent transition placeholder-white/30"
-    />
-  )
+  return <input {...props} className="ui-input text-sm w-full" />
 }
 
 export function FilterSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <select
-      {...props}
-      className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-sm w-full outline-none focus-accent transition"
-    />
-  )
+  return <select {...props} className="ui-input text-sm w-full" />
 }

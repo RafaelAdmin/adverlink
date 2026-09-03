@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import UserAvatar from '../components/UserAvatar'
+import Surface from '@/components/ui/Surface'
+import PageHeader from '@/components/ui/PageHeader'
+import Button from '@/components/ui/Button'
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null)
@@ -104,22 +107,14 @@ export default function ProfilePage() {
   }
 
   if (!user) return (
-    <div style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.3)' }}>
-      Загрузка...
-    </div>
+    <div className="ui-meta text-center py-16">Загрузка...</div>
   )
 
   return (
     <div>
+      <PageHeader title="Профиль" description="Ваш публичный профиль и каналы" />
 
-      {/* ── PROFILE HEADER ── */}
-      <div style={{
-        background: 'rgba(255,255,255,0.05)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '20px',
-        padding: '28px',
-        marginBottom: '16px',
-      }}>
+      <Surface padding="lg" className="mb-4">
 
         <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
 
@@ -163,7 +158,7 @@ export default function ProfilePage() {
 
             {/* Name + badges row */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
-              <h1 style={{ color: 'white', fontSize: '22px', fontWeight: '700', margin: 0 }}>
+              <h1 className="ui-page-title m-0">
                 {profile?.full_name || user.email?.split('@')[0]}
               </h1>
 
@@ -191,20 +186,13 @@ export default function ProfilePage() {
 
             {/* Username */}
             {profile?.username && (
-              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '14px', margin: '0 0 8px' }}>
-                @{profile.username}
-              </p>
+              <p className="ui-meta mb-2">@{profile.username}</p>
             )}
 
-            {/* Email */}
-            <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '12px', margin: '0 0 10px' }}>
-              {user.email}
-            </p>
+            <p className="ui-meta mb-2.5" style={{ fontSize: '12px' }}>{user.email}</p>
 
-            {/* Description */}
             {profile?.description && !editing && (
-              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px',
-                lineHeight: '1.5', margin: '0 0 12px' }}>
+              <p className="ui-body mb-3" style={{ lineHeight: 1.5 }}>
                 {profile.description}
               </p>
             )}
@@ -221,7 +209,7 @@ export default function ProfilePage() {
                   <div style={{ color: 'white', fontSize: '16px', fontWeight: '700' }}>
                     {stat.value}
                   </div>
-                  <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>
+                  <div className="ui-meta" style={{ fontSize: '11px' }}>
                     {stat.label}
                   </div>
                 </div>
@@ -230,103 +218,62 @@ export default function ProfilePage() {
           </div>
 
           {/* Edit button */}
-          <button
+          <Button
             onClick={() => setEditing(!editing)}
-            style={{
-              flexShrink: 0,
-              background: editing ? 'rgba(255,255,255,0.08)' : 'var(--accent-primary, #9333ea)',
-              color: 'white', border: 'none', borderRadius: '12px',
-              padding: '8px 18px', fontSize: '13px', fontWeight: '600',
-              cursor: 'pointer', whiteSpace: 'nowrap',
-              display: 'flex', alignItems: 'center', gap: '6px',
-            }}
+            variant={editing ? 'secondary' : 'primary'}
+            size="sm"
+            className="flex-shrink-0 whitespace-nowrap"
           >
             <i className={`ti ${editing ? 'ti-x' : 'ti-edit'}`} style={{ fontSize: '14px' }} />
             {editing ? 'Отмена' : 'Редактировать'}
-          </button>
+          </Button>
         </div>
 
         {/* ── EDIT FORM (shown when editing) ── */}
         {editing && (
-          <div style={{
-            marginTop: '24px',
-            paddingTop: '24px',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '14px',
-          }}>
-            <div>
-              <label style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px',
-                textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '6px' }}>
-                Имя
-              </label>
-              <input value={fullName} onChange={e => setFullName(e.target.value)}
-                placeholder="Твоё имя"
-                style={{ width: '100%', background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px',
-                  padding: '10px 14px', color: 'white', fontSize: '14px',
-                  outline: 'none', boxSizing: 'border-box' }} />
-            </div>
+          <div className="mt-6 pt-6 flex flex-col gap-3.5" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+            <label className="ui-field">
+              <span className="ui-field__label">Имя</span>
+              <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Твоё имя" className="ui-input" />
+            </label>
 
-            <div>
-              <label style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px',
-                textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '6px' }}>
-                Username
-              </label>
-              <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: '14px', top: '50%',
-                  transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)' }}>@</span>
-                <input value={username}
+            <label className="ui-field">
+              <span className="ui-field__label">Username</span>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 ui-meta">@</span>
+                <input
+                  value={username}
                   onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                   placeholder="username"
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px',
-                    padding: '10px 14px 10px 28px', color: 'white', fontSize: '14px',
-                    outline: 'none', boxSizing: 'border-box' }} />
+                  className="ui-input pl-7"
+                />
               </div>
-            </div>
+            </label>
 
-            <div>
-              <label style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px',
-                textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '6px' }}>
-                О себе
-              </label>
-              <textarea value={description}
+            <label className="ui-field">
+              <span className="ui-field__label">О себе</span>
+              <textarea
+                value={description}
                 onChange={e => setDescription(e.target.value.slice(0, 200))}
                 placeholder="Расскажи о себе..."
                 rows={3}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px',
-                  padding: '10px 14px', color: 'white', fontSize: '14px',
-                  outline: 'none', resize: 'none', fontFamily: 'inherit',
-                  boxSizing: 'border-box' }} />
-              <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px',
-                textAlign: 'right', margin: '2px 0 0' }}>
-                {description.length}/200
-              </p>
-            </div>
+                className="ui-input ui-textarea"
+              />
+              <span className="ui-field__hint text-right">{description.length}/200</span>
+            </label>
 
-            {error && <p style={{ color: '#f87171', fontSize: '13px', margin: 0 }}>{error}</p>}
-            {success && <p style={{ color: '#4ade80', fontSize: '13px', margin: 0 }}>{success}</p>}
+            {error && <p className="text-red-400 text-sm">{error}</p>}
+            {success && <p className="text-green-400 text-sm">{success}</p>}
 
-            <button onClick={handleSave} disabled={saving}
-              style={{ backgroundColor: 'var(--accent-primary, #9333ea)',
-                color: 'white', border: 'none', borderRadius: '10px',
-                padding: '12px', fontSize: '14px', fontWeight: '600',
-                cursor: saving ? 'not-allowed' : 'pointer',
-                opacity: saving ? 0.7 : 1, width: '100%' }}>
+            <Button onClick={handleSave} disabled={saving} fullWidth>
               {saving ? 'Сохранение...' : 'Сохранить изменения'}
-            </button>
+            </Button>
           </div>
         )}
-      </div>
+      </Surface>
 
       {/* ── TABS ── */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '16px',
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: '14px', padding: '4px' }}>
+      <div className="ui-surface ui-surface--pad-sm mb-4 flex gap-1">
         {[
           { key: 'channels', label: 'Каналы', icon: 'ti-brand-telegram', count: channels.length },
           { key: 'reviews', label: 'Отзывы', icon: 'ti-star', count: reviews.length },
@@ -335,22 +282,13 @@ export default function ProfilePage() {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key as 'channels' | 'reviews' | 'stats')}
-            style={{
-              flex: 1, display: 'flex', alignItems: 'center',
-              justifyContent: 'center', gap: '6px',
-              padding: '10px 16px', borderRadius: '10px', border: 'none',
-              cursor: 'pointer', fontSize: '13px', fontWeight: '500',
-              background: activeTab === tab.key
-                ? 'rgba(255,255,255,0.1)' : 'transparent',
-              color: activeTab === tab.key ? 'white' : 'rgba(255,255,255,0.4)',
-              transition: 'all 0.2s',
-            }}
+            className={`ui-btn ui-btn--sm flex-1 ${activeTab === tab.key ? 'ui-btn--secondary' : 'ui-btn--ghost'}`}
+            style={activeTab === tab.key ? { background: 'var(--surface-hover, rgba(255,255,255,0.08))' } : undefined}
           >
             <i className={`ti ${tab.icon}`} style={{ fontSize: '15px' }} />
             {tab.label}
             {tab.count !== null && tab.count > 0 && (
-              <span style={{ background: 'rgba(255,255,255,0.15)',
-                borderRadius: '20px', padding: '1px 7px', fontSize: '11px' }}>
+              <span className="ui-meta text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'var(--border-subtle)' }}>
                 {tab.count}
               </span>
             )}
@@ -362,40 +300,18 @@ export default function ProfilePage() {
       {activeTab === 'channels' && (
         <div>
           {channels.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '48px 24px',
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px' }}>
-              <i className="ti ti-brand-telegram"
-                style={{ fontSize: '40px', color: 'rgba(255,255,255,0.15)', display: 'block', marginBottom: '12px' }} />
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', margin: '0 0 16px' }}>
-                У вас пока нет каналов
-              </p>
-              <button
-                onClick={() => router.push('/dashboard/add-channel')}
-                style={{ backgroundColor: 'var(--accent-primary, #9333ea)',
-                  color: 'white', border: 'none', borderRadius: '12px',
-                  padding: '10px 24px', fontSize: '14px', cursor: 'pointer', fontWeight: '600' }}>
-                + Добавить канал
-              </button>
-            </div>
+            <Surface padding="lg" className="ui-empty">
+              <i className="ti ti-brand-telegram ui-empty__icon" />
+              <p className="ui-empty__title">У вас пока нет каналов</p>
+              <Button onClick={() => router.push('/dashboard/add-channel')}>+ Добавить канал</Button>
+            </Surface>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div className="flex flex-col gap-2.5">
               {channels.map(channel => (
-                <div key={channel.id}
+                <div
+                  key={channel.id}
                   onClick={() => router.push(`/dashboard/edit-channel/${channel.id}`)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '14px',
-                    padding: '16px 20px',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '14px', cursor: 'pointer', transition: 'all 0.2s' }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.07)'
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
-                  }}
+                  className="ui-surface ui-surface--hover ui-surface--pad-sm flex items-center gap-3.5 cursor-pointer"
                 >
                   {channel.avatar_url ? (
                     <img src={channel.avatar_url} alt={channel.name} style={{ width: '44px', height: '44px',
@@ -411,9 +327,7 @@ export default function ProfilePage() {
 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>
-                        {channel.name}
-                      </span>
+                    <span className="ui-card-title">{channel.name}</span>
                       {channel.is_verified && (
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                           <circle cx="12" cy="12" r="11" fill="#22c55e"/>
@@ -422,9 +336,7 @@ export default function ProfilePage() {
                         </svg>
                       )}
                     </div>
-                    <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px' }}>
-                      @{channel.telegram_username}
-                    </span>
+                    <span className="ui-meta">@{channel.telegram_username}</span>
                   </div>
 
                   <div style={{ display: 'flex', gap: '20px', flexShrink: 0 }}>
@@ -434,29 +346,25 @@ export default function ProfilePage() {
                           ? (channel.subscriber_count/1000).toFixed(1)+'K'
                           : channel.subscriber_count || 0}
                       </div>
-                      <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>подп.</div>
+                      <div className="ui-meta" style={{ fontSize: '10px' }}>подп.</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
                       <div style={{ color: 'var(--accent-primary, #9333ea)', fontSize: '13px', fontWeight: '600' }}>
                         {channel.ad_price ? channel.ad_price + ' ' + (channel.ad_price_currency || 'USD') : '—'}
                       </div>
-                      <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>цена</div>
+                      <div className="ui-meta" style={{ fontSize: '10px' }}>цена</div>
                     </div>
                   </div>
 
-                  <i className="ti ti-chevron-right"
-                    style={{ fontSize: '16px', color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                  <i className="ti ti-chevron-right ui-meta" style={{ fontSize: '16px', flexShrink: 0 }} />
                 </div>
               ))}
 
               <button
                 onClick={() => router.push('/dashboard/add-channel')}
-                style={{ background: 'rgba(255,255,255,0.04)',
-                  border: '1px dashed rgba(255,255,255,0.12)',
-                  borderRadius: '14px', padding: '14px',
-                  color: 'rgba(255,255,255,0.3)', fontSize: '13px',
-                  cursor: 'pointer', width: '100%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                className="ui-surface ui-surface--pad-sm w-full flex items-center justify-center gap-1.5 ui-meta cursor-pointer"
+                style={{ borderStyle: 'dashed' }}
+              >
                 <i className="ti ti-plus" style={{ fontSize: '14px' }} />
                 Добавить ещё канал
               </button>
@@ -469,23 +377,14 @@ export default function ProfilePage() {
       {activeTab === 'reviews' && (
         <div>
           {reviews.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '48px 24px',
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px' }}>
-              <i className="ti ti-star" style={{ fontSize: '40px', color: 'rgba(255,255,255,0.15)',
-                display: 'block', marginBottom: '12px' }} />
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', margin: 0 }}>
-                Отзывов пока нет
-              </p>
-            </div>
+            <Surface padding="lg" className="ui-empty">
+              <i className="ti ti-star ui-empty__icon" />
+              <p className="ui-empty__title">Отзывов пока нет</p>
+            </Surface>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div className="flex flex-col gap-2.5">
               {reviews.map(review => (
-                <div key={review.id} style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '14px', padding: '16px 20px',
-                }}>
+                <Surface key={review.id} padding="md">
                   <div style={{ display: 'flex', justifyContent: 'space-between',
                     alignItems: 'center', marginBottom: '8px' }}>
                     <div style={{ display: 'flex', gap: '3px' }}>
@@ -496,17 +395,16 @@ export default function ProfilePage() {
                         }}>★</span>
                       ))}
                     </div>
-                    <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '12px' }}>
+                    <span className="ui-meta text-xs">
                       {new Date(review.created_at).toLocaleDateString('ru-RU')}
                     </span>
                   </div>
                   {review.comment && (
-                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px',
-                      lineHeight: '1.5', margin: 0 }}>
+                    <p className="ui-body" style={{ lineHeight: 1.5 }}>
                       {review.comment}
                     </p>
                   )}
-                </div>
+                </Surface>
               ))}
             </div>
           )}
@@ -515,7 +413,7 @@ export default function ProfilePage() {
 
       {/* ── STATS TAB ── */}
       {activeTab === 'stats' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
+        <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
           {[
             { label: 'Каналов', value: channels.length, icon: 'ti-brand-telegram' },
             { label: 'Завершённых сделок', value: completedDeals, icon: 'ti-check' },
@@ -523,21 +421,12 @@ export default function ProfilePage() {
             { label: 'Средний рейтинг', value: avgRating ? avgRating + ' ★' : '—', icon: 'ti-award' },
             { label: 'Подписчиков всего', value: channels.reduce((s: number, c: any) => s + (c.subscriber_count || 0), 0).toLocaleString(), icon: 'ti-users' },
           ].map((stat, i) => (
-            <div key={i} style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: '14px', padding: '20px',
-              textAlign: 'center',
-            }}>
+            <div key={i} className="dashboard-stat-card text-center">
               <i className={`ti ${stat.icon}`}
                 style={{ fontSize: '24px', color: 'var(--accent-primary, #9333ea)',
                   display: 'block', marginBottom: '8px', opacity: 0.7 }} />
-              <div style={{ color: 'white', fontSize: '20px', fontWeight: '700' }}>
-                {stat.value}
-              </div>
-              <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', marginTop: '2px' }}>
-                {stat.label}
-              </div>
+              <div className="dashboard-stat-card__value">{stat.value}</div>
+              <div className="dashboard-stat-card__label mt-0.5">{stat.label}</div>
             </div>
           ))}
         </div>

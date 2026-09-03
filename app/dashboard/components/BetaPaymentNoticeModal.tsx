@@ -41,8 +41,8 @@ export default function BetaPaymentNoticeModal({
         <div
           role="dialog"
           aria-modal="true"
-          className="pointer-events-auto w-full max-w-md max-h-[90vh] overflow-y-auto"
-          style={{ ...glassDealCard, padding: '28px', boxShadow: '0 24px 80px rgba(0,0,0,0.45)' }}
+          className="pointer-events-auto w-full max-w-md max-h-[90vh] overflow-y-auto ui-profile-popup"
+          style={{ ...glassDealCard, padding: '28px' }}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-start justify-between gap-4 mb-5">
@@ -63,7 +63,7 @@ export default function BetaPaymentNoticeModal({
 
           {showBudget && amd > 0 && (
             <div
-              className="text-center mb-5 rounded-2xl py-4 px-4"
+              className="text-center mb-5 dashboard-panel py-4 px-4"
               style={{
                 background: 'color-mix(in srgb, var(--accent-primary, #9333ea) 12%, transparent)',
                 border: '1px solid color-mix(in srgb, var(--accent-primary, #9333ea) 35%, transparent)',
@@ -75,7 +75,7 @@ export default function BetaPaymentNoticeModal({
           )}
 
           <div
-            className="rounded-xl p-4 mb-6 text-sm leading-relaxed"
+            className="dashboard-panel p-4 mb-6 text-sm leading-relaxed"
             style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)', color: 'rgba(255,255,255,0.75)' }}
           >
             {PAYMENTS_BETA_MESSAGE}
@@ -90,7 +90,7 @@ export default function BetaPaymentNoticeModal({
             <button
               type="button"
               disabled={saving}
-              className="btn-accent w-full text-white rounded-xl py-3 text-sm font-semibold disabled:opacity-40"
+              className="ui-btn ui-btn--primary w-full disabled:opacity-40"
               onClick={handleConfirm}
             >
               {saving ? 'Сохранение...' : confirmLabel}

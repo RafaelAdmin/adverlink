@@ -37,7 +37,7 @@ export default function PlacementPublishForm({
         disabled={submitting}
         onChange={(e) => setProofUrl(e.target.value)}
         placeholder="https://t.me/channel/123"
-        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none"
+        className="ui-input w-full"
       />
       {error && <p className="text-red-400 text-xs">{error}</p>}
       <button

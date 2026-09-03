@@ -1,21 +1,14 @@
 'use client'
 
-import { Fragment, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { generateVerificationCode } from '@/lib/verification'
 import { getChannelHandle } from '@/lib/channel-helpers'
-
-const glassCard = {
-  background: 'rgba(255,255,255,0.05)',
-  backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)',
-  border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: '20px',
-  padding: '24px',
-  marginBottom: '16px',
-} as const
+import Surface from '@/components/ui/Surface'
+import Button from '@/components/ui/Button'
+import AddChannelProgressStepper from '@/app/dashboard/components/AddChannelProgressStepper'
 
 export default function VerifyChannelPage() {
   const params = useParams()
@@ -102,108 +95,39 @@ export default function VerifyChannelPage() {
   }
 
   if (loading || !channel) {
-    return <div className="text-white/50">Загрузка...</div>
+    return <div className="ui-meta">Загрузка...</div>
   }
 
   const isTelegram = channel.platform === 'telegram' || !channel.platform
   const isYoutube = channel.platform === 'youtube'
   const channelHandle = getChannelHandle(channel)
-  const stepLabels = isYoutube
-    ? [
-        { num: 1, label: 'Найти канал' },
-        { num: 2, label: 'Добавить код' },
-        { num: 3, label: 'Проверка' },
-      ]
-    : [
-        { num: 1, label: 'Добавить код' },
-        { num: 2, label: 'Проверка' },
-      ]
+  const flowStep = verificationResult === 'success' ? 4 : 3
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="dashboard-form-inner">
       <Link
         href="/dashboard"
-        className="text-white/50 hover:text-white transition text-sm mb-6 inline-flex items-center gap-2"
+        className="ui-meta mb-6 inline-flex items-center gap-2 hover:opacity-80 transition"
       >
         ← Мои каналы
       </Link>
 
-      <h1 className="text-2xl font-bold text-white mb-2">
+      <AddChannelProgressStepper currentStep={flowStep} className="mb-6" />
+
+      <h1 className="ui-page-title mb-2">
         {isYoutube ? 'Верификация YouTube канала' : 'Верификация канала'}
       </h1>
-      <p className="text-white/50 mb-8 text-sm">
+      <p className="ui-meta mb-8">
         {isYoutube
           ? `Подтвердите владение каналом ${channel.name}`
           : `Подтвердите владение каналом ${channelHandle}`}
       </p>
 
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '32px' }}>
-        {stepLabels.map((s, i) => (
-          <Fragment key={s.num}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-              <div
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  background:
-                    step > s.num
-                      ? '#22c55e'
-                      : step === s.num
-                        ? 'var(--accent-primary, #9333ea)'
-                        : 'rgba(255,255,255,0.1)',
-                  color: 'white',
-                  border: step === s.num ? '2px solid rgba(255,255,255,0.3)' : 'none',
-                }}
-              >
-                {step > s.num ? '✓' : s.num}
-              </div>
-              <span
-                style={{
-                  color: step >= s.num ? 'white' : 'rgba(255,255,255,0.3)',
-                  fontSize: '11px',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {s.label}
-              </span>
-            </div>
-            {i < stepLabels.length - 1 && (
-              <div
-                style={{
-                  flex: 1,
-                  height: '2px',
-                  background: step > s.num ? '#22c55e' : 'rgba(255,255,255,0.1)',
-                  margin: '0 8px',
-                  marginBottom: '20px',
-                }}
-              />
-            )}
-          </Fragment>
-        ))}
-      </div>
-
       {step === 1 && isYoutube && (
-        <div style={glassCard}>
-          <h2 className="text-white font-semibold text-lg mb-5">Шаг 1: Подтвердите свой YouTube канал</h2>
+        <Surface padding="lg" className="mb-4">
+          <h2 className="ui-section-title mb-5">Шаг 1: Подтвердите свой YouTube канал</h2>
 
-          <div
-            style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '16px',
-              padding: '20px',
-              marginBottom: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-            }}
-          >
+          <div className="flex items-center gap-4 ui-surface ui-surface--pad-sm mb-5">
             <div
               style={{
                 width: '48px',
@@ -219,14 +143,12 @@ export default function VerifyChannelPage() {
               <i className="ti ti-brand-youtube" style={{ fontSize: '24px', color: 'white' }} />
             </div>
             <div>
-              <div style={{ color: 'white', fontWeight: '600', fontSize: '15px' }}>{channel.name}</div>
-              <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginTop: '4px' }}>
-                {channelHandle}
-              </div>
+              <div className="ui-card-title">{channel.name}</div>
+              <div className="ui-meta">{channelHandle}</div>
             </div>
           </div>
 
-          <ol style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: '2', marginBottom: '20px', paddingLeft: '20px' }}>
+          <ol className="add-channel-instructions">
             <li>Откройте YouTube Studio (studio.youtube.com)</li>
             <li>Перейдите в раздел &quot;Настройки&quot; → &quot;Канал&quot;</li>
             <li>Подтвердите что вы владелец канала в YouTube Studio</li>
@@ -236,34 +158,17 @@ export default function VerifyChannelPage() {
             href="https://studio.youtube.com"
             target="_blank"
             rel="noopener noreferrer"
+            className="ui-btn ui-btn--ghost ui-btn--sm mb-5 inline-flex"
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              background: 'rgba(220,38,38,0.2)',
-              border: '1px solid rgba(220,38,38,0.4)',
+              borderColor: 'color-mix(in srgb, #dc2626 40%, var(--border))',
               color: '#f87171',
-              borderRadius: '12px',
-              padding: '10px 16px',
-              fontSize: '14px',
-              textDecoration: 'none',
-              marginBottom: '20px',
             }}
           >
             <i className="ti ti-brand-youtube" />
             Открыть YouTube Studio
           </a>
 
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              cursor: 'pointer',
-              color: 'rgba(255,255,255,0.7)',
-              fontSize: '14px',
-            }}
-          >
+          <label className="ui-body flex items-center gap-2.5 cursor-pointer mb-5">
             <input
               type="checkbox"
               checked={step1Confirmed}
@@ -273,294 +178,173 @@ export default function VerifyChannelPage() {
             Я подтверждаю что являюсь владельцем этого канала
           </label>
 
-          <button
+          <Button
             type="button"
             onClick={() => setStep(2)}
             disabled={!step1Confirmed}
-            style={{
-              marginTop: '20px',
-              backgroundColor: step1Confirmed ? 'var(--accent-primary, #9333ea)' : 'rgba(255,255,255,0.1)',
-              color: step1Confirmed ? 'white' : 'rgba(255,255,255,0.3)',
-              border: 'none',
-              borderRadius: '14px',
-              padding: '12px 24px',
-              fontSize: '14px',
-              cursor: step1Confirmed ? 'pointer' : 'not-allowed',
-              width: '100%',
-            }}
+            fullWidth
           >
             Далее →
-          </button>
-        </div>
+          </Button>
+        </Surface>
       )}
 
       {((step === 1 && isTelegram) || (step === 2 && isYoutube)) && (
-        <div style={glassCard}>
-          <h2 className="text-white font-semibold text-lg mb-5">
+        <Surface padding="lg" className="mb-4">
+          <h2 className="ui-section-title mb-5">
             {isYoutube
               ? 'Шаг 2: Добавьте код в описание YouTube канала'
               : 'Шаг 1: Добавьте код верификации в описание канала'}
           </h2>
 
-          <div
-            style={{
-              background: 'color-mix(in srgb, var(--accent-primary, #9333ea) 12%, transparent)',
-              border: '2px dashed color-mix(in srgb, var(--accent-primary, #9333ea) 45%, transparent)',
-              borderRadius: '16px',
-              padding: '24px',
-              textAlign: 'center',
-              marginBottom: '20px',
-            }}
-          >
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '8px' }}>
-              ВАШ КОД ВЕРИФИКАЦИИ
-            </p>
-            <p
-              style={{
-                color: 'white',
-                fontSize: '24px',
-                fontWeight: '800',
-                letterSpacing: '3px',
-                fontFamily: 'monospace',
-              }}
-            >
-              {verificationCode}
-            </p>
+          <div className="add-channel-verify-code">
+            <p className="add-channel-verify-code__label">ВАШ КОД ВЕРИФИКАЦИИ</p>
+            <p className="add-channel-verify-code__value">{verificationCode}</p>
             <button
               type="button"
               onClick={() => navigator.clipboard.writeText(verificationCode)}
-              style={{
-                marginTop: '12px',
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: 'rgba(255,255,255,0.6)',
-                borderRadius: '8px',
-                padding: '6px 16px',
-                fontSize: '12px',
-                cursor: 'pointer',
-              }}
+              className="ui-btn ui-btn--ghost ui-btn--sm mt-3"
             >
               <i className="ti ti-copy" /> Скопировать
             </button>
           </div>
 
           {isTelegram && (
-            <div
-              style={{
-                background: 'rgba(59,130,246,0.1)',
-                border: '1px solid rgba(59,130,246,0.2)',
-                borderRadius: '12px',
-                padding: '12px 16px',
-                marginBottom: '16px',
-              }}
-            >
-              <p style={{ color: '#93c5fd', fontSize: '13px', margin: 0 }}>
-                Поддерживаются только публичные Telegram-каналы с @username. Приватные каналы не
-                поддерживаются. Верификация проверяет код в описании канала — бот-администратор не
-                требуется.
-              </p>
+            <div className="add-channel-info-banner add-channel-info-banner--blue">
+              Поддерживаются только публичные Telegram-каналы с @username. Приватные каналы не
+              поддерживаются. Верификация проверяет код в описании канала — бот-администратор не
+              требуется.
             </div>
           )}
 
           {isTelegram ? (
-            <ol style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: '2', marginBottom: '20px', paddingLeft: '20px' }}>
+            <ol className="add-channel-instructions">
               <li>Откройте ваш канал {channelHandle} в Telegram</li>
               <li>Перейдите в Настройки канала → Изменить канал</li>
               <li>
                 В поле &quot;Описание&quot; добавьте код:{' '}
-                <strong style={{ color: 'white' }}>{verificationCode}</strong>
+                <strong>{verificationCode}</strong>
               </li>
               <li>Сохраните изменения</li>
               <li>Нажмите кнопку &quot;Проверить&quot; ниже</li>
             </ol>
           ) : (
-            <ol style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', lineHeight: '2', marginBottom: '20px', paddingLeft: '20px' }}>
+            <ol className="add-channel-instructions">
               <li>Откройте YouTube Studio (studio.youtube.com)</li>
               <li>Нажмите &quot;Настройки&quot; → &quot;Канал&quot; → &quot;Основная информация&quot;</li>
               <li>
                 В поле &quot;Описание&quot; добавьте код:{' '}
-                <strong style={{ color: 'white' }}>{verificationCode}</strong>
+                <strong>{verificationCode}</strong>
               </li>
               <li>Нажмите &quot;Сохранить&quot;</li>
               <li>Нажмите кнопку &quot;Проверить&quot; ниже</li>
             </ol>
           )}
 
-          <div
-            style={{
-              background: 'rgba(234,179,8,0.1)',
-              border: '1px solid rgba(234,179,8,0.2)',
-              borderRadius: '12px',
-              padding: '12px 16px',
-              marginBottom: '20px',
-            }}
-          >
-            <p style={{ color: '#fbbf24', fontSize: '13px', margin: 0 }}>
-              {isYoutube && <i className="ti ti-alert-triangle" style={{ marginRight: '6px' }} />}
-              ⚠️ Код должен присутствовать в описании во время проверки. После верификации его можно удалить.
-            </p>
+          <div className="add-channel-info-banner add-channel-info-banner--warn mb-5">
+            {isYoutube && <i className="ti ti-alert-triangle" style={{ marginRight: '6px' }} />}
+            ⚠️ Код должен присутствовать в описании во время проверки. После верификации его можно удалить.
           </div>
 
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div className="flex gap-3">
             {isYoutube && (
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                style={{
-                  flex: 1,
-                  background: 'rgba(255,255,255,0.08)',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  color: 'white',
-                  borderRadius: '14px',
-                  padding: '12px 24px',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                }}
-              >
+              <Button type="button" variant="secondary" onClick={() => setStep(1)} className="flex-1">
                 ← Назад
-              </button>
+              </Button>
             )}
-            <button
+            <Button
               type="button"
               onClick={handleVerify}
               disabled={!verificationCode}
-              className="btn-accent"
-              style={{
-                flex: 1,
-                border: 'none',
-                borderRadius: '14px',
-                padding: '12px 24px',
-                fontSize: '14px',
-                cursor: 'pointer',
-              }}
+              className="flex-1"
             >
               {isYoutube ? 'Проверить ▶' : 'Проверить'}
-            </button>
+            </Button>
           </div>
-        </div>
+        </Surface>
       )}
 
       {((step === 2 && isTelegram) || (step === 3 && isYoutube)) && (
-        <div style={glassCard}>
+        <Surface padding="lg" className="mb-4">
           {verifying && (
-            <div style={{ textAlign: 'center', padding: '40px' }}>
+            <div className="text-center py-10">
               <i
-                className="ti ti-loader"
+                className="ti ti-loader ui-meta"
                 style={{
                   fontSize: '48px',
-                  color: 'rgba(255,255,255,0.3)',
                   animation: 'spin 1s linear infinite',
                   display: 'inline-block',
                 }}
               />
-              <p style={{ color: 'rgba(255,255,255,0.5)', marginTop: '16px' }}>
+              <p className="ui-meta mt-4">
                 {isYoutube ? 'Проверяем описание YouTube канала...' : 'Проверяем описание канала...'}
               </p>
             </div>
           )}
 
           {!verifying && verificationResult === 'success' && (
-            <div style={{ textAlign: 'center', padding: '40px' }}>
+            <div className="text-center py-10">
               {isYoutube ? (
                 <i className="ti ti-circle-check" style={{ fontSize: '64px', color: '#22c55e', marginBottom: '16px', display: 'block' }} />
               ) : (
                 <div style={{ fontSize: '64px', marginBottom: '16px' }}>✅</div>
               )}
-              <h2 style={{ color: 'white', fontSize: '24px', fontWeight: '700', marginBottom: '8px' }}>
+              <h2 className="ui-page-title mb-2">
                 {isYoutube ? 'YouTube канал верифицирован!' : 'Канал верифицирован!'}
               </h2>
-              <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '16px' }}>
+              <p className="ui-meta mb-4">
                 {isYoutube
                   ? `${channel.name} (${channelHandle}) успешно подтверждён`
                   : `${channelHandle} успешно подтверждён`}
               </p>
               {isTelegram && (
-                <p
-                  style={{
-                    color: 'rgba(255,255,255,0.45)',
-                    fontSize: '13px',
-                    marginBottom: '24px',
-                    lineHeight: 1.6,
-                  }}
-                >
+                <p className="ui-body mb-6" style={{ lineHeight: 1.6 }}>
                   Канал готов к использованию на маркетплейсе. Автоматическую аналитику можно
                   подключить позже в настройках канала — это необязательно.
                 </p>
               )}
-              <button
-                type="button"
-                onClick={() => router.push('/dashboard')}
-                className="btn-accent"
-                style={{
-                  border: 'none',
-                  borderRadius: '14px',
-                  padding: '12px 32px',
-                  fontSize: '15px',
-                  cursor: 'pointer',
-                }}
-              >
+              <Button type="button" onClick={() => router.push('/dashboard')}>
                 Перейти в дашборд
-              </button>
+              </Button>
             </div>
           )}
 
           {!verifying && verificationResult === 'fail' && (
-            <div style={{ textAlign: 'center', padding: '40px' }}>
+            <div className="text-center py-10">
               {isYoutube ? (
                 <i className="ti ti-circle-x" style={{ fontSize: '64px', color: '#f87171', marginBottom: '16px', display: 'block' }} />
               ) : (
                 <div style={{ fontSize: '64px', marginBottom: '16px' }}>❌</div>
               )}
-              <h2 style={{ color: 'white', fontSize: '24px', fontWeight: '700', marginBottom: '8px' }}>
-                Код не найден
-              </h2>
-              <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>
+              <h2 className="ui-page-title mb-2">Код не найден</h2>
+              <p className="ui-meta mb-2">
                 Мы не нашли код верификации в описании канала.
               </p>
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', marginBottom: '24px' }}>
+              <p className="ui-body mb-6">
                 Убедитесь что код точно добавлен в описание и попробуйте снова.
               </p>
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                <button
+              <div className="flex gap-3 justify-center">
+                <Button
                   type="button"
+                  variant="secondary"
                   onClick={() => {
                     setStep(isYoutube ? 2 : 1)
                     setVerificationResult(null)
                   }}
-                  style={{
-                    background: 'rgba(255,255,255,0.08)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    color: 'white',
-                    borderRadius: '14px',
-                    padding: '12px 24px',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                  }}
                 >
                   ← Назад
-                </button>
-                <button
-                  type="button"
-                  onClick={handleVerify}
-                  className="btn-accent"
-                  style={{
-                    border: 'none',
-                    borderRadius: '14px',
-                    padding: '12px 24px',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                  }}
-                >
+                </Button>
+                <Button type="button" onClick={handleVerify}>
                   Попробовать снова
-                </button>
+                </Button>
               </div>
-              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', marginTop: '20px' }}>
+              <p className="ui-meta mt-5 text-xs">
                 Если проблема повторяется, канал будет верифицирован вручную администратором в течение 24
                 часов.
               </p>
             </div>
           )}
-        </div>
+        </Surface>
       )}
     </div>
   )

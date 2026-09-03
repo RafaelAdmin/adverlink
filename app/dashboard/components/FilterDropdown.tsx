@@ -51,18 +51,8 @@ export default function FilterDropdown({
         className={`filter-dropdown-trigger${open ? ' filter-dropdown-trigger--open' : ''}`}
         onClick={() => setOpen(!open)}
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          background: 'rgba(255,255,255,0.08)',
-          border: '1px solid rgba(255,255,255,0.15)',
-          borderRadius: '10px',
           padding: isSmall ? '4px 10px' : '8px 14px',
-          color: 'white',
           fontSize: isSmall ? '13px' : '14px',
-          cursor: 'pointer',
-          whiteSpace: 'nowrap',
-          transition: 'all 0.2s',
           width: fullWidth ? '100%' : undefined,
         }}
       >
@@ -70,7 +60,7 @@ export default function FilterDropdown({
           <span style={{ fontSize: isSmall ? '14px' : '16px' }}>{selected.icon}</span>
         )}
         <span>{selected.label}</span>
-        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', marginLeft: fullWidth ? 'auto' : undefined }}>
+        <span className="filter-dropdown-trigger__chevron" style={{ marginLeft: fullWidth ? 'auto' : undefined }}>
           {open ? '▲' : '▼'}
         </span>
       </button>
@@ -84,14 +74,8 @@ export default function FilterDropdown({
             left: fullWidth ? 0 : undefined,
             right: fullWidth ? undefined : 0,
             zIndex: 50,
-            background: 'rgba(15,12,41,0.98)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '12px',
-            overflow: 'hidden',
             minWidth: fullWidth ? undefined : minWidth,
             width: fullWidth ? '100%' : undefined,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           }}
         >
           {options.map((option) => (
@@ -102,19 +86,6 @@ export default function FilterDropdown({
               onClick={() => {
                 onChange(option.value)
                 setOpen(false)
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                width: '100%',
-                padding: '10px 14px',
-                border: 'none',
-                color: value === option.value ? 'white' : 'rgba(255,255,255,0.7)',
-                fontSize: '13px',
-                cursor: 'pointer',
-                textAlign: 'left',
-                transition: 'background 0.15s, box-shadow 0.15s',
               }}
             >
               {option.icon && (
@@ -127,7 +98,7 @@ export default function FilterDropdown({
                   {option.label}
                 </div>
                 {option.sublabel && (
-                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
+                  <div className="ui-meta" style={{ fontSize: '11px' }}>
                     {option.sublabel}
                   </div>
                 )}

@@ -104,13 +104,9 @@ export default function UserProfileCard({ profileId, onClose }: UserProfileCardP
       onClick={onClose}
     >
       <div
+        className="ui-profile-popup"
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: 'rgba(15,12,41,0.92)',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: '24px',
           width: '340px',
           maxHeight: '85vh',
           overflowY: 'auto',

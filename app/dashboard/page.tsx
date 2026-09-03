@@ -8,15 +8,9 @@ import { useDashboard } from './layout'
 import { CreatorDealCard, AdvertiserDealCard } from './components/DealManagement'
 import { DashboardLimitCard } from './components/LimitCounter'
 import { getMonthStart, isProPlan } from '@/lib/subscriptions'
-
-const glassCardStyle: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.06)',
-  backdropFilter: 'blur(10px)',
-  WebkitBackdropFilter: 'blur(10px)',
-  border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: '16px',
-  padding: '24px',
-}
+import PageHeader from '@/components/ui/PageHeader'
+import MetricStrip from '@/components/ui/MetricStrip'
+import Surface, { surfaceStyle } from '@/components/ui/Surface'
 
 export default function DashboardPage() {
   const { role } = useDashboard()
@@ -34,7 +28,7 @@ function CreatorDashboard() {
   const [deleteSuccess, setDeleteSuccess] = useState(false)
   const [channels, setChannels] = useState<any[]>([])
   const [adRequests, setAdRequests] = useState<any[]>([])
-  const [metrics, setMetrics] = useState({ postsThisMonth: 0, totalSubscribers: 0, adPosts: 0 })
+  const [metrics, setMetrics] = useState({ totalSubscribers: 0, adPosts: 0 })
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState('')
   const [userIsPro, setUserIsPro] = useState(false)
@@ -75,17 +69,9 @@ function CreatorDashboard() {
     }
     setAdRequests(requests)
 
-    const monthStart = new Date()
-    monthStart.setDate(1)
-    monthStart.setHours(0, 0, 0, 0)
-
     const completed = requests.filter((r) => r.status === 'completed')
-    const postsThisMonth = completed.filter(
-      (r) => new Date(r.completed_at || r.updated_at || r.created_at) >= monthStart,
-    ).length
 
     setMetrics({
-      postsThisMonth,
       totalSubscribers,
       adPosts: completed.length,
     })
@@ -113,9 +99,9 @@ function CreatorDashboard() {
   }
 
   const metricCards = [
-    { label: 'Завершено в этом месяце', value: metrics.postsThisMonth.toLocaleString() },
+    { label: 'Всего каналов', value: channels.length.toLocaleString() },
     { label: 'Всего подписчиков', value: metrics.totalSubscribers.toLocaleString() },
-    { label: 'Завершённых сделок', value: metrics.adPosts.toLocaleString() },
+    { label: 'Всего завершённых сделок', value: metrics.adPosts.toLocaleString() },
   ]
 
   return (
@@ -125,66 +111,40 @@ function CreatorDashboard() {
           ✓ Канал успешно удалён
         </div>
       )}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
-        <h1 className="text-2xl font-bold text-white">Мои каналы</h1>
-        <Link
-          href="/dashboard/add-channel"
-          className="btn-accent transition text-white px-5 py-2 rounded-full text-sm font-medium flex items-center gap-2 self-start sm:self-auto"
-        >
-          <i className="ti ti-plus" style={{ fontSize: '14px' }} />
-          Добавить канал
-        </Link>
-      </div>
-      <p className="text-white/50 mb-8">Управляй своими Telegram каналами</p>
+      <PageHeader
+        title="Мои каналы"
+        description="Управляй своими Telegram каналами"
+        actions={
+          <Link href="/dashboard/add-channel" className="ui-btn ui-btn--primary ui-btn--md">
+            <i className="ti ti-plus" style={{ fontSize: '14px' }} />
+            Добавить канал
+          </Link>
+        }
+      />
 
-      <div
-        className="stats-grid mb-8"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}
-      >
+      <div style={{ marginBottom: '12px' }}>
         <DashboardLimitCard type="channels" used={channels.length} isPro={userIsPro} />
-        {metricCards.map((item) => (
-          <div key={item.label} style={glassCardStyle}>
-            <div className="text-3xl font-bold text-white mb-1">{item.value}</div>
-            <div className="text-white/50 text-sm">{item.label}</div>
-          </div>
-        ))}
       </div>
+      <MetricStrip items={metricCards} />
 
       {loading ? (
         <div className="text-white/50 text-center py-12">Загрузка...</div>
       ) : channels.length === 0 ? (
-        <div className="text-center" style={glassCardStyle}>
-          <i className="ti ti-brand-telegram" style={{ fontSize: '32px', color: 'rgba(255,255,255,0.3)' }} />
-          <div className="text-white font-medium mb-2 mt-4">У тебя пока нет каналов</div>
-          <div className="text-white/40 text-sm mb-6">Добавь свой первый Telegram канал</div>
-          <Link
-            href="/dashboard/add-channel"
-            className="btn-accent transition text-white px-6 py-2.5 rounded-full text-sm font-medium"
-          >
+        <Surface padding="md" className="ui-empty">
+          <div className="ui-empty__icon"><i className="ti ti-brand-telegram" /></div>
+          <div className="ui-empty__title">У тебя пока нет каналов</div>
+          <div className="ui-empty__text">Добавь свой первый Telegram канал</div>
+          <Link href="/dashboard/add-channel" className="ui-btn ui-btn--primary ui-btn--md">
             Добавить канал
           </Link>
-        </div>
+        </Surface>
       ) : (
         <div className="flex flex-col">
           {channels.map((channel) => (
             <Link
               key={channel.id}
               href={`/dashboard/edit-channel/${channel.id}`}
-              className="channel-row"
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-                gap: '16px',
-                padding: '14px 20px',
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '14px',
-                marginBottom: '8px',
-                textDecoration: 'none',
-                transition: 'all 0.2s',
-                cursor: 'pointer',
-              }}
+              className="channel-row ui-surface ui-surface--hover ui-surface--pad-sm"
             >
               {channel.avatar_url ? (
                 <img
@@ -214,16 +174,7 @@ function CreatorDashboard() {
 
               <div style={{ flex: '1 1 160px', minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span
-                    style={{
-                      color: 'white',
-                      fontWeight: '600',
-                      fontSize: '14px',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
+                  <span className="channel-row__name">
                     {channel.name}
                   </span>
                   <span
@@ -240,7 +191,7 @@ function CreatorDashboard() {
                     {channel.platform === 'youtube' ? 'YouTube' : 'Telegram'}
                   </span>
                 </div>
-                <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px' }}>
+                <span className="channel-row__handle">
                   @
                   {channel.telegram_username?.length > 20
                     ? channel.telegram_username.substring(0, 20) + '...'
@@ -260,29 +211,28 @@ function CreatorDashboard() {
                 }}
               >
                 <div className="channel-stat-col" style={{ minWidth: '70px', textAlign: 'center' }}>
-                  <div style={{ color: 'white', fontSize: '14px', fontWeight: '600' }}>
+                  <div className="channel-stat-col__value">
                     {channel.subscriber_count >= 1000
                       ? `${(channel.subscriber_count / 1000).toFixed(1)}K`
                       : channel.subscriber_count || 0}
                   </div>
-                  <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>подписчиков</div>
+                  <div className="channel-stat-col__label">подписчиков</div>
                 </div>
 
                 <div className="channel-stat-col" style={{ minWidth: '70px', textAlign: 'center' }}>
-                  <div style={{ color: 'white', fontSize: '14px', fontWeight: '600' }}>
+                  <div className="channel-stat-col__value">
                     {channel.avg_views >= 1000
                       ? `${(channel.avg_views / 1000).toFixed(1)}K`
                       : channel.avg_views || 0}
                   </div>
-                  <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>охваты</div>
+                  <div className="channel-stat-col__label">охваты</div>
                 </div>
 
                 <div className="channel-stat-col" style={{ minWidth: '90px', textAlign: 'center' }}>
                   <div
+                    className="channel-stat-col__value text-price-accent"
                     style={{
-                      color: 'var(--accent-primary, #9333ea)',
                       fontSize: '13px',
-                      fontWeight: '600',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -292,7 +242,7 @@ function CreatorDashboard() {
                       ? `${channel.ad_price.toLocaleString()} ${channel.ad_price_currency || 'USD'}`
                       : '—'}
                   </div>
-                  <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>цена</div>
+                  <div className="channel-stat-col__label">цена</div>
                 </div>
 
                 <div className="channel-stat-col" style={{ minWidth: '100px', display: 'flex', justifyContent: 'center' }}>
@@ -349,7 +299,7 @@ function CreatorDashboard() {
       <div className="mt-10">
         <h2 className="text-xl font-bold text-white mb-4">Управление заказами</h2>
         {adRequests.length === 0 ? (
-          <div className="text-center text-white/50" style={glassCardStyle}>
+          <div className="text-center ui-meta" style={surfaceStyle('16px')}>
             Пока нет заказов
           </div>
         ) : (
@@ -518,43 +468,37 @@ function AdvertiserDashboard() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white mb-2">Мои кампании</h1>
-      <p className="text-white/50 mb-8">Создавай кампании — создатели каналов откликнутся сами</p>
+      <PageHeader
+        title="Мои кампании"
+        description="Создавай кампании — создатели каналов откликнутся сами"
+      />
 
-      <div
-        className="stats-grid mb-8"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}
-      >
+      <div style={{ marginBottom: '12px' }}>
         <DashboardLimitCard type="campaigns" used={campaignsThisMonth} isPro={userIsPro} />
-        {metricCards.map((item) => (
-          <div key={item.label} style={glassCardStyle}>
-            <div className="text-3xl font-bold text-white mb-1">{item.value}</div>
-            <div className="text-white/50 text-sm">{item.label}</div>
-          </div>
-        ))}
       </div>
+      <MetricStrip items={metricCards} />
 
-      <div className="text-center mb-10" style={glassCardStyle}>
-        <i className="ti ti-speakerphone" style={{ fontSize: '32px', color: 'rgba(255,255,255,0.3)' }} />
-        <div className="text-white font-medium mb-2 mt-4">
+      <Surface padding="md" className="ui-empty mb-6">
+        <div className="ui-empty__icon"><i className="ti ti-speakerphone" /></div>
+        <div className="ui-empty__title">
           {campaigns.length === 0 ? 'У тебя пока нет кампаний' : 'Запусти новую кампанию'}
         </div>
-        <div className="text-white/40 text-sm mb-6">
+        <div className="ui-empty__text">
           Опиши рекламу — создатели увидят кампанию в маркетплейсе и отправят отклики
         </div>
         <button
           type="button"
           onClick={() => router.push('/dashboard/create-campaign')}
-          className="btn-accent transition text-white px-6 py-2.5 rounded-full text-sm font-medium"
+          className="ui-btn ui-btn--primary ui-btn--md"
         >
           + Создать кампанию
         </button>
-      </div>
+      </Surface>
 
-      <div className="mb-10">
-        <h2 className="text-xl font-bold text-white mb-4">Мои заказы</h2>
+      <div className="mb-6">
+        <h2 className="ui-section-title mb-3">Мои заказы</h2>
         {adOrders.length === 0 ? (
-          <div className="text-center text-white/50" style={glassCardStyle}>
+          <div className="text-center ui-meta" style={surfaceStyle('16px')}>
             Заказов пока нет. Отправьте запрос на рекламу в маркетплейсе.
           </div>
         ) : (
@@ -574,11 +518,11 @@ function AdvertiserDashboard() {
       </div>
 
       <div>
-        <h2 className="text-xl font-bold text-white mb-4">История кампаний</h2>
+        <h2 className="ui-section-title mb-3">История кампаний</h2>
         {loading ? (
           <div className="text-white/50 text-center py-8">Загрузка...</div>
         ) : campaigns.length === 0 ? (
-          <div className="text-center text-white/50" style={glassCardStyle}>
+          <div className="text-center ui-meta" style={surfaceStyle('16px')}>
             Кампаний пока нет
           </div>
         ) : (
@@ -593,8 +537,8 @@ function AdvertiserDashboard() {
                   key={campaign.id}
                   className={`overflow-hidden transition ${isExpanded ? 'border-accent-expanded shadow-accent-expanded' : ''}`}
                   style={{
-                    ...glassCardStyle,
-                    background: isExpanded ? 'rgba(255,255,255,0.08)' : glassCardStyle.background,
+                    ...surfaceStyle('16px'),
+                    background: isExpanded ? 'var(--surface-hover)' : 'var(--surface)',
                   }}
                 >
                   <button

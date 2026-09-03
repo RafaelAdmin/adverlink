@@ -16,11 +16,14 @@ import {
   PRO_PRICE_EUR,
   isProPlan,
 } from '@/lib/subscriptions'
+import PageHeader from '@/components/ui/PageHeader'
+import Surface from '@/components/ui/Surface'
+import Button from '@/components/ui/Button'
 
 function FeatureItem({ included, children }: { included: boolean; children: React.ReactNode }) {
   return (
-    <li className={`text-sm flex items-start gap-2 ${included ? 'text-white/80' : 'text-white/30'}`}>
-      <span className={included ? 'text-green-400' : 'text-white/30'}>{included ? '✓' : '✗'}</span>
+    <li className={`text-sm flex items-start gap-2 ${included ? 'ui-body' : 'ui-meta opacity-60'}`}>
+      <span className={included ? 'text-green-400' : 'ui-meta'}>{included ? '✓' : '✗'}</span>
       {children}
     </li>
   )
@@ -147,11 +150,11 @@ export default function SubscriptionsPage() {
   const activePro = plan === 'pro' || isPro
 
   if (loading) {
-    return <div className="text-white/50">Загрузка...</div>
+    return <div className="ui-meta">Загрузка...</div>
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div>
       <SubscriptionPaymentModal
         open={showPayment}
         onClose={() => setShowPayment(false)}
@@ -183,21 +186,23 @@ export default function SubscriptionsPage() {
         successMessage="Цветная рамка добавлена к вашему аватару"
       />
 
-      <h1 className="text-2xl font-bold text-white mb-2">Подписки</h1>
-      <p className="text-white/50 mb-8">
-        {role === 'creator'
-          ? 'Управляй каналами и получай больше заказов с Pro'
-          : 'Запускай больше кампаний и отслеживай расходы с Pro'}
-      </p>
+      <PageHeader
+        title="Подписки"
+        description={
+          role === 'creator'
+            ? 'Управляй каналами и получай больше заказов с Pro'
+            : 'Запускай больше кампаний и отслеживай расходы с Pro'
+        }
+      />
 
       {activePro && (
-        <div className="mb-8 rounded-2xl p-5 border-2 border-accent-strong bg-white/5 flex items-center gap-4">
+        <Surface padding="md" className="mb-8 border-2 border-accent-strong flex items-center gap-4">
           <span className="text-3xl">★</span>
           <div>
-            <p className="text-white font-semibold">Pro активен</p>
-            <p className="text-white/50 text-sm">Все Pro-функции доступны</p>
+            <p className="ui-card-title">Pro активен</p>
+            <p className="ui-meta">Все Pro-функции доступны</p>
           </div>
-        </div>
+        </Surface>
       )}
 
       {error && (
@@ -207,13 +212,13 @@ export default function SubscriptionsPage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <div className={`bg-white/5 border rounded-2xl p-6 ${!activePro ? 'border-white/20' : 'border-white/10 opacity-80'}`}>
+        <Surface padding="md" className={!activePro ? '' : 'opacity-80'}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white font-semibold text-lg">Free</h3>
-            <span className="text-white/50 text-sm">€0</span>
+            <h3 className="ui-section-title">Free</h3>
+            <span className="ui-meta">€0</span>
           </div>
           {!activePro && (
-            <span className="inline-block bg-white/10 text-white/60 text-xs px-3 py-1 rounded-full mb-4">
+            <span className="inline-block ui-meta text-xs px-3 py-1 rounded-full mb-4" style={{ background: 'var(--border-subtle)' }}>
               Текущий план
             </span>
           )}
@@ -222,22 +227,19 @@ export default function SubscriptionsPage() {
               <FeatureItem key={f} included>{f}</FeatureItem>
             ))}
           </ul>
-          <button
-            disabled
-            className="w-full border border-white/20 text-white/40 rounded-full px-4 py-2.5 text-sm cursor-not-allowed"
-          >
+          <Button variant="secondary" fullWidth disabled>
             {!activePro ? 'Текущий план' : 'Free'}
-          </button>
-        </div>
+          </Button>
+        </Surface>
 
-        <div className={`bg-white/5 border rounded-2xl p-6 relative ${activePro ? 'border-2 border-accent-strong' : 'border-white/10'}`}>
+        <Surface padding="md" className={`relative ${activePro ? 'border-2 border-accent-strong' : ''}`}>
           {!activePro && (
-            <span className="absolute -top-3 right-4 btn-accent text-white text-xs px-3 py-1 rounded-full">
+            <span className="absolute -top-3 right-4 ui-btn ui-btn--primary ui-btn--sm text-xs">
               Рекомендуем
             </span>
           )}
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white font-semibold text-lg flex items-center gap-2">
+            <h3 className="ui-section-title flex items-center gap-2">
               <span className="text-yellow-400">★</span> Pro
             </h3>
             <span className="text-price-accent text-sm font-semibold">€{PRO_PRICE_EUR}/мес</span>
@@ -255,83 +257,47 @@ export default function SubscriptionsPage() {
           </ul>
           {!activePro ? (
             <>
-              <button
-                type="button"
-                onClick={() => setShowPayment(true)}
-                className="w-full border border-white/20 text-white/70 rounded-full px-4 py-2.5 text-sm font-medium hover:border-white/40 transition"
-              >
+              <Button type="button" variant="secondary" fullWidth onClick={() => setShowPayment(true)}>
                 Скоро — €{PRO_PRICE_EUR}/мес
-              </button>
-              <p className="text-white/35 text-xs mt-3 text-center">
+              </Button>
+              <p className="ui-meta text-xs mt-3 text-center">
                 Оплата Pro пока недоступна. Напишите на support@adverlink.am для раннего доступа.
               </p>
             </>
           ) : (
-            <button disabled className="w-full border border-white/20 text-white/50 rounded-full px-4 py-2.5 text-sm cursor-not-allowed">
+            <Button variant="secondary" fullWidth disabled>
               Pro активен
-            </button>
+            </Button>
           )}
-        </div>
+        </Surface>
 
-        <div
-          className="rounded-2xl p-6 relative"
-          style={{
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            opacity: 0.7,
-            filter: 'grayscale(30%)',
-          }}
-        >
-          <span
-            className="absolute top-4 right-4 text-[11px] font-bold tracking-wider uppercase"
-            style={{
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              color: 'rgba(255,255,255,0.4)',
-              padding: '4px 10px',
-              borderRadius: '20px',
-            }}
-          >
+        <Surface padding="md" className="relative opacity-70" style={{ filter: 'grayscale(30%)' }}>
+          <span className="absolute top-4 right-4 ui-meta text-[11px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full" style={{ background: 'var(--border-subtle)' }}>
             Скоро
           </span>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              Бизнес
-            </h3>
-            <span className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              €80/мес
-            </span>
+            <h3 className="ui-section-title ui-meta">Бизнес</h3>
+            <span className="ui-meta text-sm">€80/мес</span>
           </div>
-          <p className="text-xs mb-4" style={{ color: 'rgba(255,255,255,0.25)' }}>
-            Для агентств и крупных рекламодателей
-          </p>
-          <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)', margin: '0 0 16px' }} />
+          <p className="ui-meta text-xs mb-4">Для агентств и крупных рекламодателей</p>
+          <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)', margin: '0 0 16px' }} />
           <ul className="space-y-2 mb-6">
             {BUSINESS_FEATURES.map((f) => (
-              <li key={f} className="text-sm flex items-start gap-2" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                <span style={{ color: 'rgba(255,255,255,0.25)' }}>✓</span>
+              <li key={f} className="text-sm flex items-start gap-2 ui-meta">
+                <span>✓</span>
                 {f}
               </li>
             ))}
           </ul>
-          <button
-            type="button"
-            disabled
-            className="w-full rounded-xl py-3 text-sm font-semibold cursor-not-allowed"
-            style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: 'rgba(255,255,255,0.25)',
-            }}
-          >
+          <Button variant="secondary" fullWidth disabled>
             Скоро доступно
-          </button>
-        </div>
+          </Button>
+        </Surface>
       </div>
 
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8">
-        <h2 className="text-white font-semibold mb-2">Рамка для аватарки</h2>
-        <p className="text-white/50 text-sm mb-6">
+      <Surface padding="md" className="mb-8">
+        <h2 className="ui-section-title mb-2">Рамка для аватарки</h2>
+        <p className="ui-meta mb-6">
           Выберите цвет рамки вокруг вашего аватара — €{AVATAR_FRAME_PRICE_EUR} за разовую покупку
         </p>
 
@@ -368,13 +334,9 @@ export default function SubscriptionsPage() {
             ))}
           </div>
 
-          <button
-            type="button"
-            disabled
-            className="w-full border border-white/20 text-white/40 rounded-full px-5 py-2.5 text-sm cursor-not-allowed"
-          >
+          <Button variant="secondary" disabled className="w-full">
             Скоро — €{AVATAR_FRAME_PRICE_EUR}
-          </button>
+          </Button>
         </div>
 
         {currentFrame && (
@@ -382,22 +344,22 @@ export default function SubscriptionsPage() {
             ✓ Активная рамка: {AVATAR_FRAME_OPTIONS.find((o) => o.id === currentFrame)?.label}
           </p>
         )}
-      </div>
+      </Surface>
 
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-        <h2 className="text-white font-semibold mb-3 flex items-center gap-2">
-          <i className="ti ti-info-circle text-white/50" />
+      <Surface padding="md">
+        <h2 className="ui-section-title mb-3 flex items-center gap-2">
+          <i className="ti ti-info-circle ui-meta" />
           Об аналитике соцсетей
         </h2>
-        <p className="text-white/60 text-sm leading-relaxed">
-          Расширенная аналитика доступна для <strong className="text-white/80">Telegram</strong> и{' '}
-          <strong className="text-white/80">YouTube</strong> через открытые API.
-          Для <strong className="text-white/80">Instagram</strong> и{' '}
-          <strong className="text-white/80">TikTok</strong> детальная статистика недоступна из‑за
+        <p className="ui-body text-sm leading-relaxed">
+          Расширенная аналитика доступна для <strong>Telegram</strong> и{' '}
+          <strong>YouTube</strong> через открытые API.
+          Для <strong>Instagram</strong> и{' '}
+          <strong>TikTok</strong> детальная статистика недоступна из‑за
           закрытых API — вы можете добавлять каналы и работать со сделками, но автоматические отчёты
           по охватам для этих платформ не генерируются.
         </p>
-      </div>
+      </Surface>
     </div>
   )
 }

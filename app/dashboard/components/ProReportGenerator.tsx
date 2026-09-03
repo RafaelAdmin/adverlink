@@ -433,37 +433,23 @@ export default function ProReportGenerator({ channel, isPro }: ProReportGenerato
   if (!isPro) {
     return (
       <div
+        className="dashboard-panel ui-surface--pad-sm flex items-center justify-between gap-4"
         style={{
-          background: 'rgba(234,179,8,0.08)',
-          border: '1px solid rgba(234,179,8,0.2)',
-          borderRadius: '14px',
-          padding: '16px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '16px',
+          background: 'color-mix(in srgb, #eab308 8%, var(--surface))',
+          borderColor: 'color-mix(in srgb, #eab308 25%, var(--border))',
         }}
       >
         <div>
-          <p style={{ color: '#fbbf24', fontWeight: '600', fontSize: '14px', margin: '0 0 2px' }}>
-            🔒 Аналитический отчёт
-          </p>
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: 0 }}>
-            Доступно в Pro подписке
-          </p>
+          <p className="ui-card-title text-sm mb-0.5">🔒 Аналитический отчёт</p>
+          <p className="ui-meta text-xs m-0">Доступно в Pro подписке</p>
         </div>
         <button
+          type="button"
           onClick={() => (window.location.href = '/dashboard/subscriptions')}
+          className="ui-btn ui-btn--ghost ui-btn--sm whitespace-nowrap"
           style={{
-            background: 'rgba(234,179,8,0.2)',
-            border: '1px solid rgba(234,179,8,0.4)',
+            borderColor: 'color-mix(in srgb, #eab308 40%, var(--border))',
             color: '#fbbf24',
-            borderRadius: '10px',
-            padding: '7px 14px',
-            fontSize: '12px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
           }}
         >
           Получить Pro →
@@ -473,14 +459,7 @@ export default function ProReportGenerator({ channel, isPro }: ProReportGenerato
   }
 
   return (
-    <div
-      style={{
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '14px',
-        padding: '16px 20px',
-      }}
-    >
+    <div className="dashboard-panel ui-surface--pad-sm">
       <div
         style={{
           display: 'flex',
@@ -491,48 +470,23 @@ export default function ProReportGenerator({ channel, isPro }: ProReportGenerato
         }}
       >
         <div>
-          <p
-            style={{
-              color: 'white',
-              fontWeight: '600',
-              fontSize: '14px',
-              margin: '0 0 2px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
+          <p className="ui-card-title text-sm mb-0.5 flex items-center gap-1.5">
             <span style={{ color: '#fbbf24' }}>★</span>
             Аналитический отчёт Pro
           </p>
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: 0 }}>
-            Статистика канала и история сделок за выбранный период
-          </p>
+          <p className="ui-meta text-xs m-0">Статистика канала и история сделок за выбранный период</p>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <div
-            style={{
-              display: 'flex',
-              borderRadius: '10px',
-              overflow: 'hidden',
-              border: '1px solid rgba(255,255,255,0.12)',
-            }}
-          >
+          <div className="report-format-switch">
             {(['excel', 'pdf'] as const).map((f) => (
               <button
                 key={f}
+                type="button"
                 onClick={() => setFormat(f)}
-                style={{
-                  padding: '6px 12px',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: format === f ? 'var(--accent-primary, #9333ea)' : 'rgba(255,255,255,0.05)',
-                  color: format === f ? 'white' : 'rgba(255,255,255,0.5)',
-                  transition: 'all 0.2s',
-                }}
+                className={`report-format-switch__btn ${
+                  format === f ? 'report-format-switch__btn--active' : ''
+                }`.trim()}
               >
                 {f === 'excel' ? '📊 Excel' : '📄 PDF'}
               </button>
@@ -540,24 +494,10 @@ export default function ProReportGenerator({ channel, isPro }: ProReportGenerato
           </div>
 
           <button
+            type="button"
             onClick={generateReport}
             disabled={generating}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              backgroundColor: 'var(--accent-primary, #9333ea)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '10px',
-              padding: '7px 16px',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: generating ? 'not-allowed' : 'pointer',
-              opacity: generating ? 0.7 : 1,
-              transition: 'all 0.2s',
-              whiteSpace: 'nowrap',
-            }}
+            className="ui-btn ui-btn--primary ui-btn--sm whitespace-nowrap"
           >
             <i className="ti ti-download" style={{ fontSize: '15px' }} />
             {generating ? 'Генерация...' : 'Скачать отчёт'}

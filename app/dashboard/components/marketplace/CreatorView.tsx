@@ -7,6 +7,7 @@ import StatusToast from './StatusToast'
 import CreatorRequestCard from './CreatorRequestCard'
 import CampaignCard from './CampaignCard'
 import { CAMPAIGN_SORT_OPTIONS, COUNTRY_FILTER_OPTIONS, SOCIAL_FILTER_OPTIONS } from './constants'
+import { FilterLabel } from './filter-ui'
 
 export default function CreatorView({
   toast,
@@ -100,7 +101,7 @@ export default function CreatorView({
         placeholder={creatorTab === 'mine' ? 'Поиск по имени, контакту или сообщению...' : 'Поиск по названию, категории или описанию...'}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3 text-white placeholder-white/30 outline-none focus-accent transition mb-4"
+        className="marketplace-search-input mb-4"
         style={{ display: creatorTab === 'campaigns' ? 'none' : 'block' }}
       />
 
@@ -134,43 +135,18 @@ export default function CreatorView({
 
       {creatorTab === 'campaigns' && (
         <>
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div className="flex gap-2.5 mb-3 flex-wrap items-center">
             <input
               placeholder="Поиск по названию, категории или описанию..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{
-                flex: 1,
-                minWidth: '200px',
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '12px',
-                padding: '10px 16px',
-                color: 'white',
-                fontSize: '14px',
-                outline: 'none',
-              }}
+              className="marketplace-search-input flex-1"
+              style={{ minWidth: '200px' }}
             />
             <button
               type="button"
               onClick={() => setShowCampaignFilters(!showCampaignFilters)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '4px 10px',
-                borderRadius: '10px',
-                border: showCampaignFilters
-                  ? '1px solid var(--accent-primary, #9333ea)'
-                  : '1px solid rgba(255,255,255,0.15)',
-                background: showCampaignFilters
-                  ? 'color-mix(in srgb, var(--accent-primary, #9333ea) 15%, transparent)'
-                  : 'rgba(255,255,255,0.08)',
-                color: showCampaignFilters ? 'white' : 'rgba(255,255,255,0.7)',
-                fontSize: '13px',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-              }}
+              className={`ui-btn ui-btn--sm ${showCampaignFilters ? 'ui-btn--primary' : 'ui-btn--secondary'}`}
             >
               <i className="ti ti-adjustments-horizontal" style={{ fontSize: '14px' }} />
               Фильтры {showCampaignFilters ? '▲' : '▼'}
@@ -186,16 +162,10 @@ export default function CreatorView({
           </div>
 
           {showCampaignFilters && (
-            <div style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '16px',
-              padding: '20px',
-              marginBottom: '16px',
-            }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+            <div className="marketplace-filters-panel">
+              <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
                 <div>
-                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '8px' }}>Страна</span>
+                  <FilterLabel>Страна</FilterLabel>
                   <FilterDropdown
                     value={filterCountry}
                     onChange={setFilterCountry}
@@ -207,7 +177,7 @@ export default function CreatorView({
                 </div>
 
                 <div>
-                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '8px' }}>Соцсеть</span>
+                  <FilterLabel>Соцсеть</FilterLabel>
                   <FilterDropdown
                     value={filterSocialNet}
                     onChange={setFilterSocialNet}
@@ -219,13 +189,13 @@ export default function CreatorView({
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Бюджет (AMD)</span>
-                    <span style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>
+                  <div className="flex justify-between mb-2">
+                    <FilterLabel>Бюджет (AMD)</FilterLabel>
+                    <span className="marketplace-filter-range-value">
                       {minBudget.toLocaleString()} — {maxBudget >= 10000000 ? '10M+' : maxBudget.toLocaleString()}
                     </span>
                   </div>
-                  <div style={{ position: 'relative', height: '20px', display: 'flex', alignItems: 'center' }}>
+                  <div className="relative h-5 flex items-center">
                     <input type="range" min={0} max={10000000} step={10000} value={minBudget}
                       onChange={(e) => setMinBudget(Math.min(Number(e.target.value), maxBudget - 10000))}
                       style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary, #9333ea)', zIndex: 1 }} />
@@ -236,13 +206,13 @@ export default function CreatorView({
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Мин. подписчиков</span>
-                    <span style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>
+                  <div className="flex justify-between mb-2">
+                    <FilterLabel>Мин. подписчиков</FilterLabel>
+                    <span className="marketplace-filter-range-value">
                       {minRequiredSubs.toLocaleString()} — {maxRequiredSubs >= 1000000 ? '1M+' : maxRequiredSubs.toLocaleString()}
                     </span>
                   </div>
-                  <div style={{ position: 'relative', height: '20px', display: 'flex', alignItems: 'center' }}>
+                  <div className="relative h-5 flex items-center">
                     <input type="range" min={0} max={1000000} step={1000} value={minRequiredSubs}
                       onChange={(e) => setMinRequiredSubs(Math.min(Number(e.target.value), maxRequiredSubs - 1000))}
                       style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary, #9333ea)', zIndex: 1 }} />
@@ -253,46 +223,26 @@ export default function CreatorView({
                 </div>
 
                 <div>
-                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '8px' }}>Дата размещения</span>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <FilterLabel>Дата размещения</FilterLabel>
+                  <div className="flex gap-2 items-center">
                     <input
                       type="date"
                       value={dateFrom}
                       onChange={(e) => setDateFrom(e.target.value)}
-                      style={{
-                        flex: 1,
-                        background: 'rgba(255,255,255,0.06)',
-                        border: '1px solid rgba(255,255,255,0.12)',
-                        borderRadius: '8px',
-                        padding: '6px 10px',
-                        color: 'white',
-                        fontSize: '12px',
-                        outline: 'none',
-                        colorScheme: 'dark',
-                      }}
+                      className="ui-input flex-1"
                     />
-                    <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>—</span>
+                    <span className="ui-meta text-xs">—</span>
                     <input
                       type="date"
                       value={dateTo}
                       onChange={(e) => setDateTo(e.target.value)}
-                      style={{
-                        flex: 1,
-                        background: 'rgba(255,255,255,0.06)',
-                        border: '1px solid rgba(255,255,255,0.12)',
-                        borderRadius: '8px',
-                        padding: '6px 10px',
-                        color: 'white',
-                        fontSize: '12px',
-                        outline: 'none',
-                        colorScheme: 'dark',
-                      }}
+                      className="ui-input flex-1"
                     />
                   </div>
                 </div>
               </div>
 
-              <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+              <div className="mt-4 flex justify-end">
                 <button
                   type="button"
                   onClick={() => {
@@ -305,15 +255,7 @@ export default function CreatorView({
                     setFilterCountry('all')
                     setFilterSocialNet('all')
                   }}
-                  style={{
-                    background: 'transparent',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    borderRadius: '8px',
-                    padding: '6px 14px',
-                    color: 'rgba(255,255,255,0.4)',
-                    fontSize: '12px',
-                    cursor: 'pointer',
-                  }}
+                  className="ui-btn ui-btn--ghost ui-btn--sm"
                 >
                   Сбросить фильтры
                 </button>

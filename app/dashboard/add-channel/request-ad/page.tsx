@@ -13,6 +13,9 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { DealPaymentModal } from '@/app/dashboard/components/DealManagement'
+import PageHeader from '@/components/ui/PageHeader'
+import Surface from '@/components/ui/Surface'
+import Button from '@/components/ui/Button'
 
 export default function RequestAdPage() {
   const searchParams = useSearchParams()
@@ -155,11 +158,11 @@ export default function RequestAdPage() {
   }
 
   if (!user || loading) {
-    return <div className="text-white/50">Загрузка...</div>
+    return <div className="ui-meta">Загрузка...</div>
   }
 
   return (
-    <div className="max-w-xl mx-auto">
+    <div className="dashboard-form-inner">
       <DealPaymentModal
         open={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
@@ -178,96 +181,88 @@ export default function RequestAdPage() {
 
       <Link
         href="/dashboard/marketplace"
-        className="text-white/50 hover:text-white transition text-sm mb-8 inline-flex items-center gap-2"
+        className="ui-meta mb-8 inline-flex items-center gap-2 hover:opacity-80 transition"
       >
         ← Назад
       </Link>
 
       {loadError ? (
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
-          <p className="text-white/70">{loadError}</p>
-        </div>
+        <Surface padding="lg" className="text-center">
+          <p className="ui-body">{loadError}</p>
+        </Surface>
       ) : success ? (
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
+        <Surface padding="lg" className="text-center">
           <div className="text-4xl mb-4">✓</div>
-          <p className="text-white font-medium mb-2">
-            Запрос отправлен!
-          </p>
-          <p className="text-white/50 text-sm">
+          <p className="ui-card-title mb-2">Запрос отправлен!</p>
+          <p className="ui-meta">
             Владелец канала увидит ваш запрос. Оплату стороны согласуют напрямую (Beta).
           </p>
-        </div>
+        </Surface>
       ) : (
         <>
-          <h1 className="text-2xl font-bold text-white mb-2">Запросить рекламу</h1>
-          {channel && (
-            <p className="text-white/50 mb-8 text-sm">
-              Канал: <span className="text-white">{channel.name}</span>
-              {channel.telegram_username && (
-                <span className="text-white/40"> · @{channel.telegram_username}</span>
-              )}
-            </p>
-          )}
+          <PageHeader
+            title="Запросить рекламу"
+            description={
+              channel
+                ? `Канал: ${channel.name}${channel.telegram_username ? ` · @${channel.telegram_username}` : ''}`
+                : undefined
+            }
+          />
 
-          <form
-            onSubmit={handleSubmit}
-            className="bg-white/5 border border-white/10 rounded-2xl p-8 flex flex-col gap-5"
-          >
-            <label className="flex flex-col gap-2">
-              <span className="text-white/70 text-sm">Имя рекламодателя</span>
-              <input
-                required
-                value={advertiserName}
-                onChange={(e) => setAdvertiserName(e.target.value)}
-                className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition text-sm"
-              />
-            </label>
+          <form onSubmit={handleSubmit}>
+            <Surface padding="lg" className="flex flex-col gap-5">
+              <label className="ui-field">
+                <span className="ui-field__label">Имя рекламодателя</span>
+                <input
+                  required
+                  value={advertiserName}
+                  onChange={(e) => setAdvertiserName(e.target.value)}
+                  className="ui-input"
+                />
+              </label>
 
-            <label className="flex flex-col gap-2">
-              <span className="text-white/70 text-sm">Контакт</span>
-              <input
-                required
-                value={contact}
-                onChange={(e) => setContact(e.target.value)}
-                placeholder="@telegram or email"
-                className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition text-sm"
-              />
-            </label>
+              <label className="ui-field">
+                <span className="ui-field__label">Контакт</span>
+                <input
+                  required
+                  value={contact}
+                  onChange={(e) => setContact(e.target.value)}
+                  placeholder="@telegram or email"
+                  className="ui-input"
+                />
+              </label>
 
-            <label className="flex flex-col gap-2">
-              <span className="text-white/70 text-sm">Бюджет</span>
-              <input
-                type="number"
-                required
-                min={0}
-                value={budget}
-                onChange={(e) => setBudget(e.target.value)}
-                placeholder="100"
-                className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition text-sm"
-              />
-            </label>
+              <label className="ui-field">
+                <span className="ui-field__label">Бюджет</span>
+                <input
+                  type="number"
+                  required
+                  min={0}
+                  value={budget}
+                  onChange={(e) => setBudget(e.target.value)}
+                  placeholder="100"
+                  className="ui-input"
+                />
+              </label>
 
-            <label className="flex flex-col gap-2">
-              <span className="text-white/70 text-sm">Сообщение</span>
-              <textarea
-                required
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Describe what you want to advertise"
-                rows={4}
-                className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition text-sm resize-none"
-              />
-            </label>
+              <label className="ui-field">
+                <span className="ui-field__label">Сообщение</span>
+                <textarea
+                  required
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Describe what you want to advertise"
+                  rows={4}
+                  className="ui-input ui-textarea"
+                />
+              </label>
 
-            {submitError && <p className="text-red-400 text-sm">{submitError}</p>}
+              {submitError && <p className="text-red-400 text-sm">{submitError}</p>}
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="btn-accent disabled:opacity-50 transition text-white rounded-full px-6 py-2.5 text-sm font-medium mt-2"
-            >
-              {submitting ? 'Отправка...' : 'Оплатить и отправить запрос'}
-            </button>
+              <Button type="submit" disabled={submitting} fullWidth>
+                {submitting ? 'Отправка...' : 'Оплатить и отправить запрос'}
+              </Button>
+            </Surface>
           </form>
         </>
       )}

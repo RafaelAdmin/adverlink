@@ -57,11 +57,11 @@ import { createClient } from '@/lib/supabase'
 import UserProfileCard from '../components/UserProfileCard'
 
 const glassCard: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.05)',
+  background: 'var(--surface)',
   backdropFilter: 'blur(12px)',
   WebkitBackdropFilter: 'blur(12px)',
-  border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: '16px',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
 }
 
 type Friendship = {
@@ -376,7 +376,7 @@ export default function FriendsPage() {
 
     return (
       <div
-        className="flex items-center gap-4 p-4 rounded-2xl cursor-pointer"
+        className="flex items-center gap-4 p-4 cursor-pointer ui-surface ui-surface--hover"
         style={glassCard}
         onClick={() => setSelectedProfileId(profile.id)}
       >

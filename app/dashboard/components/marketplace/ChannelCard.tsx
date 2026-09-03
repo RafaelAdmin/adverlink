@@ -32,192 +32,113 @@ export default function ChannelCard({
     ? null
     : formatEngagementRate(channel.subscriber_count, channel.avg_views)
 
+  const priceLabel = channel.ad_price
+    ? `от ${convertChannelPrice(channel.ad_price, channel.ad_price_currency || 'USD')}`
+    : 'Цена по запросу'
+
+  const isOwn = myChannelIds.includes(channel.id)
+
   return (
-    <Link
-      key={channel.id}
-      href={`/dashboard/channel/${channel.id}`}
-      className="hover-border-accent transition cursor-pointer"
-      style={{ height: '100%', display: 'block' }}
-    >
-      <div
-        className="channel-card-inner"
-        style={{
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '16px',
-          padding: '20px',
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100%',
-          minHeight: '260px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', flexShrink: 0 }}>
-          <ChannelAvatar channel={channel} />
-          <PlatformBadge platform={channel.platform} />
-          <div className="flex-1 min-w-0">
-            <div className="text-white font-semibold truncate">{channel.name}</div>
-            <div className="text-white/40 text-sm truncate">{getChannelHandle(channel)}</div>
-          </div>
-          {(channel.is_verified || channel.verification_status === 'verified') && (
-            <VerifiedBadge gradId={`verifiedGrad-card-${channel.id}`} />
-          )}
-          {(channel.owner_profile?.subscription_plan === 'pro' || channel.owner_profile?.is_admin === true) && (
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '3px',
-                background: 'rgba(234,179,8,0.15)',
-                border: '1px solid rgba(234,179,8,0.35)',
-                color: '#fbbf24',
-                fontSize: '10px',
-                fontWeight: '700',
-                padding: '2px 7px',
-                borderRadius: '20px',
-                flexShrink: 0,
-              }}
-            >
-              PRO
-            </span>
-          )}
-        </div>
-
-        {channel.description ? (
-          <p
-            style={{
-              color: 'rgba(255,255,255,0.5)',
-              fontSize: '13px',
-              marginBottom: '12px',
-              flexShrink: 0,
-              height: '40px',
-              overflow: 'hidden',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              lineHeight: '1.5',
-            }}
-          >
-            {channel.description}
-          </p>
-        ) : (
-          <div style={{ height: '40px', flexShrink: 0 }} />
-        )}
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '8px',
-            marginBottom: '12px',
-            flexShrink: 0,
-          }}
-        >
-          <div className="bg-white/5 rounded-xl p-2 text-center">
-            <div className="text-white text-sm font-semibold">
-              {marketplaceMetrics
-                ? marketplaceMetrics.subscribers.value
-                : channel.subscriber_count >= 1000
-                  ? `${(channel.subscriber_count / 1000).toFixed(1)}K`
-                  : channel.subscriber_count}
-            </div>
-            <div className="text-white/40 text-xs">
-              {marketplaceMetrics ? marketplaceMetrics.subscribers.metricLabel : 'подписчиков'}
-            </div>
-          </div>
-          <div className="bg-white/5 rounded-xl p-2 text-center">
-            {marketplaceMetrics ? (
-              <>
-                <div
-                  className={
-                    marketplaceMetrics.engagement.value === '—'
-                      ? 'text-white/50 text-sm font-semibold'
-                      : 'text-white text-sm font-semibold'
-                  }
-                >
-                  {marketplaceMetrics.engagement.value}
-                </div>
-                <div className="text-white/40 text-xs">{marketplaceMetrics.engagement.metricLabel}</div>
-              </>
-            ) : channel.avg_views != null && channel.avg_views > 0 ? (
-              <>
-                <div className="text-white text-sm font-semibold">
-                  {channel.avg_views >= 1000
-                    ? `${(channel.avg_views / 1000).toFixed(1)}K`
-                    : channel.avg_views}
-                </div>
-                <div className="text-white/40 text-xs">охваты</div>
-              </>
-            ) : (
-              <>
-                <div className="text-white/30 text-sm font-semibold">—</div>
-                <div className="text-white/40 text-xs">охваты</div>
-              </>
+    <Link href={`/dashboard/channel/${channel.id}`} className="ui-listing-card">
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '8px' }}>
+        <ChannelAvatar channel={channel} />
+        <div className="flex-1 min-w-0">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <span className="ui-card-title truncate">{channel.name}</span>
+            {(channel.is_verified || channel.verification_status === 'verified') && (
+              <VerifiedBadge gradId={`verifiedGrad-card-${channel.id}`} />
+            )}
+            {(channel.owner_profile?.subscription_plan === 'pro' || channel.owner_profile?.is_admin === true) && (
+              <span className="ui-meta" style={{ fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: 'var(--radius-pill)', background: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.35)', color: '#ca8a04' }}>
+                PRO
+              </span>
             )}
           </div>
+          <div className="ui-meta truncate">{getChannelHandle(channel)}</div>
+          <div style={{ marginTop: '4px' }}>
+            <PlatformBadge platform={channel.platform} />
+          </div>
+        </div>
+      </div>
+
+      {channel.description ? (
+        <p className="ui-meta" style={{ marginBottom: '10px', lineHeight: 1.45, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '2.6em' }}>
+          {channel.description}
+        </p>
+      ) : (
+        <div style={{ minHeight: '2.6em', marginBottom: '10px' }} />
+      )}
+
+      <div className="ui-listing-card__metrics">
+        <div className="ui-listing-card__metric">
+          <div className="ui-listing-card__metric-value">
+            {marketplaceMetrics
+              ? marketplaceMetrics.subscribers.value
+              : channel.subscriber_count >= 1000
+                ? `${(channel.subscriber_count / 1000).toFixed(1)}K`
+                : channel.subscriber_count}
+          </div>
+          <div className="ui-listing-card__metric-label">
+            {marketplaceMetrics ? marketplaceMetrics.subscribers.metricLabel : 'подписчиков'}
+          </div>
+        </div>
+        <div className="ui-listing-card__metric">
           {marketplaceMetrics ? (
-            <div className="bg-white/5 rounded-xl p-2 text-center">
-              <div
-                className={
-                  marketplaceMetrics.price.value === '—'
-                    ? 'text-white/50 text-sm font-semibold'
-                    : 'text-white text-sm font-semibold'
-                }
-              >
+            <>
+              <div className={`ui-listing-card__metric-value ${marketplaceMetrics.engagement.value === '—' ? 'ui-listing-card__metric-value--muted' : ''}`}>
+                {marketplaceMetrics.engagement.value}
+              </div>
+              <div className="ui-listing-card__metric-label">{marketplaceMetrics.engagement.metricLabel}</div>
+            </>
+          ) : channel.avg_views != null && channel.avg_views > 0 ? (
+            <>
+              <div className="ui-listing-card__metric-value">
+                {channel.avg_views >= 1000 ? `${(channel.avg_views / 1000).toFixed(1)}K` : channel.avg_views}
+              </div>
+              <div className="ui-listing-card__metric-label">охваты</div>
+            </>
+          ) : engagementLabel ? (
+            <>
+              <div className="ui-listing-card__metric-value">{engagementLabel}</div>
+              <div className="ui-listing-card__metric-label">ER</div>
+            </>
+          ) : (
+            <>
+              <div className="ui-listing-card__metric-value ui-listing-card__metric-value--muted">—</div>
+              <div className="ui-listing-card__metric-label">ER</div>
+            </>
+          )}
+        </div>
+        <div className="ui-listing-card__metric">
+          {marketplaceMetrics ? (
+            <>
+              <div className={`ui-listing-card__metric-value ${marketplaceMetrics.price.value === '—' ? 'ui-listing-card__metric-value--muted' : ''}`}>
                 {marketplaceMetrics.price.value}
               </div>
-              <div className="text-white/40 text-xs">{marketplaceMetrics.price.metricLabel}</div>
-            </div>
-          ) : engagementLabel ? (
-            <div className="bg-white/5 rounded-xl p-2 text-center">
-              <div className="text-white text-sm font-semibold">{engagementLabel}</div>
-              <div className="text-white/40 text-xs">ER</div>
-            </div>
+              <div className="ui-listing-card__metric-label">{marketplaceMetrics.price.metricLabel}</div>
+            </>
           ) : (
-            <div className="bg-white/5 rounded-xl p-2 text-center">
-              <div className="text-white/30 text-sm font-semibold">—</div>
-              <div className="text-white/40 text-xs">ER</div>
-            </div>
+            <>
+              <div className="ui-listing-card__metric-value ui-listing-card__metric-value--muted">—</div>
+              <div className="ui-listing-card__metric-label">CPM</div>
+            </>
           )}
         </div>
+      </div>
 
-        <div style={{ flex: 1 }} />
+      <div style={{ flex: 1 }} />
 
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexShrink: 0,
-          }}
-        >
-          <div className="text-price-accent">
-            {channel.ad_price
-              ? `от ${convertChannelPrice(channel.ad_price, channel.ad_price_currency || 'USD')}`
-              : 'Цена по запросу'}
-          </div>
-          {myChannelIds.includes(channel.id) ? (
-            <span
-              style={{
-                fontSize: '11px',
-                color: 'rgba(255,255,255,0.25)',
-                padding: '6px 12px',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '20px',
-              }}
-            >
-              Ваш канал
-            </span>
-          ) : (
-            <Link
-              href={`/dashboard/add-channel/request-ad?channelId=${channel.id}`}
-              onClick={(e) => e.stopPropagation()}
-              className="btn-accent transition text-white px-4 py-1.5 rounded-full text-sm"
-            >
-              Запросить рекламу
-            </Link>
-          )}
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', paddingTop: '10px', borderTop: '1px solid var(--border-subtle)' }}>
+        <div className="ui-listing-card__price">{priceLabel}</div>
+        {isOwn ? (
+          <span className="ui-meta" style={{ padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
+            Ваш канал
+          </span>
+        ) : (
+          <span className="ui-btn ui-btn--primary ui-btn--sm" style={{ pointerEvents: 'none' }}>
+            Запросить рекламу
+          </span>
+        )}
       </div>
     </Link>
   )

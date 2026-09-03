@@ -37,9 +37,9 @@ export default function ContentReviewPanel({
 
   return (
     <div className="space-y-4">
-      <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
-        <div className="text-white font-medium">Контент от автора</div>
-        <p className="text-white/85 text-sm whitespace-pre-wrap">{submissionText}</p>
+      <div className="ui-surface ui-surface--pad-sm space-y-3">
+        <div className="ui-card-title">Контент от автора</div>
+        <p className="ui-body whitespace-pre-wrap">{submissionText}</p>
       </div>
 
       {(canApprove || canRequestChanges) && (
@@ -59,7 +59,7 @@ export default function ContentReviewPanel({
               type="button"
               disabled={submitting}
               onClick={() => setShowChangeForm(true)}
-              className="rounded-xl px-4 py-2.5 text-sm border border-white/15 bg-white/5 text-white/80 hover:bg-white/10 transition"
+              className="ui-btn ui-btn--ghost ui-btn--sm"
             >
               Запросить правки
             </button>
@@ -68,14 +68,14 @@ export default function ContentReviewPanel({
       )}
 
       {showChangeForm && canRequestChanges && (
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
-          <div className="text-white font-medium text-sm">Комментарий к правкам</div>
+        <div className="ui-surface ui-surface--pad-sm space-y-3">
+          <div className="ui-card-title text-sm">Комментарий к правкам</div>
           <textarea
             rows={4}
             disabled={submitting}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-purple-400/50"
+            className="ui-input ui-textarea w-full"
             placeholder="Опишите, что нужно изменить..."
           />
           {error && <p className="text-red-400 text-sm">{error}</p>}
@@ -96,7 +96,7 @@ export default function ContentReviewPanel({
                 setComment('')
                 setError(null)
               }}
-              className="rounded-xl px-4 py-2.5 text-sm border border-white/15 bg-white/5 text-white/80 hover:bg-white/10 transition"
+              className="ui-btn ui-btn--ghost ui-btn--sm"
             >
               Отмена
             </button>

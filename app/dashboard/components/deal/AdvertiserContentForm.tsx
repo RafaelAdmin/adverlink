@@ -47,7 +47,7 @@ export default function AdvertiserContentForm({
 
   if (readOnly) {
     return (
-      <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
+      <div className="ui-surface ui-surface--pad-sm p-4 space-y-3">
         <div className="text-white font-medium">{title}</div>
         {material?.body_text ? (
           <>
@@ -77,7 +77,7 @@ export default function AdvertiserContentForm({
   }
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-4">
+    <div className="ui-surface ui-surface--pad-sm p-4 space-y-4">
       <div className="text-white font-medium">{title}</div>
 
       <div>
@@ -90,7 +90,7 @@ export default function AdvertiserContentForm({
           disabled={submitting}
           value={values.bodyText}
           onChange={(e) => setValues((prev) => ({ ...prev, bodyText: e.target.value }))}
-          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-purple-400/50"
+          className="ui-input w-full"
           placeholder={
             mode === 'creator_creates_brief'
               ? 'Опишите, что нужно подготовить автору...'
@@ -109,7 +109,7 @@ export default function AdvertiserContentForm({
           disabled={submitting}
           value={values.destinationUrl}
           onChange={(e) => setValues((prev) => ({ ...prev, destinationUrl: e.target.value }))}
-          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-purple-400/50"
+          className="ui-input w-full"
           placeholder="https://example.com"
         />
       </div>

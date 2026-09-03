@@ -1,7 +1,7 @@
 'use client'
 
 import { formatPeriodLabel } from '@/lib/subscriptions'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 
 export default function DateRangePicker({
   from,
@@ -9,59 +9,51 @@ export default function DateRangePicker({
   onChange,
   disabled,
   style,
+  actions,
 }: {
   from: string
   to: string
   onChange: (from: string, to: string) => void
   disabled?: boolean
   style?: CSSProperties
+  actions?: ReactNode
 }) {
   const fromDate = from ? new Date(from) : new Date()
   const toDate = to ? new Date(to) : new Date()
 
   return (
-    <div
-      style={{
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '14px',
-        padding: '16px 20px',
-        marginBottom: '16px',
-        ...style,
-      }}
-    >
-      <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '10px' }}>
-        Период отчёта
+    <div className="dashboard-panel ui-surface--pad-sm" style={{ marginBottom: '16px', ...style }}>
+      <div className="ui-meta text-xs mb-2">Период отчёта</div>
+      <div className="flex flex-wrap gap-3 items-end justify-between">
+        <div className="flex flex-wrap gap-3 items-end min-w-0">
+          <label className="flex flex-col gap-1">
+            <span className="ui-meta text-[11px]">С</span>
+            <input
+              type="date"
+              value={from}
+              max={to}
+              disabled={disabled}
+              onChange={(e) => onChange(e.target.value, to)}
+              className="ui-input"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="ui-meta text-[11px]">По</span>
+            <input
+              type="date"
+              value={to}
+              min={from}
+              disabled={disabled}
+              onChange={(e) => onChange(from, e.target.value)}
+              className="ui-input"
+            />
+          </label>
+        </div>
+        {actions ? (
+          <div className="flex flex-wrap gap-2 items-center shrink-0">{actions}</div>
+        ) : null}
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>С</span>
-          <input
-            type="date"
-            value={from}
-            max={to}
-            disabled={disabled}
-            onChange={(e) => onChange(e.target.value, to)}
-            className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-sm outline-none focus-accent"
-            style={{ colorScheme: 'dark' }}
-          />
-        </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>По</span>
-          <input
-            type="date"
-            value={to}
-            min={from}
-            disabled={disabled}
-            onChange={(e) => onChange(from, e.target.value)}
-            className="bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-sm outline-none focus-accent"
-            style={{ colorScheme: 'dark' }}
-          />
-        </label>
-        <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', marginLeft: '4px' }}>
-          {formatPeriodLabel(fromDate, toDate)}
-        </span>
-      </div>
+      <div className="ui-meta text-xs mt-2">{formatPeriodLabel(fromDate, toDate)}</div>
     </div>
   )
 }

@@ -35,7 +35,7 @@ export default function CreatorContentSubmission({
 
   return (
     <div className="space-y-4">
-      <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
+      <div className="ui-surface ui-surface--pad-sm p-4 space-y-3">
         <div className="text-white font-medium">Бриф рекламодателя</div>
         {material?.body_text ? (
           <>
@@ -69,14 +69,14 @@ export default function CreatorContentSubmission({
       )}
 
       {canSubmit ? (
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-4">
+        <div className="ui-surface ui-surface--pad-sm p-4 space-y-4">
           <div className="text-white font-medium">Ваш контент для публикации</div>
           <textarea
             rows={6}
             disabled={submitting}
             value={submissionText}
             onChange={(e) => setSubmissionText(e.target.value)}
-            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-purple-400/50"
+            className="ui-input ui-textarea w-full"
             placeholder="Подготовьте рекламный текст для публикации..."
           />
           {error && <p className="text-red-400 text-sm">{error}</p>}
@@ -90,7 +90,7 @@ export default function CreatorContentSubmission({
           </button>
         </div>
       ) : material?.creator_submission_text ? (
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-2">
+        <div className="ui-surface ui-surface--pad-sm p-4 space-y-2">
           <div className="text-white font-medium">Отправленный контент</div>
           <p className="text-white/85 text-sm whitespace-pre-wrap">
             {material.creator_submission_text}

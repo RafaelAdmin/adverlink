@@ -26,12 +26,8 @@ export default function CampaignCard({
       style={{ height: '100%', display: 'block' }}
     >
       <div
-        className="channel-card-inner"
+        className="channel-card-inner ui-surface ui-surface--pad-md"
         style={{
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '16px',
-          padding: '20px',
           display: 'flex',
           flexDirection: 'column',
           height: '100%',
@@ -67,10 +63,8 @@ export default function CampaignCard({
             </div>
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '2px' }}>Рекламодатель</div>
-            <div style={{ color: 'white', fontWeight: '600', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {advertiserName}
-            </div>
+            <div className="ui-meta" style={{ fontSize: '11px', marginBottom: '2px' }}>Рекламодатель</div>
+            <div className="ui-card-title truncate">{advertiserName}</div>
           </div>
           {advertiser?.is_admin ? (
             <span style={{ background: 'rgba(220,38,38,0.2)', border: '1px solid rgba(220,38,38,0.4)', color: '#f87171', fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '20px', flexShrink: 0 }}>
@@ -85,22 +79,8 @@ export default function CampaignCard({
 
         {/* Middle: campaign name + description */}
         <div style={{ flexShrink: 0, marginBottom: '12px' }}>
-          <div style={{ color: 'white', fontWeight: '700', fontSize: '15px', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {campaign.name}
-          </div>
-          <p
-            style={{
-              color: 'rgba(255,255,255,0.5)',
-              fontSize: '13px',
-              margin: 0,
-              height: '40px',
-              overflow: 'hidden',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              lineHeight: '1.5',
-            }}
-          >
+          <div className="ui-card-title truncate mb-1.5">{campaign.name}</div>
+          <p className="ui-meta m-0" style={{ height: '40px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: 1.5 }}>
             {campaign.description || 'Без описания'}
           </p>
         </div>
@@ -158,19 +138,11 @@ export default function CampaignCard({
         <div style={{ flex: 1 }} />
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px' }}>
+          <span className="ui-meta text-xs">
             ≈ ${budgetUsd}
           </span>
           <span
-            className="btn-accent"
-            style={{
-              color: 'white',
-              padding: '6px 16px',
-              borderRadius: '20px',
-              fontSize: '13px',
-              fontWeight: '600',
-              opacity: collecting ? 1 : 0.5,
-            }}
+            className={`ui-btn ui-btn--primary ui-btn--sm ${collecting ? '' : 'opacity-50'}`}
           >
             {collecting ? 'Откликнуться' : 'Закрыта'}
           </span>

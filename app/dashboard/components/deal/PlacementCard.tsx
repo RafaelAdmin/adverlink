@@ -77,7 +77,7 @@ export default function PlacementCard({
   const views24h = formatPlacementViews(telegramAnalytics?.views24h)
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+    <div className="ui-surface ui-surface--pad-sm p-4">
       <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
         <div>
           <div className="text-white font-medium text-sm">
@@ -166,7 +166,7 @@ export default function PlacementCard({
             type="button"
             disabled={reporting}
             onClick={() => setShowReportForm(true)}
-            className="text-sm text-red-300 hover:text-red-200 border border-red-500/30 rounded-xl px-3 py-2"
+            className="ui-btn ui-btn--ghost ui-btn--sm border-red-500/30 text-red-300"
           >
             Сообщить о проблеме
           </button>
@@ -181,7 +181,7 @@ export default function PlacementCard({
             onChange={(e) => setIssueComment(e.target.value)}
             rows={3}
             placeholder="Опишите проблему с этим размещением"
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none resize-y"
+            className="w-full ui-surface ui-surface--pad-sm px-3 py-2 text-white text-sm outline-none resize-y"
           />
           {reportError && <p className="text-red-400 text-xs">{reportError}</p>}
           <div className="flex gap-2">
@@ -189,7 +189,7 @@ export default function PlacementCard({
               type="button"
               disabled={reporting}
               onClick={() => setShowReportForm(false)}
-              className="flex-1 rounded-xl border border-white/10 px-3 py-2 text-sm text-white/70"
+              className="flex-1 ui-btn ui-btn--ghost ui-btn--sm"
             >
               Отмена
             </button>
@@ -197,7 +197,7 @@ export default function PlacementCard({
               type="button"
               disabled={reporting || !issueComment.trim()}
               onClick={() => onReportIssue(placement.placement_index, issueComment.trim())}
-              className="flex-1 rounded-xl border border-red-500/30 px-3 py-2 text-sm text-red-300 disabled:opacity-50"
+              className="flex-1 ui-btn ui-btn--ghost ui-btn--sm border-red-500/30 text-red-300 disabled:opacity-50"
             >
               {reporting ? 'Отправка…' : 'Отправить'}
             </button>

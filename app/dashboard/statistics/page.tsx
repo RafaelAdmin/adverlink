@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from '../layout'
 import { formatAmdWithUsd } from '@/lib/currency'
+import PageHeader from '@/components/ui/PageHeader'
+import Surface from '@/components/ui/Surface'
 
 function useAccentColor() {
   const [color, setColor] = useState('#9333ea')
@@ -56,7 +58,7 @@ function buildMonthlyChart(items: { created_at: string; [key: string]: unknown }
 function SubMetric({
   label,
   value,
-  valueColor = 'white',
+  valueColor,
 }: {
   label: string
   value: string | number
@@ -64,8 +66,13 @@ function SubMetric({
 }) {
   return (
     <div>
-      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', marginBottom: '4px' }}>{label}</div>
-      <div style={{ color: valueColor, fontSize: '20px', fontWeight: '700' }}>{value}</div>
+      <div className="dashboard-stat-card__label">{label}</div>
+      <div
+        className="dashboard-stat-card__value"
+        style={valueColor ? { color: valueColor } : undefined}
+      >
+        {value}
+      </div>
     </div>
   )
 }
@@ -84,11 +91,7 @@ function BigMetricCard({
   cols?: 2 | 3
 }) {
   return (
-    <div className={`border ${borderClass} rounded-2xl p-6 relative overflow-hidden`} style={{
-      background: 'rgba(255,255,255,0.06)',
-      backdropFilter: 'blur(10px)',
-      WebkitBackdropFilter: 'blur(10px)',
-    }}>
+    <div className={`dashboard-stat-card relative overflow-hidden ${borderClass}`}>
       <i
         className={`ti ${iconClass}`}
         style={{
@@ -97,10 +100,10 @@ function BigMetricCard({
           position: 'absolute',
           right: '16px',
           top: '16px',
-          color: 'white',
+          color: 'var(--text)',
         }}
       />
-      <div style={{ color: 'white', fontWeight: '700', fontSize: '14px', marginBottom: '16px' }}>{title}</div>
+      <div className="ui-section-title mb-4">{title}</div>
       <div className={`grid gap-4 ${cols === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>{children}</div>
     </div>
   )
@@ -110,9 +113,9 @@ function SkeletonCards() {
   return (
     <div className="grid grid-cols-2 gap-4 mb-8">
       {[1, 2, 3, 4].map((i) => (
-        <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-6 h-36 animate-pulse" />
+        <div key={i} className="dashboard-stat-card h-36 animate-pulse" />
       ))}
-      <div className="col-span-2 bg-white/5 border border-white/10 rounded-2xl p-6 h-64 animate-pulse" />
+      <div className="col-span-2 dashboard-panel h-64 animate-pulse" style={{ padding: '24px' }} />
     </div>
   )
 }
@@ -167,9 +170,9 @@ function SvgLineChart({
   const gridLines = [0, 1, 2, 3].map((i) => 20 + (i / 3) * 150)
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8">
-      <h2 className="text-lg font-bold text-white mb-1">{title}</h2>
-      <p className="text-white/40 text-sm mb-6">{subtitle}</p>
+    <Surface padding="md" className="mb-8">
+      <h2 className="ui-section-title mb-1">{title}</h2>
+      <p className="ui-meta mb-6">{subtitle}</p>
       <svg viewBox="0 0 600 200" width="100%" style={{ overflow: 'visible' }}>
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -212,8 +215,8 @@ function SvgLineChart({
           </>
         )}
       </svg>
-      {allZero && <p className="text-white/30 text-sm text-center mt-2">{emptyMessage}</p>}
-    </div>
+      {allZero && <p className="ui-meta text-center mt-2">{emptyMessage}</p>}
+    </Surface>
   )
 }
 
@@ -435,8 +438,7 @@ export default function StatisticsPage() {
   if (loading) {
     return (
       <div>
-        <h1 className="text-2xl font-bold text-white mb-2">Статистика</h1>
-        <p className="text-white/50 mb-8">Загрузка данных...</p>
+        <PageHeader title="Статистика" description="Загрузка данных..." />
         <SkeletonCards />
       </div>
     )
@@ -446,8 +448,7 @@ export default function StatisticsPage() {
     const d = creatorStats
     return (
       <div>
-        <h1 className="text-2xl font-bold text-white mb-2">Статистика</h1>
-        <p className="text-white/50 mb-8">Обзор доходов, сделок и каналов</p>
+        <PageHeader title="Статистика" description="Обзор доходов, сделок и каналов" />
 
         <div className="grid grid-cols-2 gap-4 mb-8">
           <BigMetricCard title="Доход" iconClass="ti-currency-dollar" borderClass="border-green-500/30">
@@ -483,19 +484,19 @@ export default function StatisticsPage() {
           emptyMessage="График появится после первой завершённой сделки"
         />
 
-        <h2 className="text-xl font-bold text-white mb-4">Последние сделки</h2>
+        <h2 className="ui-section-title mb-4">Последние сделки</h2>
         {d.recentDeals.length === 0 ? (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center text-white/50 text-sm">
+          <Surface padding="lg" className="text-center ui-meta text-sm">
             Пока нет сделок
-          </div>
+          </Surface>
         ) : (
           <div className="flex flex-col gap-2">
             {d.recentDeals.map((deal) => (
-              <div key={deal.id} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 flex items-center gap-4">
+              <div key={deal.id} className="ui-surface ui-surface--pad-sm flex items-center gap-4">
                 <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${dealStatusDot(deal.status)}`} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-white font-medium truncate">{deal.advertiser_name || '—'}</div>
-                  <div className="text-white/40 text-xs">{new Date(deal.created_at).toLocaleDateString('ru-RU')}</div>
+                  <div className="ui-card-title truncate">{deal.advertiser_name || '—'}</div>
+                  <div className="ui-meta">{new Date(deal.created_at).toLocaleDateString('ru-RU')}</div>
                 </div>
                 <div className="text-price-accent">{formatAmdWithUsd(deal.budget)}</div>
               </div>
@@ -510,17 +511,13 @@ export default function StatisticsPage() {
     const d = advertiserStats
     return (
       <div>
-        <h1 className="text-2xl font-bold text-white mb-2">Статистика</h1>
-        <p className="text-white/50 mb-8">Обзор расходов, кампаний и репутации</p>
+        <PageHeader title="Статистика" description="Обзор расходов, кампаний и репутации" />
 
         <div className="grid grid-cols-2 gap-4 mb-8">
           <BigMetricCard title="Расходы" iconClass="ti-cash" borderClass="border-red-500/30">
             <SubMetric label="За месяц" value={`${d.monthSpent.toLocaleString()} AMD`} />
             <SubMetric label="За всё время" value={`${d.totalSpent.toLocaleString()} AMD`} />
-            <div
-              className="col-span-2"
-              style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', marginTop: '4px' }}
-            >
+            <div className="col-span-2 ui-meta text-sm mt-1">
               ≈ ${Math.round(d.totalSpent / 385)}
             </div>
           </BigMetricCard>
@@ -552,18 +549,18 @@ export default function StatisticsPage() {
           emptyMessage="График появится после первой завершённой сделки"
         />
 
-        <h2 className="text-xl font-bold text-white mb-4">Активные кампании</h2>
+        <h2 className="ui-section-title mb-4">Активные кампании</h2>
         {d.activeCampaignsList.length === 0 ? (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center text-white/50 text-sm">
+          <Surface padding="lg" className="text-center ui-meta text-sm">
             Нет активных кампаний
-          </div>
+          </Surface>
         ) : (
           <div className="flex flex-col gap-3">
             {d.activeCampaignsList.map((camp) => (
-              <div key={camp.id} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-4 flex-wrap">
+              <Surface key={camp.id} padding="sm" className="flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex-1 min-w-0">
-                  <div className="text-white font-medium">{camp.name}</div>
-                  <div className="flex flex-wrap gap-3 mt-1 text-sm text-white/50">
+                  <div className="ui-card-title">{camp.name}</div>
+                  <div className="flex flex-wrap gap-3 mt-1 text-sm ui-meta">
                     <span className="text-price-accent">{safeNum(camp.budget).toLocaleString()} AMD</span>
                     {camp.category && (
                       <span className="badge-accent text-xs px-2 py-0.5 rounded-full">{camp.category}</span>
@@ -572,7 +569,7 @@ export default function StatisticsPage() {
                   </div>
                 </div>
                 <span className="bg-green-500/20 text-green-400 text-xs px-3 py-1 rounded-full">Активна</span>
-              </div>
+              </Surface>
             ))}
           </div>
         )}
@@ -582,8 +579,7 @@ export default function StatisticsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white mb-2">Статистика</h1>
-      <p className="text-white/50">Не удалось загрузить данные</p>
+      <PageHeader title="Статистика" description="Не удалось загрузить данные" />
     </div>
   )
 }

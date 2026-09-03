@@ -10,6 +10,9 @@ import ProReportGenerator from '@/app/dashboard/components/ProReportGenerator'
 import TelegramAnalyticsConnect from '@/app/dashboard/components/TelegramAnalyticsConnect'
 import CurrencySelector from '@/app/dashboard/components/CurrencySelector'
 import { CurrencyCode } from '@/lib/currency'
+import PageHeader from '@/components/ui/PageHeader'
+import Surface from '@/components/ui/Surface'
+import Button from '@/components/ui/Button'
 
 export default function EditChannelPage() {
   const [channel, setChannel] = useState<any>(null)
@@ -70,7 +73,6 @@ export default function EditChannelPage() {
         avg_views: avgViews,
         ad_price: adPrice,
         ad_price_currency: channel.ad_price_currency || 'USD',
-        contact_telegram: (channel.contact_telegram || '').trim().slice(0, 64),
         language: channel.language,
         country: channel.country,
       })
@@ -105,25 +107,24 @@ export default function EditChannelPage() {
   }
 
   if (loading) return (
-    <div className="text-white/50 text-center py-24">Загрузка...</div>
+    <div className="ui-meta text-center py-24">Загрузка...</div>
   )
 
   return (
-    <div className="max-w-xl mx-auto">
+    <div className="dashboard-form-inner">
       <Link
         href="/dashboard"
-        className="text-white/50 hover:text-white transition text-sm mb-8 inline-flex items-center gap-2"
+        className="ui-meta mb-8 inline-flex items-center gap-2 hover:opacity-80 transition"
       >
         ← Назад к дашборду
       </Link>
 
-      <h1 className="text-2xl font-bold text-white mb-2">Редактировать канал</h1>
-      <p className="text-white/50 mb-8 text-sm">Обнови информацию о своём канале</p>
+      <PageHeader title="Редактировать канал" description="Обнови информацию о своём канале" />
 
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-8 flex flex-col gap-5">
+      <Surface padding="lg" className="flex flex-col gap-5">
 
         {/* Аватар и название */}
-        <div className="flex items-center gap-4 pb-4 border-b border-white/10">
+        <div className="flex items-center gap-4 pb-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
           {channel.avatar_url ? (
             <img src={channel.avatar_url} alt={channel.name} className="w-14 h-14 rounded-full object-cover" />
           ) : (
@@ -136,7 +137,7 @@ export default function EditChannelPage() {
               {channel.name}
               <PlatformBadge platform={channel.platform} />
             </div>
-            <div className="text-white/40 text-sm">{getChannelHandle(channel)}</div>
+            <div className="ui-meta">{getChannelHandle(channel)}</div>
             <div className={`text-xs mt-1 ${
               channel.verification_status === 'verified' ? 'text-green-400' : 'text-yellow-400'
             }`}>
@@ -146,39 +147,39 @@ export default function EditChannelPage() {
         </div>
 
         {/* Название */}
-        <div className="flex flex-col gap-2">
-          <label className="text-white/70 text-sm">Название канала</label>
+        <label className="ui-field">
+          <span className="ui-field__label">Название канала</span>
           <input
             value={channel.name}
             onChange={(e) => setChannel({ ...channel, name: e.target.value })}
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus-accent transition text-sm"
+            className="ui-input"
           />
-        </div>
+        </label>
 
         {/* Описание */}
-        <div className="flex flex-col gap-2">
-          <label className="text-white/70 text-sm">Описание</label>
+        <label className="ui-field">
+          <span className="ui-field__label">Описание</span>
           <textarea
             value={channel.description || ''}
             onChange={(e) => setChannel({ ...channel, description: e.target.value })}
             rows={3}
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus-accent transition text-sm resize-none"
+            className="ui-input ui-textarea"
           />
-        </div>
+        </label>
 
         {/* Охваты и цена */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-2">
-            <label className="text-white/70 text-sm">Средние охваты</label>
+          <label className="ui-field">
+            <span className="ui-field__label">Средние охваты</span>
             <input
               type="number"
               value={channel.avg_views || 0}
               onChange={(e) => setChannel({ ...channel, avg_views: e.target.value })}
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus-accent transition text-sm"
+              className="ui-input"
             />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-white/70 text-sm">Цена рекламы</label>
+          </label>
+          <label className="ui-field">
+            <span className="ui-field__label">Цена рекламы</span>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <CurrencySelector
                 value={(channel.ad_price_currency || 'USD') as CurrencyCode}
@@ -190,65 +191,48 @@ export default function EditChannelPage() {
                 step="0.01"
                 value={channel.ad_price || 0}
                 onChange={(e) => setChannel({ ...channel, ad_price: e.target.value })}
-                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus-accent transition text-sm"
+                className="ui-input flex-1"
               />
             </div>
-            <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>
-              Цена сохраняется в выбранной валюте
-            </span>
-          </div>
-        </div>
-
-        {/* Контакт */}
-        <div className="flex flex-col gap-2">
-          <label className="text-white/70 text-sm">Контакт в Telegram</label>
-          <input
-            value={channel.contact_telegram || ''}
-            onChange={(e) => setChannel({ ...channel, contact_telegram: e.target.value })}
-            placeholder="@username"
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus-accent transition text-sm"
-          />
+            <span className="ui-field__hint">Цена сохраняется в выбранной валюте</span>
+          </label>
         </div>
 
         {/* Язык и страна */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-2">
-            <label className="text-white/70 text-sm">Язык</label>
+          <label className="ui-field">
+            <span className="ui-field__label">Язык</span>
             <select
               value={channel.language || 'ru'}
               onChange={(e) => setChannel({ ...channel, language: e.target.value })}
-              className="bg-white/10 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus-accent transition text-sm"
+              className="ui-input"
             >
               <option value="ru">Русский</option>
               <option value="hy">Армянский</option>
               <option value="en">English</option>
             </select>
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-white/70 text-sm">Страна</label>
+          </label>
+          <label className="ui-field">
+            <span className="ui-field__label">Страна</span>
             <select
               value={channel.country || 'AM'}
               onChange={(e) => setChannel({ ...channel, country: e.target.value })}
-              className="bg-white/10 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus-accent transition text-sm"
+              className="ui-input"
             >
               <option value="AM">Армения</option>
               <option value="RU">Россия</option>
               <option value="GE">Грузия</option>
             </select>
-          </div>
+          </label>
         </div>
 
         {error && <p className="text-red-400 text-sm">{error}</p>}
         {success && <p className="text-green-400 text-sm">✓ Изменения сохранены</p>}
 
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="btn-accent disabled:opacity-50 transition text-white px-6 py-2.5 rounded-full text-sm font-medium"
-        >
+        <Button onClick={handleSave} disabled={saving}>
           {saving ? 'Сохранение...' : 'Сохранить изменения'}
-        </button>
-      </div>
+        </Button>
+      </Surface>
 
       <div style={{ marginTop: '24px' }}>
         <ProReportGenerator channel={channel} isPro={isPro} />
@@ -274,25 +258,12 @@ export default function EditChannelPage() {
         <h2 style={{ color: '#f87171', fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>
           Опасная зона
         </h2>
-        <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px', marginBottom: '16px', lineHeight: 1.5 }}>
+        <p className="ui-meta mb-4" style={{ lineHeight: 1.5 }}>
           Удаление канала необратимо. Все заявки и сделки по этому каналу будут удалены без возможности восстановления.
         </p>
-        <button
-          type="button"
-          onClick={() => setShowDeleteConfirm(true)}
-          style={{
-            background: 'rgba(239,68,68,0.12)',
-            border: '1px solid rgba(239,68,68,0.35)',
-            color: '#f87171',
-            borderRadius: '12px',
-            padding: '10px 20px',
-            fontSize: '14px',
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
+        <Button type="button" variant="danger" onClick={() => setShowDeleteConfirm(true)}>
           Удалить канал
-        </button>
+        </Button>
       </div>
 
       {showDeleteConfirm && (
@@ -306,44 +277,30 @@ export default function EditChannelPage() {
             <div
               role="dialog"
               aria-modal="true"
-              className="pointer-events-auto w-full max-w-md bg-[#12101f] border border-red-500/30 rounded-2xl p-6 shadow-2xl"
+              className="pointer-events-auto w-full max-w-md ui-profile-popup p-6"
               onClick={(e) => e.stopPropagation()}
             >
               <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, marginBottom: '12px' }}>
                 Удалить канал навсегда?
               </h3>
-              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', lineHeight: 1.6, marginBottom: '20px' }}>
+              <p className="ui-body mb-5" style={{ lineHeight: 1.6 }}>
                 Это действие необратимо. Канал «{channel.name}» и{' '}
-                <strong style={{ color: 'rgba(255,255,255,0.85)' }}>вся история сделок и заявок</strong> по нему
+                <strong>вся история сделок и заявок</strong> по нему
                 будут удалены из базы без возможности восстановления.
               </p>
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="sm"
                   disabled={deleting}
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="border border-white/20 text-white/70 rounded-xl px-4 py-2 text-sm"
                 >
                   Отмена
-                </button>
-                <button
-                  type="button"
-                  disabled={deleting}
-                  onClick={handleDelete}
-                  style={{
-                    background: '#dc2626',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '8px 16px',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: deleting ? 'not-allowed' : 'pointer',
-                    opacity: deleting ? 0.7 : 1,
-                  }}
-                >
+                </Button>
+                <Button type="button" variant="danger" size="sm" disabled={deleting} onClick={handleDelete}>
                   {deleting ? 'Удаление...' : 'Да, удалить'}
-                </button>
+                </Button>
               </div>
             </div>
           </div>

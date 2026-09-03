@@ -180,7 +180,7 @@ export default function PlacementsSection({
                 <button
                   type="button"
                   onClick={() => void runInitialize(true)}
-                  className="rounded-xl border border-white/15 px-4 py-2 text-sm text-white hover:bg-white/5"
+                  className="ui-btn ui-btn--ghost ui-btn--sm"
                 >
                   Подготовить размещения
                 </button>

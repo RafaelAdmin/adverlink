@@ -40,6 +40,9 @@ import { SOCIAL_NETWORK_OPTIONS } from '@/lib/campaigns'
 import { CampaignLimitBanner } from '@/app/dashboard/components/LimitCounter'
 import { canCreateCampaign, getMonthStart, isProPlan } from '@/lib/subscriptions'
 import { useDashboard } from '../layout'
+import PageHeader from '@/components/ui/PageHeader'
+import Surface from '@/components/ui/Surface'
+import Button from '@/components/ui/Button'
 
 const CATEGORIES = ['Новости', 'Технологии', 'Бизнес', 'Спорт', 'Lifestyle', 'Юмор', 'Другое']
 
@@ -180,158 +183,103 @@ export default function CreateCampaignPage() {
   }
 
   if (!user || limitsLoading) {
-    return <div className="text-white/50">Загрузка...</div>
+    return <div className="ui-meta">Загрузка...</div>
   }
 
   const atCampaignLimit = !editId && !canCreateCampaign(userIsPro, campaignsThisMonth)
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="dashboard-form-inner">
       <Link
         href="/dashboard"
-        className="text-white/50 hover:text-white transition text-sm mb-8 inline-flex items-center gap-2"
+        className="ui-meta mb-8 inline-flex items-center gap-2 hover:opacity-80 transition"
       >
         ← Назад
       </Link>
 
       {!editId && <CampaignLimitBanner used={campaignsThisMonth} isPro={userIsPro} />}
 
-      <h1 className="text-2xl font-bold text-white mb-2">
-        {editId ? 'Редактировать кампанию' : 'Создать рекламную кампанию'}
-      </h1>
-      <p className="text-white/50 mb-8">
-        Опишите кампанию — создатели каналов увидят её в маркетплейсе и смогут откликнуться
-      </p>
+      <PageHeader
+        title={editId ? 'Редактировать кампанию' : 'Создать рекламную кампанию'}
+        description="Опишите кампанию — создатели каналов увидят её в маркетплейсе и смогут откликнуться"
+      />
 
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
-        <h2 className="text-white font-semibold mb-4">Требования для запуска кампании</h2>
+      <Surface padding="md" className="mb-6">
+        <h2 className="ui-section-title mb-4">Требования для запуска кампании</h2>
         <ul className="space-y-2 text-sm mb-4">
           <li className={reqBudget ? 'text-green-400' : 'text-red-400'}>
             {reqBudget ? '✓' : '✗'} Минимальный бюджет 50,000 драм
             {budgetNum > 0 && (
-              <span className="text-white/40 ml-2">(≈ ${budgetUsd} USD)</span>
+              <span className="ui-meta ml-2">(≈ ${budgetUsd} USD)</span>
             )}
           </li>
         </ul>
-        <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-blue-300 text-sm">
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-blue-300 text-sm" style={{ borderRadius: 'var(--radius-md)' }}>
           Кампания появится в маркетплейсе для всех создателей. Они сами выберут подходящие каналы и отправят отклики.
         </div>
-      </div>
+      </Surface>
 
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-8 mb-6 flex flex-col gap-5">
-        <label className="flex flex-col gap-2">
-          <span className="text-white/70 text-sm">Название кампании</span>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition"
-          />
+      <Surface padding="lg" className="mb-6 flex flex-col gap-5">
+        <label className="ui-field">
+          <span className="ui-field__label">Название кампании</span>
+          <input value={name} onChange={(e) => setName(e.target.value)} className="ui-input" />
         </label>
 
-        <label className="flex flex-col gap-2">
-          <span className="text-white/70 text-sm">Что хотите рекламировать</span>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={4}
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition resize-none"
-          />
+        <label className="ui-field">
+          <span className="ui-field__label">Что хотите рекламировать</span>
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className="ui-input ui-textarea" />
         </label>
 
-        <label className="flex flex-col gap-2">
-          <span className="text-white/70 text-sm">Бюджет (в драмах AMD)</span>
-          <input
-            type="number"
-            value={budget}
-            onChange={(e) => setBudget(e.target.value)}
-            placeholder="50000"
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition"
-          />
-          {budgetNum > 0 && (
-            <span className="text-white/50 text-sm">≈ ${budgetUsd} USD</span>
-          )}
+        <label className="ui-field">
+          <span className="ui-field__label">Бюджет (в драмах AMD)</span>
+          <input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="50000" className="ui-input" />
+          {budgetNum > 0 && <span className="ui-meta text-sm">≈ ${budgetUsd} USD</span>}
         </label>
 
-        <label className="flex flex-col gap-2">
-          <span className="text-white/70 text-sm">Ссылка на продукт или услугу</span>
-          <input
-            value={productLink}
-            onChange={(e) => setProductLink(e.target.value)}
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition"
-          />
+        <label className="ui-field">
+          <span className="ui-field__label">Ссылка на продукт или услугу</span>
+          <input value={productLink} onChange={(e) => setProductLink(e.target.value)} className="ui-input" />
         </label>
 
-        <label className="flex flex-col gap-2">
-          <span className="text-white/70 text-sm">Целевая аудитория</span>
-          <input
-            value={targetAudience}
-            onChange={(e) => setTargetAudience(e.target.value)}
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition"
-          />
+        <label className="ui-field">
+          <span className="ui-field__label">Целевая аудитория</span>
+          <input value={targetAudience} onChange={(e) => setTargetAudience(e.target.value)} className="ui-input" />
         </label>
 
-        <label className="flex flex-col gap-2">
-          <span className="text-white/70 text-sm">Желаемая дата размещения</span>
-          <input
-            type="date"
-            value={preferredDate}
-            onChange={(e) => setPreferredDate(e.target.value)}
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white outline-none focus-accent transition"
-          />
+        <label className="ui-field">
+          <span className="ui-field__label">Желаемая дата размещения</span>
+          <input type="date" value={preferredDate} onChange={(e) => setPreferredDate(e.target.value)} className="ui-input" />
         </label>
 
-        <label className="flex flex-col gap-2">
-          <span className="text-white/70 text-sm">Категория</span>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white outline-none focus-accent transition"
-          >
+        <label className="ui-field">
+          <span className="ui-field__label">Категория</span>
+          <select value={category} onChange={(e) => setCategory(e.target.value)} className="ui-input">
             {CATEGORIES.map((cat) => (
-              <option key={cat} value={cat} className="bg-[#1a1560]">{cat}</option>
+              <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
         </label>
 
-        <label className="flex flex-col gap-2">
-          <span className="text-white/70 text-sm">Минимальное количество подписчиков канала</span>
-          <input
-            type="number"
-            min={0}
-            value={minSubscribers}
-            onChange={(e) => setMinSubscribers(e.target.value)}
-            placeholder="Необязательно"
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition"
-          />
+        <label className="ui-field">
+          <span className="ui-field__label">Минимальное количество подписчиков канала</span>
+          <input type="number" min={0} value={minSubscribers} onChange={(e) => setMinSubscribers(e.target.value)} placeholder="Необязательно" className="ui-input" />
         </label>
 
-        <label className="flex flex-col gap-2">
-          <span className="text-white/70 text-sm">Особые требования</span>
-          <textarea
-            value={requirements}
-            onChange={(e) => setRequirements(e.target.value)}
-            rows={2}
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition resize-none"
-          />
+        <label className="ui-field">
+          <span className="ui-field__label">Особые требования</span>
+          <textarea value={requirements} onChange={(e) => setRequirements(e.target.value)} rows={2} className="ui-input ui-textarea" />
         </label>
 
-        <label className="flex flex-col gap-2">
-          <span className="text-white/70 text-sm">Количество каналов</span>
-          <span className="text-white/40 text-xs -mt-1">Сколько каналов вам нужно для этой кампании?</span>
-          <input
-            type="number"
-            min={1}
-            max={20}
-            value={slotsTotal}
-            onChange={(e) => setSlotsTotal(e.target.value)}
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white outline-none focus-accent transition"
-          />
+        <label className="ui-field">
+          <span className="ui-field__label">Количество каналов</span>
+          <span className="ui-field__hint -mt-1">Сколько каналов вам нужно для этой кампании?</span>
+          <input type="number" min={1} max={20} value={slotsTotal} onChange={(e) => setSlotsTotal(e.target.value)} className="ui-input" />
         </label>
 
-        <div className="flex flex-col gap-2">
-          <span className="text-white/70 text-sm">Социальные сети</span>
-          <span className="text-white/40 text-xs -mt-1">В каких соцсетях планируется реклама?</span>
-          <div className="flex flex-wrap gap-2">
+        <div className="ui-field">
+          <span className="ui-field__label">Социальные сети</span>
+          <span className="ui-field__hint -mt-1">В каких соцсетях планируется реклама?</span>
+          <div className="flex flex-wrap gap-2 mt-2">
             {SOCIAL_NETWORK_OPTIONS.map((opt) => {
               const selected = preferredNetworks.includes(opt.value)
               return (
@@ -343,11 +291,7 @@ export default function CreateCampaignPage() {
                       selected ? prev.filter((v) => v !== opt.value) : [...prev, opt.value],
                     )
                   }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition border ${
-                    selected
-                      ? 'border-accent bg-accent/20 text-white'
-                      : 'border-white/20 text-white/50 hover:border-white/40'
-                  }`}
+                  className={`ui-btn ui-btn--sm ${selected ? 'ui-btn--primary' : 'ui-btn--secondary'}`}
                 >
                   <i className={`ti ${opt.icon}`} style={{ fontSize: '16px' }} />
                   {opt.label}
@@ -357,40 +301,30 @@ export default function CreateCampaignPage() {
           </div>
         </div>
 
-        <label className="flex flex-col gap-2">
-          <span className="text-white/70 text-sm">Дедлайн сбора заявок</span>
-          <span className="text-white/40 text-xs -mt-1">До когда принимать заявки от каналов?</span>
-          <input
-            type="date"
-            value={collectionDeadline}
-            onChange={(e) => setCollectionDeadline(e.target.value)}
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white outline-none focus-accent transition"
-          />
+        <label className="ui-field">
+          <span className="ui-field__label">Дедлайн сбора заявок</span>
+          <span className="ui-field__hint -mt-1">До когда принимать заявки от каналов?</span>
+          <input type="date" value={collectionDeadline} onChange={(e) => setCollectionDeadline(e.target.value)} className="ui-input" />
         </label>
 
-        <label className="flex flex-col gap-2">
-          <span className="text-white/70 text-sm">Бриф для исполнителя</span>
-          <span className="text-white/40 text-xs -mt-1">Что именно нужно опубликовать? Детали для создателя.</span>
+        <label className="ui-field">
+          <span className="ui-field__label">Бриф для исполнителя</span>
+          <span className="ui-field__hint -mt-1">Что именно нужно опубликовать? Детали для создателя.</span>
           <textarea
             value={brief}
             onChange={(e) => setBrief(e.target.value)}
             rows={4}
             placeholder="Опишите формат поста, ключевые сообщения, ссылки, хештеги..."
-            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 outline-none focus-accent transition resize-none"
+            className="ui-input ui-textarea"
           />
         </label>
-      </div>
+      </Surface>
 
       {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
 
-      <button
-        type="button"
-        onClick={handleSubmit}
-        disabled={submitting || atCampaignLimit}
-        className="btn-accent disabled:opacity-50 text-white rounded-full px-6 py-2.5 text-sm font-medium w-full transition"
-      >
+      <Button type="button" onClick={handleSubmit} disabled={submitting || atCampaignLimit} fullWidth>
         {submitting ? 'Сохранение...' : editId ? 'Сохранить изменения' : 'Опубликовать кампанию'}
-      </button>
+      </Button>
     </div>
   )
 }

@@ -159,7 +159,7 @@ export default function FinalReviewSection({
                 type="button"
                 disabled={submitting || !canDispute}
                 onClick={() => setShowDisputeForm(true)}
-                className="rounded-xl border border-red-500/30 px-4 py-2.5 text-sm text-red-300 disabled:opacity-50"
+                className="ui-btn ui-btn--ghost ui-btn--sm border-red-500/30 text-red-300 disabled:opacity-50"
               >
                 Открыть спор
               </button>
@@ -167,7 +167,7 @@ export default function FinalReviewSection({
           )}
 
           {role === 'advertiser' && showConfirm && (
-            <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
+            <div className="mt-4 ui-surface ui-surface--pad-sm space-y-3">
               <p className="text-white/80 text-sm">
                 Подтвердить, что все размещения выполнены корректно?
               </p>
@@ -184,7 +184,7 @@ export default function FinalReviewSection({
                   type="button"
                   disabled={submitting}
                   onClick={() => setShowConfirm(false)}
-                  className="rounded-xl border border-white/15 px-4 py-2 text-sm text-white/70"
+                  className="ui-btn ui-btn--ghost ui-btn--sm"
                 >
                   Отмена
                 </button>
@@ -193,21 +193,21 @@ export default function FinalReviewSection({
           )}
 
           {role === 'advertiser' && showDisputeForm && (
-            <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
+            <div className="mt-4 ui-surface ui-surface--pad-sm space-y-3">
               <textarea
                 value={disputeReason}
                 disabled={submitting}
                 onChange={(e) => setDisputeReason(e.target.value)}
                 rows={3}
                 placeholder="Опишите причину спора..."
-                className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-white text-sm"
+                className="ui-input w-full"
               />
               <div className="flex gap-3">
                 <button
                   type="button"
                   disabled={submitting || !disputeReason.trim()}
                   onClick={() => void handleDispute()}
-                  className="rounded-xl border border-red-500/30 px-4 py-2 text-sm text-red-300 disabled:opacity-50"
+                  className="ui-btn ui-btn--ghost ui-btn--sm border-red-500/30 text-red-300 disabled:opacity-50"
                 >
                   {submitting ? 'Отправка…' : 'Открыть спор'}
                 </button>
@@ -215,7 +215,7 @@ export default function FinalReviewSection({
                   type="button"
                   disabled={submitting}
                   onClick={() => setShowDisputeForm(false)}
-                  className="rounded-xl border border-white/15 px-4 py-2 text-sm text-white/70"
+                  className="ui-btn ui-btn--ghost ui-btn--sm"
                 >
                   Отмена
                 </button>

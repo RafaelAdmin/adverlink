@@ -193,7 +193,7 @@ export default function FinalTermsSection({
               type="button"
               disabled={submitting}
               onClick={openEditor}
-              className="flex-1 rounded-xl border border-white/15 px-4 py-3 text-sm font-semibold text-white hover:bg-white/5"
+              className="flex-1 ui-btn ui-btn--ghost ui-btn--md"
             >
               {uiState === 'none'
                 ? 'Предложить условия'

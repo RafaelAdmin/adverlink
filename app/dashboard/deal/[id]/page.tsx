@@ -167,7 +167,7 @@ export default function DealDetailPage() {
     ['new', 'payment_pending'].includes(status)
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div>
       <Link
         href="/dashboard"
         className="text-white/50 hover:text-white transition text-sm mb-6 inline-flex items-center gap-2"
@@ -303,18 +303,7 @@ export default function DealDetailPage() {
               href={link}
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '12px',
-                padding: '12px 16px',
-                color: '#60a5fa',
-                textDecoration: 'none',
-                marginBottom: '8px',
-              }}
+              className="flex items-center gap-2 ui-surface ui-surface--pad-sm mb-2 text-sky-400 no-underline"
             >
               <i className="ti ti-brand-telegram" />
               Пост в Telegram

@@ -12,6 +12,8 @@ import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
 import VerifiedBadge from '@/app/dashboard/components/VerifiedBadge'
 import TelegramChannelAnalyticsSection from '@/app/dashboard/components/TelegramChannelAnalyticsSection'
 import { formatEngagementRate } from '@/lib/channel-metrics'
+import Surface from '@/components/ui/Surface'
+import MetricStrip from '@/components/ui/MetricStrip'
 
 export default function ChannelProfilePage() {
   const params = useParams()
@@ -77,9 +79,9 @@ export default function ChannelProfilePage() {
         >
           ← Назад в маркетплейс
         </Link>
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center text-white/70">
+        <Surface padding="md" className="ui-empty text-center">
           {error || 'Канал не найден'}
-        </div>
+        </Surface>
       </div>
     )
   }
@@ -122,16 +124,8 @@ export default function ChannelProfilePage() {
         ← Назад в маркетплейс
       </Link>
 
-      <div
-        style={{
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '20px',
-          padding: '28px',
-          marginBottom: '16px',
-        }}
-      >
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'flex-start' }}>
+      <Surface padding="lg" style={{ marginBottom: '12px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'flex-start' }}>
           {channel.avatar_url ? (
             <img
               src={channel.avatar_url}
@@ -171,13 +165,13 @@ export default function ChannelProfilePage() {
           </div>
 
           <div style={{ flex: 1, minWidth: '200px' }}>
-            <h1 style={{ color: 'white', fontSize: '22px', fontWeight: '700', margin: '0 0 8px' }}>
+            <h1 className="ui-page-title" style={{ fontSize: '1.375rem', margin: '0 0 6px' }}>
               {channel.name}
             </h1>
             <div style={{ marginBottom: '8px' }}>
               <PlatformBadge platform={channel.platform} />
             </div>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', margin: '0 0 12px' }}>
+            <p className="ui-meta" style={{ margin: '0 0 10px' }}>
               {getChannelHandle(channel)}
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
@@ -191,30 +185,17 @@ export default function ChannelProfilePage() {
               <button
                 type="button"
                 onClick={openChannel}
-                className="border border-white/20 text-white/80 hover-border-accent hover:text-white transition text-sm px-4 py-1.5 rounded-full"
+                className="ui-btn ui-btn--ghost ui-btn--sm"
               >
                 Открыть в {getPlatformLabel(channel.platform || 'telegram')}
               </button>
             </div>
           </div>
         </div>
-      </div>
+      </Surface>
 
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          marginBottom: '16px',
-          padding: '12px 16px',
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '14px',
-        }}
-      >
-        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>
-          Предпочитаемая валюта:
-        </span>
+      <div className="ui-surface ui-surface--pad-sm" style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <span className="ui-meta">Предпочитаемая валюта:</span>
         <CurrencySelector value={displayCurrency} onChange={setDisplayCurrency} size="sm" />
       </div>
 
@@ -225,75 +206,29 @@ export default function ChannelProfilePage() {
         />
       ) : null}
 
-      {generalMetrics.length > 0 && (
-        <div
-          className="stats-grid"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-            gap: '12px',
-            marginBottom: '16px',
-          }}
-        >
-          {generalMetrics.map((item) => (
-            <div
-              key={item.label}
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '14px',
-                padding: '20px',
-              }}
-            >
-              <div className="text-white" style={{ fontSize: '20px', fontWeight: '700', marginBottom: '4px' }}>
-                {item.value}
-              </div>
-              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>{item.label}</div>
-            </div>
-          ))}
-        </div>
+      {!isTelegram && generalMetrics.length > 0 && (
+        <MetricStrip items={generalMetrics.map((item) => ({ label: item.label, value: item.value }))} />
       )}
 
       {channel.description && (
-        <div
-          style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '16px',
-            padding: '24px',
-            marginBottom: '16px',
-          }}
-        >
-          <h2 style={{ color: 'white', fontWeight: '600', fontSize: '16px', margin: '0 0 12px' }}>
-            О канале
-          </h2>
-          <p style={{ color: 'rgba(255,255,255,0.65)', lineHeight: '1.6', margin: 0, fontSize: '14px' }}>
-            {channel.description}
-          </p>
-        </div>
+        <Surface padding="md" style={{ marginBottom: '12px' }}>
+          <h2 className="ui-card-title mb-2">О канале</h2>
+          <p className="ui-body">{channel.description}</p>
+        </Surface>
       )}
 
       {isMyChannel ? (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '16px',
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '16px',
-            color: 'rgba(255,255,255,0.3)',
-            fontSize: '13px',
-          }}
-        >
-          <i className="ti ti-user" style={{ fontSize: '20px', display: 'block', marginBottom: '6px' }} />
-          Это ваш канал
-        </div>
+        <Surface padding="sm" className="ui-empty">
+          <div className="ui-empty__icon"><i className="ti ti-user" /></div>
+          <div className="ui-empty__text">Это ваш канал</div>
+        </Surface>
       ) : (
         <Link
           href={`/dashboard/add-channel/request-ad?channelId=${channel.id}`}
-          className="btn-accent block w-full py-3.5 rounded-xl text-center font-medium text-white text-[15px] no-underline"
+          className="ui-btn ui-btn--primary ui-btn--lg ui-btn--full"
+          style={{ textDecoration: 'none' }}
         >
-          <i className="ti ti-speakerphone" style={{ marginRight: '8px' }} />
+          <i className="ti ti-speakerphone" />
           Запросить рекламу
         </Link>
       )}

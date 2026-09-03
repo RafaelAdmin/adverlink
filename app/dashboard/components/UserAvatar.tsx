@@ -21,47 +21,38 @@ export default function UserAvatar({
 }: UserAvatarProps) {
   const letter = (name || 'U')[0]?.toUpperCase() || 'U'
   const frameCss = getAvatarFrameCssColor(frameColor)
-  const innerSize = size - borderWidth * 2
+  const ringColor = frameCss || 'var(--user-avatar-border, rgba(255, 255, 255, 0.15))'
 
   return (
     <div
-      className={`relative flex-shrink-0 ${className}`}
+      className={`user-avatar ${className}`.trim()}
       style={{
         width: size,
         height: size,
-        borderRadius: '50%',
-        padding: frameCss ? borderWidth : 0,
-        background: frameCss || 'transparent',
-        boxSizing: 'border-box',
+        minWidth: size,
+        minHeight: size,
+        border: `${borderWidth}px solid ${ringColor}`,
       }}
     >
       {src ? (
         <img
           src={src}
           alt=""
-          className="rounded-full object-cover"
-          style={{
-            width: frameCss ? innerSize : size,
-            height: frameCss ? innerSize : size,
-            border: frameCss ? 'none' : `${borderWidth}px solid rgba(255,255,255,0.15)`,
-            boxSizing: 'border-box',
-          }}
+          className="user-avatar__media"
           onError={(e) => {
             e.currentTarget.style.display = 'none'
-            const fallback = e.currentTarget.nextElementSibling as HTMLElement | null
+            const fallback = e.currentTarget.parentElement?.querySelector(
+              '.user-avatar__fallback',
+            ) as HTMLElement | null
             if (fallback) fallback.style.display = 'flex'
           }}
         />
       ) : null}
       <div
-        className="avatar-accent-fallback rounded-full items-center justify-center text-white font-bold"
+        className="avatar-accent-fallback user-avatar__fallback"
         style={{
-          width: frameCss ? innerSize : size,
-          height: frameCss ? innerSize : size,
           fontSize: Math.round(size * 0.38),
           display: src ? 'none' : 'flex',
-          border: frameCss ? 'none' : `${borderWidth}px solid rgba(255,255,255,0.15)`,
-          boxSizing: 'border-box',
         }}
       >
         {letter}

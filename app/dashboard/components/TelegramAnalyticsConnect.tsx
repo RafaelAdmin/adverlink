@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { getBotUsername } from '@/lib/telegram-bot-client'
+import Surface from '@/components/ui/Surface'
+import Button from '@/components/ui/Button'
 
 type Props = {
   channelId: string
@@ -57,25 +59,15 @@ export default function TelegramAnalyticsConnect({
   }
 
   return (
-    <div
-      style={{
-        background: 'rgba(255,255,255,0.05)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '16px',
-        padding: '20px',
-        marginTop: '24px',
-      }}
-    >
-      <h2 style={{ color: 'white', fontSize: '16px', fontWeight: 600, margin: '0 0 8px' }}>
+    <Surface padding="md" className="mt-6">
+      <h2 className="ui-section-title mb-2">
         Подключить автоматическую аналитику
-        <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 400, fontSize: '13px', marginLeft: '8px' }}>
-          (необязательно)
-        </span>
+        <span className="ui-meta font-normal ml-2">(необязательно)</span>
       </h2>
-      <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', lineHeight: 1.6, margin: '0 0 12px' }}>
-        Эта функция <strong style={{ color: 'rgba(255,255,255,0.85)' }}>не требуется</strong> для
+      <p className="ui-body mb-3" style={{ lineHeight: 1.6 }}>
+        Эта функция <strong>не требуется</strong> для
         верификации или работы на маркетплейсе. Она позволяет автоматически отслеживать{' '}
-        <strong style={{ color: 'rgba(255,255,255,0.85)' }}>новые публикации</strong> после
+        <strong>новые публикации</strong> после
         подключения. Исторические посты не импортируются.
       </p>
 
@@ -84,7 +76,7 @@ export default function TelegramAnalyticsConnect({
           style={{
             background: 'rgba(34,197,94,0.1)',
             border: '1px solid rgba(34,197,94,0.25)',
-            borderRadius: '10px',
+            borderRadius: 'var(--radius-md)',
             padding: '10px 14px',
             color: '#86efac',
             fontSize: '13px',
@@ -94,47 +86,26 @@ export default function TelegramAnalyticsConnect({
         </div>
       ) : (
         <>
-          <ol
-            style={{
-              color: 'rgba(255,255,255,0.65)',
-              fontSize: '13px',
-              lineHeight: 1.9,
-              paddingLeft: '20px',
-              margin: '0 0 12px',
-            }}
-          >
+          <ol className="ui-body mb-3" style={{ lineHeight: 1.9, paddingLeft: '20px' }}>
             <li>
-              Добавьте <strong style={{ color: 'white' }}>{botUsername}</strong> в канал как{' '}
-              <strong style={{ color: 'white' }}>администратора</strong>
+              Добавьте <strong>{botUsername}</strong> в канал как{' '}
+              <strong>администратора</strong>
             </li>
             <li>
-              AdverLink <strong style={{ color: 'white' }}>не нужны</strong> права публиковать,
+              AdverLink <strong>не нужны</strong> права публиковать,
               редактировать или удалять контент — достаточно статуса администратора для получения
               уведомлений о новых постах
             </li>
             <li>Нажмите кнопку ниже</li>
           </ol>
           {error && (
-            <p style={{ color: '#f87171', fontSize: '13px', margin: '0 0 12px' }}>{error}</p>
+            <p className="text-red-400 text-sm mb-3">{error}</p>
           )}
-          <button
-            type="button"
-            onClick={handleConnect}
-            disabled={connecting}
-            className="btn-accent"
-            style={{
-              border: 'none',
-              borderRadius: '12px',
-              padding: '10px 20px',
-              fontSize: '14px',
-              cursor: connecting ? 'wait' : 'pointer',
-              opacity: connecting ? 0.7 : 1,
-            }}
-          >
+          <Button type="button" onClick={handleConnect} disabled={connecting}>
             {connecting ? 'Подключение...' : 'Подключить автоматическую аналитику'}
-          </button>
+          </Button>
         </>
       )}
-    </div>
+    </Surface>
   )
 }

@@ -153,16 +153,10 @@ export default function ProfileCard({ user, role, onClose }: ProfileCardProps) {
   return (
     <div
       ref={cardRef}
-      className="p-5"
+      className="ui-profile-popup p-5"
       style={{
         position: 'relative',
         width: '320px',
-        background: 'rgba(10, 8, 30, 0.75)',
-        backdropFilter: 'blur(32px)',
-        WebkitBackdropFilter: 'blur(32px)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '24px',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)',
         overflow: 'hidden',
         animation: 'slideDown 0.2s ease-out',
       }}

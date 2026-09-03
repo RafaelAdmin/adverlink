@@ -144,28 +144,13 @@ export default function DealChat({ dealId, currentUserId }: DealChatProps) {
   }
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '420px',
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: '16px',
-        overflow: 'hidden',
-      }}
-    >
+    <div className="flex flex-col h-[420px] ui-surface overflow-hidden">
       <div
-        style={{
-          padding: '12px 16px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}
+        className="flex items-center gap-2 px-4 py-3"
+        style={{ borderBottom: '1px solid var(--border)' }}
       >
         <i className="ti ti-message-circle" style={{ fontSize: '16px', color: 'var(--accent-primary, #9333ea)' }} />
-        <span style={{ color: 'white', fontSize: '14px', fontWeight: '500' }}>Чат по заказу</span>
+        <span className="ui-card-title text-sm">Чат по заказу</span>
         <span
           style={{
             marginLeft: 'auto',
@@ -176,7 +161,7 @@ export default function DealChat({ dealId, currentUserId }: DealChatProps) {
             boxShadow: '0 0 6px #22c55e',
           }}
         />
-        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>онлайн</span>
+        <span className="ui-meta text-xs">онлайн</span>
       </div>
 
       <div
@@ -261,7 +246,7 @@ export default function DealChat({ dealId, currentUserId }: DealChatProps) {
                     style={{
                       padding: '8px 12px',
                       borderRadius: isOwn ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                      background: isOwn ? 'var(--accent-primary, #9333ea)' : 'rgba(255,255,255,0.08)',
+                      background: isOwn ? 'var(--accent-primary, #9333ea)' : 'var(--surface-hover)',
                       color: 'white',
                       fontSize: '13px',
                       lineHeight: '1.5',
@@ -290,13 +275,8 @@ export default function DealChat({ dealId, currentUserId }: DealChatProps) {
       </div>
 
       <div
-        style={{
-          padding: '12px 16px',
-          borderTop: '1px solid rgba(255,255,255,0.08)',
-          display: 'flex',
-          gap: '8px',
-          alignItems: 'flex-end',
-        }}
+        className="flex gap-2 items-end px-4 py-3"
+        style={{ borderTop: '1px solid var(--border)' }}
       >
         <textarea
           value={newMessage}
@@ -304,37 +284,19 @@ export default function DealChat({ dealId, currentUserId }: DealChatProps) {
           onKeyDown={handleKeyDown}
           placeholder="Написать сообщение... (Enter для отправки)"
           rows={1}
-          style={{
-            flex: 1,
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '12px',
-            padding: '10px 14px',
-            color: 'white',
-            fontSize: '13px',
-            resize: 'none',
-            outline: 'none',
-            maxHeight: '100px',
-            lineHeight: '1.5',
-            fontFamily: 'inherit',
-          }}
+          className="ui-input ui-textarea flex-1"
+          style={{ maxHeight: '100px' }}
         />
         <button
           type="button"
           onClick={sendMessage}
           disabled={!newMessage.trim() || sending}
+          className="ui-btn ui-btn--primary flex-shrink-0"
           style={{
             width: '40px',
             height: '40px',
-            borderRadius: '12px',
-            background: newMessage.trim() ? 'var(--accent-primary, #9333ea)' : 'rgba(255,255,255,0.06)',
-            border: 'none',
-            cursor: newMessage.trim() ? 'pointer' : 'not-allowed',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            transition: 'all 0.2s',
+            padding: 0,
+            opacity: newMessage.trim() ? 1 : 0.5,
           }}
         >
           <i

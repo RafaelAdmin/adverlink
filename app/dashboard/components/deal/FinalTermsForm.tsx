@@ -36,7 +36,7 @@ export default function FinalTermsForm({
   }
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-4">
+    <div className="ui-surface ui-surface--pad-sm space-y-4">
       <div>
         <div className="text-white/50 text-xs mb-2">Тип контента</div>
         <div className="flex flex-col sm:flex-row gap-2">
@@ -51,10 +51,8 @@ export default function FinalTermsForm({
               type="button"
               disabled={submitting}
               onClick={() => setValues((prev) => ({ ...prev, contentMode: mode }))}
-              className={`flex-1 rounded-xl px-3 py-2.5 text-sm text-left border transition ${
-                values.contentMode === mode
-                  ? 'border-purple-400/60 bg-purple-500/15 text-white'
-                  : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'
+              className={`flex-1 ui-btn ui-btn--sm text-left ${
+                values.contentMode === mode ? 'ui-btn--primary' : 'ui-btn--ghost'
               }`}
             >
               {label}
@@ -81,7 +79,7 @@ export default function FinalTermsForm({
           onChange={(e) =>
             setValues((prev) => ({ ...prev, placementsCount: Number(e.target.value) || 1 }))
           }
-          className="w-full sm:w-32 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none"
+          className="w-full sm:w-32 ui-input"
         />
       </div>
 
@@ -93,7 +91,7 @@ export default function FinalTermsForm({
             value={values.placementStartAt}
             disabled={submitting}
             onChange={(e) => setValues((prev) => ({ ...prev, placementStartAt: e.target.value }))}
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none"
+            className="flex-1 ui-input"
           />
           <span className="text-white/30 text-center hidden sm:block">→</span>
           <input
@@ -101,7 +99,7 @@ export default function FinalTermsForm({
             value={values.placementEndAt}
             disabled={submitting}
             onChange={(e) => setValues((prev) => ({ ...prev, placementEndAt: e.target.value }))}
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none"
+            className="flex-1 ui-input"
           />
         </div>
       </div>
@@ -116,7 +114,7 @@ export default function FinalTermsForm({
             value={values.finalPrice}
             disabled={submitting}
             onChange={(e) => setValues((prev) => ({ ...prev, finalPrice: Number(e.target.value) || 0 }))}
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none"
+            className="flex-1 ui-input"
           />
           <select
             value={values.finalPriceCurrency}
@@ -127,7 +125,7 @@ export default function FinalTermsForm({
                 finalPriceCurrency: e.target.value as CurrencyCode,
               }))
             }
-            className="sm:w-28 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none"
+            className="sm:w-28 ui-input"
           >
             {FINAL_TERMS_CURRENCIES.map((c) => (
               <option key={c} value={c} className="bg-gray-900">
@@ -148,7 +146,7 @@ export default function FinalTermsForm({
           value={values.additionalTerms}
           disabled={submitting}
           onChange={(e) => setValues((prev) => ({ ...prev, additionalTerms: e.target.value }))}
-          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none resize-y min-h-[80px]"
+          className="w-full ui-input ui-textarea min-h-[80px]"
           placeholder="Необязательно"
         />
       </div>
@@ -160,7 +158,7 @@ export default function FinalTermsForm({
           type="button"
           disabled={submitting}
           onClick={onCancel}
-          className="flex-1 rounded-xl border border-white/10 px-4 py-2.5 text-sm text-white/70 hover:bg-white/5"
+          className="flex-1 ui-btn ui-btn--ghost ui-btn--md"
         >
           Отмена
         </button>

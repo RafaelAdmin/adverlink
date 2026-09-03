@@ -134,7 +134,7 @@ export default function AdvertiserView({
               <div className="text-white/40 text-sm">Попробуй изменить фильтры</div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="ui-marketplace-grid">
               {filteredChannels.map((channel) => (
                 <ChannelCard
                   key={channel.id}
@@ -154,7 +154,7 @@ export default function AdvertiserView({
           placeholder="Поиск по каналу или сообщению..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3 text-white placeholder-white/30 outline-none focus-accent transition mb-4"
+          className="marketplace-search-input mb-4"
         />
       )}
 

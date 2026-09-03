@@ -141,11 +141,11 @@ export function canMarkCompleted(status: string) {
 }
 
 export const glassDealCard = {
-  background: 'rgba(255,255,255,0.05)',
-  backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)',
-  border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: '20px',
+  background: 'var(--surface)',
+  backdropFilter: 'blur(var(--glass-blur, 12px))',
+  WebkitBackdropFilter: 'blur(var(--glass-blur, 12px))',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
 } as const
 
 export const dealBtn = {
@@ -153,8 +153,8 @@ export const dealBtn = {
     background: '#16a34a',
     color: 'white',
     border: 'none',
-    borderRadius: '14px',
-    padding: '12px 20px',
+    borderRadius: 'var(--radius-sm)',
+    padding: '10px 16px',
     fontSize: '14px',
     fontWeight: '600' as const,
     cursor: 'pointer',
@@ -164,7 +164,7 @@ export const dealBtn = {
     background: 'transparent',
     border: '1px solid #dc2626',
     color: '#f87171',
-    borderRadius: '14px',
+    borderRadius: 'var(--radius-sm)',
     padding: '12px 20px',
     fontSize: '14px',
     fontWeight: '600' as const,
@@ -175,7 +175,7 @@ export const dealBtn = {
     background: 'var(--accent-primary, #9333ea)',
     color: 'white',
     border: 'none',
-    borderRadius: '14px',
+    borderRadius: 'var(--radius-sm)',
     padding: '12px 20px',
     fontSize: '14px',
     fontWeight: '600' as const,
@@ -186,7 +186,7 @@ export const dealBtn = {
     background: '#16a34a',
     color: 'white',
     border: 'none',
-    borderRadius: '14px',
+    borderRadius: 'var(--radius-sm)',
     padding: '12px 20px',
     fontSize: '14px',
     fontWeight: '600' as const,
@@ -197,7 +197,7 @@ export const dealBtn = {
     background: 'transparent',
     border: '1px solid rgba(239,68,68,0.5)',
     color: '#f87171',
-    borderRadius: '14px',
+    borderRadius: 'var(--radius-sm)',
     padding: '12px 20px',
     fontSize: '14px',
     cursor: 'pointer',

@@ -16,14 +16,15 @@ export function ChannelLimitBanner({
 
   return (
     <div
-      className={`mb-6 rounded-2xl p-4 border ${atLimit ? 'border-red-500/30 bg-red-500/10' : 'border-white/10 bg-white/5'}`}
+      className={`mb-6 dashboard-panel ui-surface--pad-md ${atLimit ? 'border-red-500/30' : ''}`}
+      style={atLimit ? { background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.3)' } : undefined}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className={`text-sm font-medium ${atLimit ? 'text-red-300' : 'text-white/80'}`}>
+          <p className={`text-sm font-medium ${atLimit ? 'text-red-300' : 'ui-body'}`}>
             Каналы: {used}/{FREE_CHANNEL_LIMIT}
           </p>
-          <p className="text-white/40 text-xs mt-1">
+          <p className="ui-meta mt-1">
             {atLimit
               ? 'Лимит Free достигнут. Перейдите на Pro для неограниченного числа каналов.'
               : 'На Free можно добавить до 3 каналов'}
@@ -32,7 +33,7 @@ export function ChannelLimitBanner({
         {atLimit && (
           <Link
             href="/dashboard/subscriptions"
-            className="btn-accent text-white rounded-full px-4 py-2 text-xs font-medium whitespace-nowrap"
+            className="ui-btn ui-btn--primary ui-btn--sm whitespace-nowrap"
           >
             Получить Pro →
           </Link>
@@ -56,14 +57,15 @@ export function CampaignLimitBanner({
 
   return (
     <div
-      className={`mb-6 rounded-2xl p-4 border ${atLimit ? 'border-red-500/30 bg-red-500/10' : 'border-white/10 bg-white/5'}`}
+      className={`mb-6 dashboard-panel ui-surface--pad-md ${atLimit ? 'border-red-500/30' : ''}`}
+      style={atLimit ? { background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.3)' } : undefined}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className={`text-sm font-medium ${atLimit ? 'text-red-300' : 'text-white/80'}`}>
+          <p className={`text-sm font-medium ${atLimit ? 'text-red-300' : 'ui-body'}`}>
             Кампании в этом месяце: {used}/{FREE_CAMPAIGN_LIMIT}
           </p>
-          <p className="text-white/40 text-xs mt-1">
+          <p className="ui-meta mt-1">
             {atLimit
               ? `Лимит Free достигнут. Сброс ${resetLabel}. Pro — безлимитные кампании.`
               : `Сброс лимита ${resetLabel}`}
@@ -72,7 +74,7 @@ export function CampaignLimitBanner({
         {atLimit && (
           <Link
             href="/dashboard/subscriptions"
-            className="btn-accent text-white rounded-full px-4 py-2 text-xs font-medium whitespace-nowrap"
+            className="ui-btn ui-btn--primary ui-btn--sm whitespace-nowrap"
           >
             Получить Pro →
           </Link>
@@ -98,18 +100,12 @@ export function DashboardLimitCard({
   const pct = Math.min(100, (used / limit) * 100)
 
   return (
-    <div style={{
-      background: 'rgba(255,255,255,0.06)',
-      backdropFilter: 'blur(10px)',
-      border: '1px solid rgba(255,255,255,0.1)',
-      borderRadius: '16px',
-      padding: '20px',
-    }}>
+    <div className="dashboard-stat-card">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-white/50 text-sm">{label}</span>
-        <span className="text-white font-semibold text-sm">{used}/{limit}</span>
+        <span className="dashboard-stat-card__label">{label}</span>
+        <span className="ui-card-title text-sm">{used}/{limit}</span>
       </div>
-      <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border-subtle)' }}>
         <div
           className="h-full rounded-full transition-all"
           style={{
@@ -119,7 +115,7 @@ export function DashboardLimitCard({
         />
       </div>
       {type === 'campaigns' && (
-        <p className="text-white/30 text-xs mt-2">Сброс {getLimitResetLabel()}</p>
+        <p className="ui-meta mt-2">Сброс {getLimitResetLabel()}</p>
       )}
     </div>
   )

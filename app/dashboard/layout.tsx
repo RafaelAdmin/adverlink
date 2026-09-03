@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, useRef, useCallback } f
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { applyAccentColor, getAccentColor } from '@/lib/theme'
+import { applySpaceAppearance } from '@/lib/theme'
 import { fetchNotificationFlags } from '@/lib/notifications'
 import ProfileCard from './components/ProfileCard'
 import BreathingBackground from './components/BreathingBackground'
@@ -52,65 +52,36 @@ function SidebarItem({
     <Link
       href={href}
       onClick={onNavigate}
-      className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all duration-200 w-full group ${
-        active ? 'text-white' : 'text-white/50 hover:text-white'
-      }`}
-      style={
-        active
-          ? {
-              background: 'rgba(255,255,255,0.12)',
-              backdropFilter: 'blur(10px)',
-              WebkitBackdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
-            }
-          : {
-              background: 'transparent',
-              border: '1px solid transparent',
-            }
-      }
+      className={`ui-nav-item ${active ? 'ui-nav-item--active' : ''}`}
     >
-      <i
-        className={`ti ${icon}`}
-        style={{
-          fontSize: '18px',
-          color: active ? 'var(--accent-primary, #9333ea)' : 'rgba(255,255,255,0.4)',
-          transition: 'color 0.2s',
-        }}
-      />
-      <span style={{ flex: 1, fontWeight: active ? '500' : '400' }}>{label}</span>
+      <i className={`ti ${icon} ui-nav-item__icon`} />
+      <span style={{ flex: 1 }}>{label}</span>
       {notifyDot ? (
         <span
           style={{
-            width: '8px',
-            height: '8px',
+            width: '7px',
+            height: '7px',
             borderRadius: '50%',
-            backgroundColor: '#dc2626',
+            backgroundColor: 'var(--danger)',
             flexShrink: 0,
-            boxShadow: '0 0 6px rgba(220,38,38,0.6)',
           }}
           aria-label="Есть новые уведомления"
         />
       ) : badge && badge > 0 ? (
         <span
           style={{
-            backgroundColor: '#dc2626',
-            color: 'white',
+            backgroundColor: 'var(--danger)',
+            color: '#fff',
             fontSize: '10px',
             fontWeight: '700',
-            padding: '2px 6px',
-            borderRadius: '10px',
-            minWidth: '18px',
+            padding: '1px 5px',
+            borderRadius: 'var(--radius-pill)',
+            minWidth: '16px',
             textAlign: 'center',
           }}
         >
           {badge > 99 ? '99+' : badge}
         </span>
-      ) : active ? (
-        <div
-          className="w-1.5 h-1.5 rounded-full"
-          style={{ backgroundColor: 'var(--accent-primary, #9333ea)' }}
-        />
       ) : null}
     </Link>
   )
@@ -145,8 +116,8 @@ function LockedAnalyticsItem({ onNavigate }: { onNavigate: () => void }) {
         e.currentTarget.style.background = 'rgba(234,179,8,0.04)'
       }}
     >
-      <i className="ti ti-report-analytics" style={{ fontSize: '18px', color: 'rgba(255,255,255,0.35)' }} />
-      <span style={{ flex: 1, color: 'rgba(255,255,255,0.35)', fontSize: '14px', fontWeight: '400' }}>
+      <i className="ti ti-report-analytics ui-nav-item__icon" />
+      <span className="ui-meta" style={{ flex: 1, fontSize: '14px' }}>
         Аналитика
       </span>
       <span
@@ -168,87 +139,30 @@ function LockedAnalyticsItem({ onNavigate }: { onNavigate: () => void }) {
 }
 
 function RoleToggle({ role, onToggle }: { role: Role; onToggle: () => void }) {
-  const isCreator = role === 'creator'
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }} data-testid="role-switch" data-active-role={role}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: !isCreator ? 'white' : 'rgba(255,255,255,0.35)', transition: 'color 0.2s', flexShrink: 0 }}>
-          <path d="M18 8a3 3 0 0 1 0 6" />
-          <path d="M10 8v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-5" />
-          <path d="M12 8H5l-2 4l2 4h14l2-4l-2-4z" />
-        </svg>
-        <span
-          className="topbar-role-label"
-          style={{
-            color: !isCreator ? 'white' : 'rgba(255,255,255,0.35)',
-            fontSize: '12px',
-            fontWeight: !isCreator ? '600' : '400',
-            transition: 'color 0.2s',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Рекламодатель
-        </span>
-      </div>
-
+    <div className="ui-role-switch" data-testid="role-switch" data-active-role={role}>
+      <button
+        type="button"
+        className={`ui-role-switch__btn ${role === 'advertiser' ? 'ui-role-switch__btn--active' : ''}`}
+        onClick={() => role !== 'advertiser' && onToggle()}
+        aria-pressed={role === 'advertiser'}
+      >
+        <span className="topbar-role-label">Рекламодатель</span>
+      </button>
       <button
         type="button"
         data-testid="role-switch-toggle"
+        className={`ui-role-switch__btn ${role === 'creator' ? 'ui-role-switch__btn--active' : ''}`}
+        onClick={onToggle}
         aria-label={
-          isCreator
+          role === 'creator'
             ? 'Роль: создатель. Переключить на рекламодателя'
             : 'Роль: рекламодатель. Переключить на создателя'
         }
-        aria-pressed={isCreator}
-        onClick={onToggle}
-        style={{
-          position: 'relative',
-          width: '44px',
-          height: '24px',
-          borderRadius: '12px',
-          border: 'none',
-          cursor: 'pointer',
-          flexShrink: 0,
-          transition: 'background 0.3s',
-          background: isCreator ? 'var(--accent-primary, #9333ea)' : 'rgba(255,255,255,0.15)',
-        }}
+        aria-pressed={role === 'creator'}
       >
-        <span
-          style={{
-            position: 'absolute',
-            top: '2px',
-            left: '2px',
-            width: '20px',
-            height: '20px',
-            borderRadius: '50%',
-            background: 'white',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-            transition: 'transform 0.3s',
-            transform: isCreator ? 'translateX(20px)' : 'translateX(0)',
-          }}
-        />
+        <span className="topbar-role-label">Создатель</span>
       </button>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: isCreator ? 'white' : 'rgba(255,255,255,0.35)', transition: 'color 0.2s', flexShrink: 0 }}>
-          <path d="M12 21a9 9 0 0 1 0-18c4.97 0 9 3.582 9 8c0 1.06-.474 2.078-1.318 2.828-.844.75-1.989 1.172-3.182 1.172h-2.5a2 2 0 0 0-1 3.75a1.3 1.3 0 0 1-1 2.25" />
-          <path d="M7.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0" />
-          <path d="M11.5 7.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0" />
-          <path d="M15.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0" />
-        </svg>
-        <span
-          className="topbar-role-label"
-          style={{
-            color: isCreator ? 'white' : 'rgba(255,255,255,0.35)',
-            fontSize: '12px',
-            fontWeight: isCreator ? '600' : '400',
-            transition: 'color 0.2s',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Создатель
-        </span>
-      </div>
     </div>
   )
 }
@@ -361,21 +275,12 @@ function GlobalSearch() {
     <div ref={ref} className="relative">
       <button
         type="button"
-        className="mobile-search-btn"
+        className="mobile-search-btn ui-btn ui-btn--ghost ui-btn--sm"
         onClick={() => setMobileSearchOpen((v) => !v)}
         aria-label="Поиск"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '8px',
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '10px',
-          cursor: 'pointer',
-        }}
+        style={{ padding: '8px' }}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="8" />
           <path d="m21 21-4.35-4.35" />
         </svg>
@@ -387,14 +292,15 @@ function GlobalSearch() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query && setOpen(true)}
-          className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 pl-9 text-white placeholder-white/30 outline-none focus-accent transition w-72 text-sm full-width-mobile"
+          className="ui-search-input relative topbar-search w-72 full-width-mobile"
+          style={{ paddingLeft: '34px', paddingRight: query ? '28px' : '12px' }}
         />
         <svg
           width="16"
           height="16"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="rgba(255,255,255,0.4)"
+          stroke="var(--text-subtle)"
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -406,7 +312,7 @@ function GlobalSearch() {
         {query && (
           <button
             onClick={() => { setQuery(''); setOpen(false) }}
-            className="absolute right-3 top-2.5 text-white/30 hover:text-white transition text-sm"
+            className="absolute right-3 top-2.5 ui-meta hover:text-[var(--text)] transition text-sm"
           >
             ✕
           </button>
@@ -414,9 +320,9 @@ function GlobalSearch() {
       </div>
 
       {open && (
-        <div className="absolute top-12 left-0 w-96 bg-[#1a1560] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden">
+        <div className="absolute top-12 left-0 w-96 ui-dropdown-menu z-50">
           {loading ? (
-            <div className="p-4 text-white/50 text-sm text-center">Поиск...</div>
+            <div className="p-4 ui-meta text-sm text-center">Поиск...</div>
           ) : (
             <>
               {results.channels.length > 0 && (
@@ -546,12 +452,8 @@ function GlobalSearch() {
             onClick={() => setShowUserCard(null)}
           />
           <div
+            className="ui-profile-popup"
             style={{
-              background: 'rgba(15,12,41,0.92)',
-              backdropFilter: 'blur(24px)',
-              WebkitBackdropFilter: 'blur(24px)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: '20px',
               width: '320px',
               padding: '24px',
               position: 'fixed',
@@ -564,7 +466,7 @@ function GlobalSearch() {
             <button
               type="button"
               onClick={() => setShowUserCard(null)}
-              className="absolute top-3 right-3 text-white/40 hover:text-white text-lg"
+              className="absolute top-3 right-3 ui-meta hover:text-[var(--text)] text-lg"
             >
               ×
             </button>
@@ -618,8 +520,7 @@ function GlobalSearch() {
                     })
                     setShowUserCard(null)
                   }}
-                  className="w-full flex items-center justify-center gap-2 text-white rounded-full px-4 py-2 text-sm"
-                  style={{ backgroundColor: 'var(--accent-primary, #9333ea)' }}
+                  className="w-full flex items-center justify-center gap-2 ui-btn ui-btn--primary ui-btn--md"
                 >
                   <i className="ti ti-user-plus" style={{ fontSize: '14px' }} />
                   Добавить в друзья
@@ -632,7 +533,7 @@ function GlobalSearch() {
                     }
                     setShowUserCard(null)
                   }}
-                  className="w-full flex items-center justify-center gap-2 border border-white/20 text-white rounded-full px-4 py-2 text-sm"
+                  className="w-full flex items-center justify-center gap-2 ui-btn ui-btn--ghost ui-btn--md"
                 >
                   <i className="ti ti-external-link" style={{ fontSize: '14px' }} />
                   Перейти в профиль
@@ -700,16 +601,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [user, supabase])
 
   useEffect(() => {
-    const color = getAccentColor(role)
-    applyAccentColor(color)
-    setCurrentGradient(color.gradientRaw)
+    const { gradient } = applySpaceAppearance(role)
+    setCurrentGradient(gradient)
   }, [role])
 
   useEffect(() => {
     const onThemeChange = () => {
-      const color = getAccentColor(role)
-      applyAccentColor(color)
-      setCurrentGradient(color.gradientRaw)
+      const { gradient } = applySpaceAppearance(role)
+      setCurrentGradient(gradient)
     }
     window.addEventListener('adverlink-theme-change', onThemeChange)
     window.addEventListener('adverlink-accent-change', onThemeChange)
@@ -746,9 +645,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
       setUser(user)
 
-      const color = getAccentColor(role)
-      applyAccentColor(color)
-      setCurrentGradient(color.gradientRaw)
+      const { gradient } = applySpaceAppearance(role)
+      setCurrentGradient(gradient)
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -802,9 +700,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const newRole = role === 'creator' ? 'advertiser' : 'creator'
     setRole(newRole)
     localStorage.setItem('adverlink_role', newRole)
-    const color = getAccentColor(newRole)
-    applyAccentColor(color)
-    setCurrentGradient(color.gradientRaw)
+    const { gradient } = applySpaceAppearance(newRole)
+    setCurrentGradient(gradient)
   }
 
   const refreshPlan = useCallback(async () => {
@@ -848,16 +745,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
 
         <aside
-          className="md-sidebar w-64 shrink-0 h-full flex flex-col gap-1 px-4 pb-4 pt-0 overflow-y-auto"
+          className="md-sidebar ui-sidebar w-64 shrink-0 h-full flex flex-col gap-0.5 px-3 pb-3 pt-0 overflow-y-auto"
           style={{
-            width: '256px',
+            width: '240px',
             flexShrink: 0,
             display: 'flex',
             flexDirection: 'column',
-            background: 'rgba(255,255,255,0.04)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            borderRight: '1px solid rgba(255,255,255,0.08)',
             position: 'fixed',
             top: 0,
             left: 0,
@@ -871,19 +764,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             href="/dashboard"
             className="shrink-0 block"
             style={{
-              height: '64px',
+              height: '56px',
               display: 'flex',
               alignItems: 'center',
-              padding: '0 16px',
-              marginBottom: '8px',
+              padding: '0 12px',
+              marginBottom: '4px',
             }}
           >
-            <span className="text-white text-2xl font-bold tracking-tight">
-              Adver<span style={{ color: 'var(--accent-primary, #9333ea)' }}>Link</span>
+            <span className="ui-page-title" style={{ fontSize: '1.25rem' }}>
+              Adver<span style={{ color: 'var(--accent-primary)' }}>Link</span>
             </span>
           </Link>
 
-          <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '0 4px 8px' }} />
+          <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '0 4px 6px' }} />
 
           {role === 'creator' ? (
             <>
@@ -929,11 +822,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div
             role="button"
             tabIndex={0}
-            className="flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer"
-            style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
-            }}
+            className="ui-nav-item"
+            style={{ marginTop: '4px' }}
             onClick={() => {
               closeSidebar()
               router.push('/dashboard/profile')
@@ -948,33 +838,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <UserAvatar
               src={avatarUrl}
               name={user.email?.split('@')[0]}
-              size={32}
+              size={28}
               frameColor={avatarFrameColor}
               borderWidth={2}
             />
             <div className="flex-1 min-w-0">
-              <div className="text-white text-xs font-medium truncate">
+              <div className="ui-card-title truncate" style={{ fontSize: '0.8125rem' }}>
                 {user.email?.split('@')[0]}
               </div>
-              <div className="text-white/30 text-xs truncate">{user.email}</div>
+              <div className="ui-meta truncate">{user.email}</div>
             </div>
-            <i className="ti ti-chevron-right" style={{ fontSize: '14px', color: 'rgba(255,255,255,0.2)' }} />
+            <i className="ti ti-chevron-right ui-nav-item__icon" style={{ fontSize: '14px' }} />
           </div>
         </aside>
 
         <div className="flex-1 flex flex-col min-h-0 min-w-0 h-full md-main-content">
-          <header
-            className="topbar-header shrink-0 flex items-center justify-between z-20"
-            style={{
-              minHeight: '64px',
-              display: 'flex',
-              alignItems: 'center',
-              background: 'rgba(255,255,255,0.03)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              borderBottom: '1px solid rgba(255,255,255,0.07)',
-            }}
-          >
+          <header className="topbar-header ui-topbar shrink-0 flex items-center justify-between z-20 px-4" style={{ minHeight: '56px' }}>
             <div className="flex items-center gap-1 min-w-0">
               <button
                 type="button"
@@ -993,9 +872,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   flexShrink: 0,
                 }}
               >
-                <span style={{ width: '20px', height: '2px', background: 'white', borderRadius: '1px', display: 'block' }} />
-                <span style={{ width: '20px', height: '2px', background: 'white', borderRadius: '1px', display: 'block' }} />
-                <span style={{ width: '20px', height: '2px', background: 'white', borderRadius: '1px', display: 'block' }} />
+                <span style={{ width: '20px', height: '2px', background: 'var(--text)', borderRadius: '1px', display: 'block' }} />
+                <span style={{ width: '20px', height: '2px', background: 'var(--text)', borderRadius: '1px', display: 'block' }} />
+                <span style={{ width: '20px', height: '2px', background: 'var(--text)', borderRadius: '1px', display: 'block' }} />
               </button>
 
               <div className="relative min-w-0">
@@ -1057,7 +936,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           )}
 
-          <main className="dashboard-content flex-1 min-h-0 overflow-y-auto p-8">{children}</main>
+          <main className="dashboard-content flex-1 min-h-0 overflow-y-auto">{children}</main>
         </div>
       </BreathingBackground>
     </DashboardContext.Provider>

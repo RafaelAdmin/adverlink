@@ -5,6 +5,7 @@ import { CurrencyCode, getCurrencySymbol } from '@/lib/currency'
 import CurrencySelector from '../CurrencySelector'
 import FilterDropdown from '../FilterDropdown'
 import { ADVERTISER_SORT_OPTIONS, COUNTRY_FILTER_OPTIONS, SOCIAL_FILTER_OPTIONS } from './constants'
+import { FilterLabel } from './filter-ui'
 
 function CustomSelect({
   value,
@@ -31,50 +32,19 @@ function CustomSelect({
   const selected = options.find((o) => o.value === value) || options[0]
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} className="relative">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: '10px',
-          padding: '7px 12px',
-          color: 'white',
-          fontSize: '13px',
-          cursor: 'pointer',
-          width: '100%',
-          justifyContent: 'space-between',
-          minWidth: '140px',
-        }}
+        className={`filter-dropdown-trigger w-full ${open ? 'filter-dropdown-trigger--open' : ''}`}
+        style={{ minWidth: '140px', justifyContent: 'space-between' }}
       >
-        <span>
-          {selected.flag} {selected.label}
-        </span>
-        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px' }}>{open ? '▲' : '▼'}</span>
+        <span>{selected.flag} {selected.label}</span>
+        <span className="filter-dropdown-trigger__chevron ui-meta">{open ? '▲' : '▼'}</span>
       </button>
 
       {open && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 4px)',
-            left: 0,
-            right: 0,
-            zIndex: 100,
-            background: 'rgba(15,12,41,0.98)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '12px',
-            overflow: 'hidden',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-            minWidth: '160px',
-          }}
-        >
+        <div className="filter-dropdown-menu" style={{ minWidth: '160px' }}>
           {options.map((opt) => (
             <button
               key={opt.value}
@@ -83,31 +53,12 @@ function CustomSelect({
                 onChange(opt.value)
                 setOpen(false)
               }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                width: '100%',
-                padding: '10px 14px',
-                background: value === opt.value ? 'rgba(147,51,234,0.2)' : 'transparent',
-                border: 'none',
-                color: value === opt.value ? 'white' : 'rgba(255,255,255,0.7)',
-                fontSize: '13px',
-                cursor: 'pointer',
-                textAlign: 'left',
-                transition: 'background 0.15s',
-              }}
-              onMouseEnter={(e) => {
-                if (value !== opt.value) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
-              }}
-              onMouseLeave={(e) => {
-                if (value !== opt.value) e.currentTarget.style.background = 'transparent'
-              }}
+              className={`filter-dropdown-item ${value === opt.value ? 'filter-dropdown-item--selected' : ''}`}
             >
               {opt.flag && <span>{opt.flag}</span>}
               <span>{opt.label}</span>
               {value === opt.value && (
-                <span style={{ marginLeft: 'auto', color: 'var(--accent-primary, #9333ea)' }}>✓</span>
+                <span style={{ marginLeft: 'auto', color: 'var(--accent-primary)' }}>✓</span>
               )}
             </button>
           ))}
@@ -170,43 +121,18 @@ export default function ChannelFilters({
 }) {
   return (
     <>
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+      <div className="flex gap-2.5 mb-3 flex-wrap items-center">
         <input
           placeholder="Поиск по названию или username..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{
-            flex: 1,
-            minWidth: '200px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '12px',
-            padding: '10px 16px',
-            color: 'white',
-            fontSize: '14px',
-            outline: 'none',
-          }}
+          className="marketplace-search-input flex-1"
+          style={{ minWidth: '200px' }}
         />
         <button
           type="button"
           onClick={() => setShowFilters(!showFilters)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '4px 10px',
-            borderRadius: '10px',
-            border: showFilters
-              ? '1px solid var(--accent-primary, #9333ea)'
-              : '1px solid rgba(255,255,255,0.15)',
-            background: showFilters
-              ? 'color-mix(in srgb, var(--accent-primary, #9333ea) 15%, transparent)'
-              : 'rgba(255,255,255,0.08)',
-            color: showFilters ? 'white' : 'rgba(255,255,255,0.7)',
-            fontSize: '13px',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
+          className={`ui-btn ui-btn--sm ${showFilters ? 'ui-btn--primary' : 'ui-btn--secondary'}`}
         >
           <i className="ti ti-adjustments-horizontal" style={{ fontSize: '14px' }} />
           Фильтры {showFilters ? '▲' : '▼'}
@@ -222,16 +148,10 @@ export default function ChannelFilters({
       </div>
 
       {showFilters && (
-        <div style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '16px',
-          padding: '20px',
-          marginBottom: '16px',
-        }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+        <div className="marketplace-filters-panel">
+          <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
             <div>
-              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '8px' }}>Страна</span>
+              <FilterLabel>Страна</FilterLabel>
               <CustomSelect
                 value={selectedCountry}
                 onChange={setSelectedCountry}
@@ -244,7 +164,7 @@ export default function ChannelFilters({
             </div>
 
             <div>
-              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '8px' }}>Соцсеть</span>
+              <FilterLabel>Соцсеть</FilterLabel>
               <CustomSelect
                 value={selectedSocialNet}
                 onChange={setSelectedSocialNet}
@@ -257,13 +177,13 @@ export default function ChannelFilters({
             </div>
 
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Подписчики</span>
-                <span style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>
+              <div className="flex justify-between mb-2">
+                <FilterLabel>Подписчики</FilterLabel>
+                <span className="marketplace-filter-range-value">
                   {minSubs.toLocaleString()} — {maxSubs >= 1000000 ? '1M+' : maxSubs.toLocaleString()}
                 </span>
               </div>
-              <div style={{ position: 'relative', height: '20px', display: 'flex', alignItems: 'center' }}>
+              <div className="relative h-5 flex items-center">
                 <input
                   type="range"
                   min={0}
@@ -271,7 +191,7 @@ export default function ChannelFilters({
                   step={1000}
                   value={minSubs}
                   onChange={(e) => setMinSubs(Math.min(Number(e.target.value), maxSubs - 1000))}
-                  style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary, #9333ea)', zIndex: 1 }}
+                  style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary)', zIndex: 1 }}
                 />
                 <input
                   type="range"
@@ -280,19 +200,19 @@ export default function ChannelFilters({
                   step={1000}
                   value={maxSubs}
                   onChange={(e) => setMaxSubs(Math.max(Number(e.target.value), minSubs + 1000))}
-                  style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary, #9333ea)', zIndex: 2, background: 'transparent' }}
+                  style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary)', zIndex: 2, background: 'transparent' }}
                 />
               </div>
             </div>
 
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Охваты</span>
-                <span style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>
+              <div className="flex justify-between mb-2">
+                <FilterLabel>Охваты</FilterLabel>
+                <span className="marketplace-filter-range-value">
                   {minViews.toLocaleString()} — {maxViews >= 500000 ? '500K+' : maxViews.toLocaleString()}
                 </span>
               </div>
-              <div style={{ position: 'relative', height: '20px', display: 'flex', alignItems: 'center' }}>
+              <div className="relative h-5 flex items-center">
                 <input
                   type="range"
                   min={0}
@@ -300,7 +220,7 @@ export default function ChannelFilters({
                   step={500}
                   value={minViews}
                   onChange={(e) => setMinViews(Math.min(Number(e.target.value), maxViews - 500))}
-                  style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary, #9333ea)', zIndex: 1 }}
+                  style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary)', zIndex: 1 }}
                 />
                 <input
                   type="range"
@@ -309,19 +229,19 @@ export default function ChannelFilters({
                   step={500}
                   value={maxViews}
                   onChange={(e) => setMaxViews(Math.max(Number(e.target.value), minViews + 500))}
-                  style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary, #9333ea)', zIndex: 2, background: 'transparent' }}
+                  style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary)', zIndex: 2, background: 'transparent' }}
                 />
               </div>
             </div>
 
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Цена</span>
-                <span style={{ color: 'white', fontSize: '12px', fontWeight: '600' }}>
+              <div className="flex justify-between mb-2">
+                <FilterLabel>Цена</FilterLabel>
+                <span className="marketplace-filter-range-value">
                   {getCurrencySymbol(displayCurrency)}{minPrice} — {maxPrice >= 10000 ? '10K+' : getCurrencySymbol(displayCurrency) + maxPrice}
                 </span>
               </div>
-              <div style={{ position: 'relative', height: '20px', display: 'flex', alignItems: 'center' }}>
+              <div className="relative h-5 flex items-center">
                 <input
                   type="range"
                   min={0}
@@ -329,7 +249,7 @@ export default function ChannelFilters({
                   step={10}
                   value={minPrice}
                   onChange={(e) => setMinPrice(Math.min(Number(e.target.value), maxPrice - 10))}
-                  style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary, #9333ea)', zIndex: 1 }}
+                  style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary)', zIndex: 1 }}
                 />
                 <input
                   type="range"
@@ -338,13 +258,13 @@ export default function ChannelFilters({
                   step={10}
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(Math.max(Number(e.target.value), minPrice + 10))}
-                  style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary, #9333ea)', zIndex: 2, background: 'transparent' }}
+                  style={{ position: 'absolute', width: '100%', accentColor: 'var(--accent-primary)', zIndex: 2, background: 'transparent' }}
                 />
               </div>
             </div>
           </div>
 
-          <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+          <div className="mt-4 flex justify-end">
             <button
               type="button"
               onClick={() => {
@@ -357,15 +277,7 @@ export default function ChannelFilters({
                 setSelectedSocialNet('all')
                 setSelectedCountry('all')
               }}
-              style={{
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.15)',
-                borderRadius: '8px',
-                padding: '6px 14px',
-                color: 'rgba(255,255,255,0.4)',
-                fontSize: '12px',
-                cursor: 'pointer',
-              }}
+              className="ui-btn ui-btn--ghost ui-btn--sm"
             >
               Сбросить фильтры
             </button>
