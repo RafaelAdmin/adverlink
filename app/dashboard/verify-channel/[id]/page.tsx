@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
@@ -22,7 +22,9 @@ export default function VerifyChannelPage() {
   const [verificationCode, setVerificationCode] = useState('')
   const [verifying, setVerifying] = useState(false)
   const [verificationResult, setVerificationResult] = useState<'success' | 'fail' | null>(null)
+  const [verificationFailureReason, setVerificationFailureReason] = useState<string | null>(null)
   const [step1Confirmed, setStep1Confirmed] = useState(false)
+  const verifyInFlightRef = useRef(false)
 
   useEffect(() => {
     const load = async () => {
@@ -45,39 +47,37 @@ export default function VerifyChannelPage() {
         return
       }
 
+      if (data.verification_code) {
+        setVerificationCode(data.verification_code)
+      } else {
+        const code = generateVerificationCode()
+        setVerificationCode(code)
+        await supabase.from('channels').update({ verification_code: code }).eq('id', channelId)
+      }
+
       setChannel(data)
       setLoading(false)
     }
     load()
   }, [channelId, router, supabase])
 
-  useEffect(() => {
-    if (!channelId) return
-
-    const generateCode = async () => {
-      const code = generateVerificationCode()
-      setVerificationCode(code)
-
-      await supabase.from('channels').update({ verification_code: code }).eq('id', channelId)
-    }
-
-    generateCode()
-  }, [channelId, supabase])
-
   const handleVerify = async () => {
-    if (!channel) return
+    if (!channel || verifyInFlightRef.current) return
 
     const youtube = channel.platform === 'youtube'
 
+    verifyInFlightRef.current = true
     setVerifying(true)
     setStep(isYoutube ? 3 : 2)
     setVerificationResult(null)
+    setVerificationFailureReason(null)
 
     try {
       const endpoint = youtube ? '/api/youtube/verify' : '/api/telegram/verify'
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
         body: JSON.stringify({ channelId: channel.id, code: verificationCode }),
       })
       const data = await response.json()
@@ -86,13 +86,32 @@ export default function VerifyChannelPage() {
         setVerificationResult('success')
       } else {
         setVerificationResult('fail')
+        setVerificationFailureReason(data.reason || data.error || null)
       }
     } catch {
       setVerificationResult('fail')
+      setVerificationFailureReason('telegram_unavailable')
     }
 
     setVerifying(false)
+    verifyInFlightRef.current = false
   }
+
+  const telegramFailureMessage = (() => {
+    switch (verificationFailureReason) {
+      case 'telegram_unavailable':
+        return 'Не удалось получить данные канала от Telegram. Попробуйте ещё раз.'
+      case 'channel_not_found':
+      case 'channel_inaccessible':
+      case 'invalid_username':
+        return 'Канал недоступен для проверки. Убедитесь, что это публичный Telegram-канал с @username.'
+      case 'code_mismatch':
+        return 'Код верификации устарел. Обновите страницу, скопируйте новый код в описание канала и попробуйте снова.'
+      case 'code_not_found':
+      default:
+        return 'Код пока не найден в описании канала. Убедитесь, что изменения сохранены в Telegram, и попробуйте ещё раз через несколько секунд.'
+    }
+  })()
 
   if (loading || !channel) {
     return <div className="ui-meta">Загрузка...</div>
@@ -255,7 +274,7 @@ export default function VerifyChannelPage() {
             <Button
               type="button"
               onClick={handleVerify}
-              disabled={!verificationCode}
+              disabled={!verificationCode || verifying}
               className="flex-1"
             >
               {isYoutube ? 'Проверить ▶' : 'Проверить'}
@@ -276,8 +295,11 @@ export default function VerifyChannelPage() {
                   display: 'inline-block',
                 }}
               />
-              <p className="ui-meta mt-4">
-                {isYoutube ? 'Проверяем описание YouTube канала...' : 'Проверяем описание канала...'}
+              <p className="ui-section-title mt-4 mb-1">Проверяем...</p>
+              <p className="ui-meta">
+                {isYoutube
+                  ? 'Проверяем описание YouTube канала...'
+                  : 'Telegram может обновлять описание канала несколько секунд. Проверяем изменения…'}
               </p>
             </div>
           )}
@@ -316,12 +338,13 @@ export default function VerifyChannelPage() {
               ) : (
                 <div style={{ fontSize: '64px', marginBottom: '16px' }}>❌</div>
               )}
-              <h2 className="ui-page-title mb-2">Код не найден</h2>
-              <p className="ui-meta mb-2">
-                Мы не нашли код верификации в описании канала.
-              </p>
+              <h2 className="ui-page-title mb-2">
+                {isYoutube ? 'Код не найден' : 'Проверка не удалась'}
+              </h2>
               <p className="ui-body mb-6">
-                Убедитесь что код точно добавлен в описание и попробуйте снова.
+                {isYoutube
+                  ? 'Мы не нашли код верификации в описании YouTube канала. Убедитесь, что код точно добавлен в описание и попробуйте снова.'
+                  : telegramFailureMessage}
               </p>
               <div className="flex gap-3 justify-center">
                 <Button
@@ -330,11 +353,12 @@ export default function VerifyChannelPage() {
                   onClick={() => {
                     setStep(isYoutube ? 2 : 1)
                     setVerificationResult(null)
+                    setVerificationFailureReason(null)
                   }}
                 >
                   ← Назад
                 </Button>
-                <Button type="button" onClick={handleVerify}>
+                <Button type="button" onClick={handleVerify} disabled={verifying}>
                   Попробовать снова
                 </Button>
               </div>

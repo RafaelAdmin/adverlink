@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import {
@@ -19,11 +19,13 @@ import { AutoCompleteCountdown, PaymentReservedBadge, RefundSummary, SplitPaymen
 import { markDealViewed } from '@/lib/notifications'
 import {
   applyDealApiPatch,
+  getDealApiError,
   postConfirmCompletion,
   postDealDispute,
   postDealTransition,
   postRequestRevision,
 } from '@/lib/deal-api-client'
+import { coerceAdRequestRow } from '@/lib/final-terms-ui'
 
 export function DealStatusPill({ status, large }: { status: string; large?: boolean }) {
   const badge = getDealStatusBadge(status)
@@ -148,6 +150,7 @@ export function CreatorDealActions({
   channel,
   userId,
   onUpdate,
+  onRefresh,
   showDetails = true,
   hideLegacyProofSubmit = false,
   useNewLifecycleWorkflow = false,
@@ -156,12 +159,15 @@ export function CreatorDealActions({
   channel?: any
   userId: string
   onUpdate: (patch: Record<string, unknown>) => void
+  onRefresh?: () => Promise<void>
   showDetails?: boolean
   hideLegacyProofSubmit?: boolean
   useNewLifecycleWorkflow?: boolean
 }) {
   const supabase = createClient()
   const [saving, setSaving] = useState(false)
+  const [acceptError, setAcceptError] = useState<string | null>(null)
+  const acceptInFlightRef = useRef(false)
   const [postsCount, setPostsCount] = useState(request.posts_count || 1)
   const [proofLinks, setProofLinks] = useState((request.proof_links || []).join('\n'))
   const [creatorNote, setCreatorNote] = useState(request.creator_note || '')
@@ -171,6 +177,13 @@ export function CreatorDealActions({
   const [campaignBrief, setCampaignBrief] = useState<string | null>(null)
 
   const status = normalizeDealStatus(request.status)
+  const rawStatus = String(request.status ?? 'new')
+  const canAcceptOrder =
+    !request.campaign_id && (rawStatus === 'new' || rawStatus === 'payment_pending')
+
+  useEffect(() => {
+    setAcceptError(null)
+  }, [request.id, rawStatus])
 
   useEffect(() => {
     if (!request.campaign_id) return
@@ -210,6 +223,78 @@ export function CreatorDealActions({
 
     setSaving(false)
     return ok
+  }
+
+  const acceptOrder = async () => {
+    if (acceptInFlightRef.current || saving) return
+    acceptInFlightRef.current = true
+    setSaving(true)
+    setAcceptError(null)
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[deal-accept] click', { dealId: request.id, rawStatus })
+    }
+
+    try {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[deal-accept] request start', { dealId: request.id, toStatus: 'accepted' })
+      }
+
+      const result = await postDealTransition(request.id, { toStatus: 'accepted' })
+      const apiError = getDealApiError(result)
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[deal-accept] response', {
+          dealId: request.id,
+          ok: result.ok,
+          error: apiError,
+          status: !result.ok ? result.status : 200,
+        })
+      }
+
+      if (apiError) {
+        setAcceptError(apiError)
+        return
+      }
+
+      if (result.ok && result.deal && typeof result.deal === 'object') {
+        onUpdate(coerceAdRequestRow(result.deal as Record<string, unknown>))
+      } else {
+        applyDealApiPatch(onUpdate, result)
+      }
+
+      try {
+        await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'deal_accepted',
+            channelId: request.channel_id,
+            dealId: request.id,
+            advertiserName: request.advertiser_name,
+            advertiserContact: request.advertiser_contact,
+            budget: request.budget,
+          }),
+        })
+      } catch {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[deal-accept] notification failed (non-blocking)')
+        }
+      }
+
+      if (onRefresh) {
+        await onRefresh()
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Не удалось принять заказ'
+      setAcceptError(message)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[deal-accept] unexpected error', error)
+      }
+    } finally {
+      setSaving(false)
+      acceptInFlightRef.current = false
+    }
   }
 
   const submitReview = async (rating: number, comment: string) => {
@@ -263,52 +348,41 @@ export function CreatorDealActions({
 
       <ProgressTracker steps={getCreatorSteps(request.status)} />
 
-      {status === 'payment_pending' && (
+      {(status === 'payment_pending' || rawStatus === 'new') && (
         <div style={{ marginBottom: '12px' }}>
-          <PaymentReservedBadge />
+          {status === 'payment_pending' && <PaymentReservedBadge />}
         </div>
       )}
 
-      {(status === 'payment_pending') && !request.campaign_id && (
-        <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+      {canAcceptOrder && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+          {acceptError && <p className="text-red-400 text-sm">{acceptError}</p>}
+          <div style={{ display: 'flex', gap: '12px' }}>
           <button
             type="button"
             disabled={saving}
             style={{ ...dealBtn.accept, opacity: saving ? 0.6 : 1 }}
-            onClick={async () => {
-              const ok = await patch({ status: 'accepted', accepted_at: new Date().toISOString() })
-              if (ok) {
-                try {
-                  await fetch('/api/notify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      type: 'deal_accepted',
-                      channelId: request.channel_id,
-                      dealId: request.id,
-                      advertiserName: request.advertiser_name,
-                      advertiserContact: request.advertiser_contact,
-                      budget: request.budget,
-                    }),
-                  })
-                } catch {
-                  console.log('Notification failed silently')
-                }
-              }
-            }}
+            onClick={acceptOrder}
           >
-            ✓ Принять заказ
+            {saving ? 'Принимаем заказ…' : '✓ Принять заказ'}
           </button>
           <button
             type="button"
             disabled={saving}
             style={{ ...dealBtn.reject, opacity: saving ? 0.6 : 1 }}
             onClick={async () => {
-              await patch({ status: 'cancelled', payment_status: 'refunded' })
+              setAcceptError(null)
+              const ok = await patch({ status: 'cancelled', payment_status: 'refunded' })
+              if (!ok) {
+                setAcceptError('Не удалось отклонить заказ. Обновите страницу и попробуйте снова.')
+              } else if (onRefresh) {
+                await onRefresh()
+              }
             }}
           >
             ✗ Отклонить
           </button>
+          </div>
         </div>
       )}
 
@@ -1120,6 +1194,12 @@ export function DealTimeline({ request }: { request: any }) {
   const events: { label: string; date?: string; color: string; show: boolean }[] = [
     { label: 'Запрос отправлен', date: request.created_at, color: '#fbbf24', show: true },
     { label: 'Заказ принят', date: request.accepted_at, color: '#4ade80', show: !!request.accepted_at },
+    {
+      label: request.payment_mode === 'simulated' ? 'Тестовая оплата подтверждена' : 'Оплата подтверждена',
+      date: request.paid_at ?? undefined,
+      color: '#22c55e',
+      show: Boolean(request.paid_at && request.payment_status === 'paid'),
+    },
     { label: 'Работа начата', date: request.accepted_at, color: '#60a5fa', show: ['in_progress', 'submitted', 'completed'].includes(status) },
     { label: 'Отправлено на проверку', date: request.updated_at, color: '#a78bfa', show: ['submitted', 'completed'].includes(status) },
     { label: 'Заказ завершён', date: request.completed_at, color: '#22c55e', show: status === 'completed' && !!request.completed_at },

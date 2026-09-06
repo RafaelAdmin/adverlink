@@ -41,6 +41,13 @@ export type DealRecord = {
   all_placements_published_at: string | null
   final_review_started_at: string | null
   auto_complete_deadline: string | null
+  payment_mode: string | null
+  payment_amount: number | null
+  payment_currency: string | null
+  paid_at: string | null
+  payment_provider: string | null
+  payment_environment: string | null
+  payment_reference: string | null
   channels: {
     owner_id: string
     telegram_username: string

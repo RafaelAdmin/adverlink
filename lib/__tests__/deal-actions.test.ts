@@ -63,6 +63,11 @@ describe('generic transition policy', () => {
     )
   })
 
+  it('allows creator new -> accepted and cancelled', () => {
+    expect(() => assertGenericTransitionAllowed('creator', 'new', 'accepted')).not.toThrow()
+    expect(() => assertGenericTransitionAllowed('creator', 'new', 'cancelled')).not.toThrow()
+  })
+
   it('allows creator payment_pending -> accepted and cancelled', () => {
     expect(() => assertGenericTransitionAllowed('creator', 'payment_pending', 'accepted')).not.toThrow()
     expect(() => assertGenericTransitionAllowed('creator', 'payment_pending', 'cancelled')).not.toThrow()

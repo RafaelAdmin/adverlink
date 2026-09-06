@@ -15,6 +15,7 @@ import FinalTermsSection from '@/app/dashboard/components/deal/FinalTermsSection
 import DealContentSection from '@/app/dashboard/components/deal/DealContentSection'
 import PlacementsSection from '@/app/dashboard/components/deal/PlacementsSection'
 import FinalReviewSection from '@/app/dashboard/components/deal/FinalReviewSection'
+import SimulatedDealPaymentSection from '@/app/dashboard/components/deal/SimulatedDealPaymentSection'
 import DealNextAction from '@/app/dashboard/components/deal/DealNextAction'
 import DealChat from '@/app/dashboard/components/DealChat'
 import { markDealViewed } from '@/lib/notifications'
@@ -164,7 +165,7 @@ export default function DealDetailPage() {
   const showActionsPanel =
     !usePlacementsWorkflow ||
     status === 'completed' ||
-    ['new', 'payment_pending'].includes(status)
+    ['new', 'payment_pending', 'accepted'].includes(status)
 
   return (
     <div>
@@ -246,6 +247,15 @@ export default function DealDetailPage() {
         onRefresh={refreshDealState}
       />
 
+      <SimulatedDealPaymentSection
+        dealId={dealId}
+        request={request}
+        placements={placements}
+        role={role}
+        onDealUpdate={handleUpdate}
+        onRefresh={refreshDealState}
+      />
+
       <DealContentSection
         dealId={dealId}
         request={request}
@@ -322,6 +332,7 @@ export default function DealDetailPage() {
               channel={channel}
               userId={userId}
               onUpdate={handleUpdate}
+              onRefresh={refreshDealState}
               showDetails={false}
               hideLegacyProofSubmit={usePlacementsWorkflow}
               useNewLifecycleWorkflow={usePlacementsWorkflow}

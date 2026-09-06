@@ -25,3 +25,5 @@ export const PAYMENTS_BETA_MESSAGE =
   'Онлайн-оплата через AdverLink будет доступна позже. На этапе Beta стороны согласовывают оплату самостоятельно.'
 
 export const PAYMENTS_ENABLED = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === 'true'
+
+export const SIMULATED_PAYMENTS_ENABLED = process.env.NEXT_PUBLIC_SIMULATED_PAYMENTS_ENABLED === 'true'

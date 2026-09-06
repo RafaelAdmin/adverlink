@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   assertDealStatusTransition,
+  areTermsReadyForExecution,
   canAcceptTerms,
   canApproveCreatorContent,
   canCompleteDeal,
@@ -208,6 +209,26 @@ describe('terms sequence', () => {
       false,
     )
   })
+
+  it('requires locked terms for new lifecycle execution readiness', () => {
+    const phase0AcceptedOnly = baseCtx({ termsStatus: 'accepted' })
+    expect(isLegacyLifecycleDeal(phase0AcceptedOnly)).toBe(false)
+    expect(areTermsReadyForExecution(phase0AcceptedOnly)).toBe(false)
+
+    const newAccepted = {
+      ...newLifecycleCtx(),
+      termsStatus: 'accepted' as const,
+      termsLockedAt: null,
+    }
+    expect(areTermsReadyForExecution(newAccepted)).toBe(false)
+
+    const newLocked = {
+      ...newLifecycleCtx(),
+      termsStatus: 'locked' as const,
+      termsLockedAt: '2026-01-02',
+    }
+    expect(areTermsReadyForExecution(newLocked)).toBe(true)
+  })
 })
 
 describe('creator content workflow', () => {
@@ -253,11 +274,11 @@ describe('placement workflow', () => {
     expect(supportsPerPlacementAdvertiserApproval()).toBe(false)
   })
 
-  it('canPublishPlacement when terms accepted and content ready', () => {
+  it('canPublishPlacement when terms locked and content ready', () => {
     const ctx = newLifecycleCtx({
       status: 'in_progress',
-      termsStatus: 'accepted',
-      termsLockedAt: null,
+      termsStatus: 'locked',
+      termsLockedAt: '2026-01-02T00:00:00Z',
       contentMode: 'creator_creates',
       contentStatus: 'approved',
     })
@@ -490,7 +511,7 @@ describe('financial architecture (types only, no fake payment)', () => {
     expect(getTargetFinancialOutcome(baseCtx({ status: 'submitted' }))).toBe('not_applicable')
   })
 
-  it('signals awaiting_hold for locked new lifecycle terms without pretending payment', () => {
-    expect(getTargetFinancialOutcome(newLifecycleCtx())).toBe('awaiting_hold')
+  it('signals not_applicable for locked new lifecycle terms without real payment hold', () => {
+    expect(getTargetFinancialOutcome(newLifecycleCtx())).toBe('not_applicable')
   })
 })

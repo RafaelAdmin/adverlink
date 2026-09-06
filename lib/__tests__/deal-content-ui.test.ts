@@ -21,7 +21,10 @@ function acceptedDeal(overrides: Partial<AdRequest> = {}): AdRequest {
   return coerceAdRequestRow({
     id: 'deal-1',
     status: 'in_progress',
-    terms_status: 'accepted',
+    terms_status: 'locked',
+    terms_locked_at: '2026-01-02T00:00:00Z',
+    payment_status: 'paid',
+    payment_mode: 'simulated',
     content_mode: 'advertiser_provides',
     content_status: 'not_required',
     placements_count: 2,
@@ -71,7 +74,17 @@ describe('shouldShowContentSection', () => {
   })
 
   it('hides before terms accepted', () => {
-    expect(shouldShowContentSection(acceptedDeal({ terms_status: 'proposed' }), [])).toBe(false)
+    expect(
+      shouldShowContentSection(
+        acceptedDeal({
+          terms_status: 'proposed',
+          terms_locked_at: null,
+          payment_status: 'pending',
+          payment_mode: null,
+        }),
+        [],
+      ),
+    ).toBe(false)
   })
 })
 

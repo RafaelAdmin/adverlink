@@ -18,11 +18,14 @@ import {
 import { isLegacyLifecycleDeal } from '@/lib/deal-lifecycle'
 import { coerceAdRequestRow } from '@/lib/final-terms-ui'
 
-function acceptedDeal(overrides: Partial<AdRequest> = {}): AdRequest {
+function paidDeal(overrides: Partial<AdRequest> = {}): AdRequest {
   return coerceAdRequestRow({
     id: 'deal-1',
     status: 'in_progress',
-    terms_status: 'accepted',
+    terms_status: 'locked',
+    terms_locked_at: '2026-01-02T00:00:00Z',
+    payment_status: 'paid',
+    payment_mode: 'simulated',
     content_mode: 'advertiser_provides',
     content_status: 'not_required',
     placements_count: 3,
@@ -33,6 +36,11 @@ function acceptedDeal(overrides: Partial<AdRequest> = {}): AdRequest {
     created_at: '2026-01-01',
     ...overrides,
   } as Record<string, unknown>)
+}
+
+/** @deprecated use paidDeal — kept as alias for tests expecting post-payment execution */
+function acceptedDeal(overrides: Partial<AdRequest> = {}): AdRequest {
+  return paidDeal(overrides)
 }
 
 describe('shouldUsePlacementsWorkflow', () => {
@@ -64,7 +72,18 @@ describe('initialization state', () => {
   })
 
   it('does not initialize before terms accepted', () => {
-    const request = acceptedDeal({ terms_status: 'proposed', placements_count: 3 })
+    const request = paidDeal({ terms_status: 'proposed', terms_locked_at: null, payment_status: 'pending', payment_mode: null, placements_count: 3 })
+    expect(canInitializePlacements(request, [])).toBe(false)
+  })
+
+  it('does not initialize before simulated payment locks terms', () => {
+    const request = paidDeal({
+      terms_status: 'accepted',
+      terms_locked_at: null,
+      payment_status: 'pending',
+      payment_mode: null,
+      placements_count: 3,
+    })
     expect(canInitializePlacements(request, [])).toBe(false)
   })
 })

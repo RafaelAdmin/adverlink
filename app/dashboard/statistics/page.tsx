@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from '../layout'
 import { formatAmdWithUsd } from '@/lib/currency'
+import { countsAsRealRevenue } from '@/lib/deal-payments'
 import PageHeader from '@/components/ui/PageHeader'
 import Surface from '@/components/ui/Surface'
 
@@ -292,13 +293,13 @@ export default function StatisticsPage() {
                 ? supabase.from('ad_requests').select('id, budget, created_at, status, advertiser_name').in('channel_id', channelIds)
                 : Promise.resolve({ data: [] as any[] }),
               channelIds.length > 0
-                ? supabase.from('ad_requests').select('id, budget, created_at').in('channel_id', channelIds).eq('status', 'completed')
+                ? supabase.from('ad_requests').select('id, budget, created_at, payment_mode, payment_status').in('channel_id', channelIds).eq('status', 'completed')
                 : Promise.resolve({ data: [] as any[] }),
               channelIds.length > 0
                 ? supabase.from('ad_requests').select('id').in('channel_id', channelIds).eq('status', 'replied')
                 : Promise.resolve({ data: [] as any[] }),
               channelIds.length > 0
-                ? supabase.from('ad_requests').select('id, budget').in('channel_id', channelIds).eq('status', 'completed').gte('created_at', firstDayOfMonth.toISOString())
+                ? supabase.from('ad_requests').select('id, budget, payment_mode, payment_status').in('channel_id', channelIds).eq('status', 'completed').gte('created_at', firstDayOfMonth.toISOString())
                 : Promise.resolve({ data: [] as any[] }),
               supabase.from('reviews').select('rating').eq('reviewee_id', user.id),
             ])
@@ -306,12 +307,15 @@ export default function StatisticsPage() {
           const allDealsRaw = allReqRes.data || []
           const allDealsNonCancelled = allDealsRaw.filter((d) => d.status !== 'cancelled')
           const completedDeals = completedReqRes.data || []
-          const repliedDeals = repliedReqRes.data || []
           const monthDeals = monthReqRes.data || []
           const reviews = reviewsRes.data || []
 
-          const totalRevenue = completedDeals.reduce((s, d) => s + (Number(d.budget) || 0), 0)
-          const monthRevenue = monthDeals.reduce((s, d) => s + (Number(d.budget) || 0), 0)
+          const totalRevenue = completedDeals
+            .filter((d) => countsAsRealRevenue(d))
+            .reduce((s, d) => s + (Number(d.budget) || 0), 0)
+          const monthRevenue = monthDeals
+            .filter((d) => countsAsRealRevenue(d))
+            .reduce((s, d) => s + (Number(d.budget) || 0), 0)
           const avgRating = reviews.length > 0
             ? reviews.reduce((s, r) => s + safeNum(r.rating), 0) / reviews.length
             : 0
@@ -328,7 +332,7 @@ export default function StatisticsPage() {
             totalRevenue,
             monthRevenue,
             completedDeals: completedDeals.length,
-            inProgressDeals: repliedDeals.length,
+            inProgressDeals: (repliedReqRes.data || []).length,
             allDeals: allDealsNonCancelled.length,
             totalSubs,
             totalViews,
@@ -345,8 +349,8 @@ export default function StatisticsPage() {
 
           const [campaignsRes, completedReqRes, monthReqRes, reviewsRes] = await Promise.all([
             supabase.from('campaigns').select('id, name, status, category, budget, created_at').eq('advertiser_id', user.id),
-            supabase.from('ad_requests').select('id, budget, created_at, channel_id').eq('advertiser_id', user.id).eq('status', 'completed'),
-            supabase.from('ad_requests').select('id, budget').eq('advertiser_id', user.id).eq('status', 'completed').gte('created_at', firstDayOfMonth.toISOString()),
+            supabase.from('ad_requests').select('id, budget, created_at, channel_id, payment_mode, payment_status').eq('advertiser_id', user.id).eq('status', 'completed'),
+            supabase.from('ad_requests').select('id, budget, payment_mode, payment_status').eq('advertiser_id', user.id).eq('status', 'completed').gte('created_at', firstDayOfMonth.toISOString()),
             supabase.from('reviews').select('rating').eq('reviewee_id', user.id),
           ])
 
@@ -355,8 +359,12 @@ export default function StatisticsPage() {
           const monthRequests = monthReqRes.data || []
           const reviews = reviewsRes.data || []
 
-          const totalSpent = completedRequests.reduce((s, r) => s + (Number(r.budget) || 0), 0)
-          const monthSpent = monthRequests.reduce((s, r) => s + (Number(r.budget) || 0), 0)
+          const totalSpent = completedRequests
+            .filter((r) => countsAsRealRevenue(r))
+            .reduce((s, r) => s + (Number(r.budget) || 0), 0)
+          const monthSpent = monthRequests
+            .filter((r) => countsAsRealRevenue(r))
+            .reduce((s, r) => s + (Number(r.budget) || 0), 0)
 
           const activeCampaigns = campaigns.filter((c) => c.status === 'active').length
           const completedCampaigns = campaigns.filter((c) => c.status === 'completed').length

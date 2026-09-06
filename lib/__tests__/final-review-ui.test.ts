@@ -16,7 +16,10 @@ function acceptedDeal(overrides: Partial<AdRequest> = {}): AdRequest {
   return coerceAdRequestRow({
     id: 'deal-1',
     status: 'in_progress',
-    terms_status: 'accepted',
+    terms_status: 'locked',
+    terms_locked_at: '2026-01-02T00:00:00Z',
+    payment_status: 'paid',
+    payment_mode: 'simulated',
     content_mode: 'advertiser_provides',
     content_status: 'not_required',
     placements_count: 2,
@@ -160,7 +163,7 @@ describe('deal next action', () => {
   })
 
   it('advertiser material action', () => {
-    const request = acceptedDeal({ terms_status: 'accepted' })
+    const request = acceptedDeal()
     expect(getDealNextAction(request, [], material, 'advertiser')).toContain('материал')
   })
 
@@ -181,7 +184,7 @@ describe('deal next action', () => {
   })
 
   it('issue correction action for creator', () => {
-    const request = acceptedDeal({ terms_status: 'accepted' })
+    const request = acceptedDeal()
     const placements = [{ ...placement(2, 'issue_reported'), issue_comment: 'x' }]
     expect(getDealNextAction(request, placements, material, 'creator')).toContain('исправить')
   })

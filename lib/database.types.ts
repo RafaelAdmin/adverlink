@@ -128,6 +128,13 @@ export type AdRequest = {
   all_placements_published_at: string | null
   final_review_started_at: string | null
   auto_complete_deadline: string | null
+  payment_mode: 'simulated' | 'real' | null
+  payment_amount: number | null
+  payment_currency: CurrencyCode | null
+  paid_at: string | null
+  payment_provider: string | null
+  payment_environment: string | null
+  payment_reference: string | null
 }
 
 export type DealPlacement = {

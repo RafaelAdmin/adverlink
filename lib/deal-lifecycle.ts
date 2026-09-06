@@ -245,8 +245,10 @@ export function areTermsLocked(ctx: DealLifecycleContext): boolean {
 }
 
 export function areTermsReadyForExecution(ctx: DealLifecycleContext): boolean {
-  // TODO(payment): require successful HOLD before creator execution
-  return areTermsLocked(ctx) || ctx.termsStatus === 'accepted'
+  if (isLegacyLifecycleDeal(ctx)) {
+    return areTermsLocked(ctx) || ctx.termsStatus === 'accepted'
+  }
+  return areTermsLocked(ctx)
 }
 
 // ---------------------------------------------------------------------------
@@ -496,8 +498,7 @@ export function getTargetFinancialOutcome(ctx: DealLifecycleContext): DealFinanc
   if (isLegacyLifecycleDeal(ctx)) return 'not_applicable'
 
   if (areTermsLocked(ctx)) {
-    // TODO(payment): return 'held' once provider integration exists
-    return 'awaiting_hold'
+    return 'not_applicable'
   }
 
   return 'not_applicable'

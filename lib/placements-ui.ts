@@ -11,6 +11,7 @@ import {
   isCreatorContentReady,
   isLegacyLifecycleDeal,
   isNewLifecycleDeal,
+  areTermsReadyForExecution,
   type DealLifecycleContext,
   type DealPlacementSnapshot,
   type PlacementStatus,
@@ -96,8 +97,7 @@ export function shouldUsePlacementsWorkflow(
   const ctx = buildLifecycleContextFromAdRequest(request, placements)
   if (isLegacyLifecycleDeal(ctx)) return false
 
-  const termsReady =
-    request.terms_status === 'accepted' || request.terms_status === 'locked'
+  const termsReady = areTermsReadyForExecution(ctx)
   if (!termsReady) return false
 
   const count = request.placements_count

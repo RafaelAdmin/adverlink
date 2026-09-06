@@ -209,7 +209,10 @@ async function fetchPreviewPageInternal(
       headers: {
         Accept: 'text/html',
         'User-Agent': PREVIEW_USER_AGENT,
+        'Cache-Control': 'no-cache',
+        Pragma: 'no-cache',
       },
+      cache: 'no-store',
       signal: controller.signal,
       redirect: 'follow',
     })
@@ -244,6 +247,26 @@ async function fetchPreviewPageInternal(
   } finally {
     clearTimeout(timeout)
   }
+}
+
+/** Parse public channel description from t.me/s preview HTML. */
+export function parseChannelDescriptionFromPreviewHtml(html: string): string | null {
+  const match = html.match(
+    /class="tgme_channel_info_description"[^>]*>([\s\S]*?)<\/div>/i,
+  )
+  if (!match) return null
+
+  const decoded = match[1]
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+
+  const trimmed = decoded.trim()
+  return trimmed.length > 0 ? trimmed : null
 }
 
 export async function fetchChannelPreview(

@@ -6,7 +6,7 @@ import {
   dealActionSuccess,
   withDealContext,
 } from '@/lib/server/deal-route-handler'
-import { DealActionError } from '@/lib/server/deal-errors'
+import { DealActionError, isDealActionError } from '@/lib/server/deal-errors'
 
 export async function POST(
   request: NextRequest,
@@ -36,6 +36,12 @@ export async function POST(
 
     return dealActionSuccess(bundle)
   } catch (error) {
+    if (process.env.NODE_ENV === 'development' && isDealActionError(error)) {
+      console.warn('[deal-transition] rejected', {
+        error: error.message,
+        status: error.status,
+      })
+    }
     return dealActionErrorResponse(error)
   }
 }

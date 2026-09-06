@@ -106,6 +106,13 @@ export async function postRequestContentChanges(dealId: string, comment: string)
   })
 }
 
+export async function postSimulatedDealPayment(dealId: string) {
+  return postJson<ApiResult & { paymentAlreadyPaid?: boolean; paymentReference?: string }>(
+    `/api/deals/${dealId}/payment/simulated`,
+    {},
+  )
+}
+
 export async function postReportPlacementIssue(dealId: string, placementIndex: number, issueComment: string) {
   return postJson<ApiResult>(`/api/deals/${dealId}/placements/report-issue`, { placementIndex, issueComment })
 }

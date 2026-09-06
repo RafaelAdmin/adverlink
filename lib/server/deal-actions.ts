@@ -144,7 +144,24 @@ export async function executeGenericDealTransition(
     q.eq('status', fromStatus),
   )
   if (!updated) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[deal-transition] conditional update missed', {
+        dealId,
+        fromStatus,
+        toStatus: payload.toStatus,
+        role,
+      })
+    }
     throw new DealActionError('Deal state changed; refresh and retry', 409)
+  }
+
+  if (process.env.NODE_ENV === 'development' && payload.toStatus === 'accepted') {
+    console.log('[deal-transition] accept success', {
+      dealId,
+      fromStatus,
+      toStatus: payload.toStatus,
+      role,
+    })
   }
 
   if (payload.toStatus === 'accepted' && bundle.deal.campaign_id) {

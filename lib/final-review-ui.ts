@@ -20,6 +20,7 @@ import {
   shouldUsePlacementsWorkflow,
 } from '@/lib/placements-ui'
 import { getFinalTermsUiState, normalizeTermsStatus } from '@/lib/final-terms-ui'
+import { isDealAwaitingSimulatedPayment, isSimulatedPaymentsEnabledClient } from '@/lib/deal-payments'
 
 export type AutoCompleteRemaining = {
   expired: boolean
@@ -134,6 +135,15 @@ export function getDealNextAction(
   const termsStatus = normalizeTermsStatus(request.terms_status)
   if (termsStatus !== 'accepted' && termsStatus !== 'locked') {
     return 'Нужно согласовать финальные условия'
+  }
+
+  if (
+    isSimulatedPaymentsEnabledClient() &&
+    isDealAwaitingSimulatedPayment(request, ctx)
+  ) {
+    return role === 'advertiser'
+      ? 'Рекламодателю нужно выполнить тестовую оплату'
+      : 'Ожидание тестовой оплаты от рекламодателя'
   }
 
   const issueIndex = findIssueReportedPlacementIndex(ctx)

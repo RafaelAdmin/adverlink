@@ -4,6 +4,7 @@ import {
   canApproveCreatorContent,
   canRequestContentChanges,
   canSubmitCreatorContent,
+  areTermsReadyForExecution,
   isLegacyLifecycleDeal,
   type DealLifecycleContext,
 } from '@/lib/deal-lifecycle'
@@ -46,9 +47,7 @@ export function shouldShowContentSection(
   if (request.content_mode !== 'advertiser_provides' && request.content_mode !== 'creator_creates') {
     return false
   }
-  const termsReady =
-    request.terms_status === 'accepted' || request.terms_status === 'locked'
-  return termsReady
+  return areTermsReadyForExecution(ctx)
 }
 
 export function getContentModeLabel(mode: ContentMode | null): string {

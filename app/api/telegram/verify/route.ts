@@ -1,77 +1,106 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
-import { verifyCodeInDescription } from '@/lib/verification-check'
+import { codesMatch } from '@/lib/verification-check'
+import { verifyTelegramChannelDescription } from '@/lib/telegram-verification'
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   const session = await requireAuth()
   if (!session) {
-    return NextResponse.json({ verified: false, error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ verified: false, reason: 'unauthorized', error: 'Unauthorized' }, { status: 401 })
   }
 
   let body: { channelId?: string; code?: string }
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ verified: false, error: 'Invalid body' }, { status: 400 })
+    return NextResponse.json({ verified: false, reason: 'invalid_body', error: 'Invalid body' }, { status: 400 })
   }
 
   const { channelId, code } = body
   if (!channelId || !code) {
-    return NextResponse.json({ verified: false, error: 'Missing params' }, { status: 400 })
+    return NextResponse.json({ verified: false, reason: 'missing_params', error: 'Missing params' }, { status: 400 })
   }
 
   const { supabase, user } = session
   const { data: channel } = await supabase
     .from('channels')
-    .select('id, owner_id, telegram_username, verification_code')
+    .select('id, owner_id, telegram_username, verification_code, verification_status, is_verified')
     .eq('id', channelId)
     .single()
 
   if (!channel || channel.owner_id !== user.id) {
-    return NextResponse.json({ verified: false, error: 'Forbidden' }, { status: 403 })
+    return NextResponse.json({ verified: false, reason: 'forbidden', error: 'Forbidden' }, { status: 403 })
+  }
+
+  if (channel.verification_status === 'verified' || channel.is_verified) {
+    return NextResponse.json({ verified: true, reason: 'already_verified' })
   }
 
   if (!channel.verification_code) {
-    return NextResponse.json({ verified: false, error: 'Verification code not issued' }, { status: 400 })
+    return NextResponse.json(
+      { verified: false, reason: 'code_not_issued', error: 'Verification code not issued' },
+      { status: 400 },
+    )
+  }
+
+  if (!codesMatch(code, channel.verification_code)) {
+    return NextResponse.json({ verified: false, reason: 'code_mismatch' }, { status: 400 })
   }
 
   const token = process.env.TELEGRAM_BOT_TOKEN
   if (!token) {
-    return NextResponse.json({ verified: false, error: 'Bot token not configured' }, { status: 500 })
+    return NextResponse.json(
+      { verified: false, reason: 'telegram_unavailable', error: 'Bot token not configured' },
+      { status: 500 },
+    )
   }
 
-  const username = channel.telegram_username?.replace('@', '').replace(/[^a-zA-Z0-9_]/g, '') || ''
-  if (!username) {
-    return NextResponse.json({ verified: false, error: 'Channel username missing' }, { status: 400 })
+  if (!channel.telegram_username) {
+    return NextResponse.json(
+      { verified: false, reason: 'invalid_username', error: 'Channel username missing' },
+      { status: 400 },
+    )
   }
 
   try {
-    const response = await fetch(
-      `https://api.telegram.org/bot${token}/getChat?chat_id=@${username}`,
-    )
-    const data = await response.json()
+    const result = await verifyTelegramChannelDescription({
+      username: channel.telegram_username,
+      submittedCode: code,
+      storedCode: channel.verification_code,
+      botToken: token,
+    })
 
-    if (!data.ok) {
-      return NextResponse.json({ verified: false, error: 'Channel not found' })
-    }
-
-    const description = data.result?.description || ''
-    const verified = verifyCodeInDescription(code, channel.verification_code, description)
-
-    if (verified) {
+    if (result.verified) {
       const { error: updateError } = await supabase.rpc('verify_channel_after_check', {
         p_channel_id: channelId,
       })
 
       if (updateError) {
-        console.error('Telegram verify RPC error:', updateError.message)
-        return NextResponse.json({ verified: false, error: 'Verification failed' }, { status: 500 })
+        console.error('[telegram-verify] RPC error:', updateError.message)
+        return NextResponse.json(
+          { verified: false, reason: 'telegram_unavailable', error: 'Verification failed' },
+          { status: 500 },
+        )
       }
     }
 
-    return NextResponse.json({ verified })
-  } catch {
-    return NextResponse.json({ verified: false, error: 'API error' }, { status: 500 })
+    return NextResponse.json({
+      verified: result.verified,
+      reason: result.reason,
+      attempts: result.attempts,
+      matchedSource: result.matchedSource,
+    })
+  } catch (error) {
+    console.error(
+      '[telegram-verify] unexpected error:',
+      error instanceof Error ? error.message : error,
+    )
+    return NextResponse.json(
+      { verified: false, reason: 'telegram_unavailable', error: 'API error' },
+      { status: 500 },
+    )
   }
 }
 

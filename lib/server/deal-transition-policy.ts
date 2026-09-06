@@ -16,6 +16,7 @@ export const SPECIALIZED_TRANSITION_TARGETS = new Set<DealStatus>([
 
 /** Generic POST /api/deals/[id]/transition — creator role. */
 export const GENERIC_CREATOR_TRANSITIONS: Partial<Record<DealStatus, readonly DealStatus[]>> = {
+  new: ['accepted', 'cancelled'],
   payment_pending: ['accepted', 'cancelled'],
   accepted: ['in_progress'],
   in_progress: ['submitted'],

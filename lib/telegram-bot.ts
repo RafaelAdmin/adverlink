@@ -53,7 +53,13 @@ export async function callTelegramApi<T>(
       url.searchParams.set(key, String(value))
     }
   }
-  const response = await fetch(url.toString())
+  const response = await fetch(url.toString(), {
+    cache: 'no-store',
+    headers: {
+      'Cache-Control': 'no-cache',
+      Pragma: 'no-cache',
+    },
+  })
   return response.json()
 }
 
