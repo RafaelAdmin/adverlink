@@ -6,6 +6,7 @@ import {
   createEmptyPriceDraft,
   formatPriceListLine,
   moveDraftPrice,
+  withPriceListCurrency,
   type DraftChannelPrice,
 } from '@/lib/channel-prices'
 import type { CurrencyCode } from '@/lib/currency'
@@ -21,7 +22,18 @@ export default function ChannelPriceListEditor({
   defaultCurrency?: CurrencyCode
   compactHint?: boolean
 }) {
+  const listCurrency = items[0]?.currency || defaultCurrency
+
   const updateItem = (index: number, patch: Partial<DraftChannelPrice>) => {
+    if (patch.currency) {
+      onChange(
+        withPriceListCurrency(
+          items.map((item, i) => (i === index ? { ...item, ...patch } : item)),
+          patch.currency,
+        ),
+      )
+      return
+    }
     onChange(items.map((item, i) => (i === index ? { ...item, ...patch } : item)))
   }
 
@@ -90,7 +102,7 @@ export default function ChannelPriceListEditor({
                   Валюта
                 </span>
                 <CurrencySelector
-                  value={item.currency}
+                  value={item.currency || listCurrency}
                   onChange={(currency) => updateItem(index, { currency })}
                 />
               </div>
@@ -131,7 +143,7 @@ export default function ChannelPriceListEditor({
       <Button
         type="button"
         variant="secondary"
-        onClick={() => onChange([...items, createEmptyPriceDraft(defaultCurrency)])}
+        onClick={() => onChange([...items, createEmptyPriceDraft(listCurrency)])}
       >
         + Добавить услугу
       </Button>

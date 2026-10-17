@@ -74,7 +74,7 @@ Production notes:
 
 ## Channel price list
 
-- [ ] Apply `supabase/channel-prices.sql` in Supabase SQL Editor. This extends the existing `channel_prices` table (`currency`, `sort_order`, RLS). Do not create a second prices table.
+- [ ] Apply `supabase/channel-prices.sql` in Supabase SQL Editor. This extends the existing `channel_prices` table (`currency`, `sort_order`, RLS) and adds `replace_channel_prices` for an atomic save. Do not create a second prices table.
 
 ## Telegram analytics bot
 

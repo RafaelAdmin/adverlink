@@ -76,7 +76,7 @@ export default function EditChannelPage() {
     const isTelegram = channel.platform === 'telegram' || !channel.platform
     const priceItems = isTelegram ? sanitizeDraftPrices(priceDrafts) : []
     const startingPrice = isTelegram
-      ? deriveChannelStartingPrice(priceItems)
+      ? deriveChannelStartingPrice(priceItems, (channel.ad_price_currency || 'USD') as CurrencyCode)
       : {
           ad_price: Math.max(0, Number(channel.ad_price) || 0),
           ad_price_currency: channel.ad_price_currency || 'USD',

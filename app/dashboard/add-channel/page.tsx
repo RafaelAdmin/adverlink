@@ -164,7 +164,7 @@ export default function AddChannelPage() {
     const isTelegram = selectedPlatform === 'telegram' || !selectedPlatform
     const priceItems = isTelegram ? sanitizeDraftPrices(drafts) : []
     const startingPrice = isTelegram
-      ? deriveChannelStartingPrice(priceItems)
+      ? deriveChannelStartingPrice(priceItems, adPriceCurrency)
       : {
           ad_price: adPrice ? Number(adPrice) : null,
           ad_price_currency: adPriceCurrency,
