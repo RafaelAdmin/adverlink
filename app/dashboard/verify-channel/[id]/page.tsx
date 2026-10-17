@@ -125,7 +125,13 @@ export default function VerifyChannelPage() {
   const isYoutube = channel.platform === 'youtube'
   const isOauth = channel.platform === 'instagram' || channel.platform === 'tiktok'
   const channelHandle = getChannelHandle(channel)
-  const flowStep = verificationResult === 'success' || (isOauth && channel.verification_status === 'verified') ? 4 : 3
+  const flowStep = isTelegram
+    ? verificationResult === 'success'
+      ? 5
+      : 4
+    : verificationResult === 'success' || (isOauth && channel.verification_status === 'verified')
+      ? 4
+      : 3
 
   return (
     <div className="dashboard-form-inner">
@@ -136,7 +142,11 @@ export default function VerifyChannelPage() {
         ← Мои каналы
       </Link>
 
-      <AddChannelProgressStepper currentStep={flowStep} className="mb-6" />
+      <AddChannelProgressStepper
+        currentStep={flowStep}
+        className="mb-6"
+        variant={isTelegram ? 'telegram' : 'default'}
+      />
 
       <h1 className="ui-page-title mb-2">
         {isOauth

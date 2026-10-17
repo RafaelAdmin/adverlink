@@ -1,30 +1,41 @@
 'use client'
 
-export type AddChannelFlowStep = 1 | 2 | 3 | 4
+export type AddChannelFlowStep = 1 | 2 | 3 | 4 | 5
 
-const STEPS: { id: AddChannelFlowStep; label: string; shortLabel: string }[] = [
+const DEFAULT_STEPS: { id: AddChannelFlowStep; label: string; shortLabel: string }[] = [
   { id: 1, label: 'Выберите социальную сеть', shortLabel: 'Соцсеть' },
   { id: 2, label: 'Добавьте канал', shortLabel: 'Канал' },
   { id: 3, label: 'Верификация канала', shortLabel: 'Верификация' },
   { id: 4, label: 'Канал добавлен', shortLabel: 'Готово' },
 ]
 
+const TELEGRAM_STEPS: { id: AddChannelFlowStep; label: string; shortLabel: string }[] = [
+  { id: 1, label: 'Выберите социальную сеть', shortLabel: 'Соцсеть' },
+  { id: 2, label: 'Добавьте канал', shortLabel: 'Канал' },
+  { id: 3, label: 'Прайс-лист', shortLabel: 'Прайс' },
+  { id: 4, label: 'Верификация канала', shortLabel: 'Верификация' },
+]
+
 type AddChannelProgressStepperProps = {
   currentStep: AddChannelFlowStep
   className?: string
+  variant?: 'default' | 'telegram'
 }
 
 export default function AddChannelProgressStepper({
   currentStep,
   className = '',
+  variant = 'default',
 }: AddChannelProgressStepperProps) {
+  const steps = variant === 'telegram' ? TELEGRAM_STEPS : DEFAULT_STEPS
+
   return (
     <nav
       className={`add-channel-stepper ${className}`.trim()}
       aria-label="Прогресс добавления канала"
     >
       <ol className="add-channel-stepper__list">
-        {STEPS.map((step, index) => {
+        {steps.map((step, index) => {
           const completed = currentStep > step.id
           const current = currentStep === step.id
 
@@ -49,7 +60,7 @@ export default function AddChannelProgressStepper({
               <span className="add-channel-stepper__label add-channel-stepper__label--short">
                 {step.shortLabel}
               </span>
-              {index < STEPS.length - 1 && (
+              {index < steps.length - 1 && (
                 <span
                   className={`add-channel-stepper__connector ${
                     completed ? 'add-channel-stepper__connector--completed' : ''

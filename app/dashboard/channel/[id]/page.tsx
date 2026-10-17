@@ -12,6 +12,7 @@ import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
 import VerifiedBadge from '@/app/dashboard/components/VerifiedBadge'
 import TelegramChannelAnalyticsSection from '@/app/dashboard/components/TelegramChannelAnalyticsSection'
 import { formatEngagementRate } from '@/lib/channel-metrics'
+import { formatPriceListLine, type ChannelPriceRow } from '@/lib/channel-prices'
 import Surface from '@/components/ui/Surface'
 import MetricStrip from '@/components/ui/MetricStrip'
 
@@ -24,6 +25,7 @@ export default function ChannelProfilePage() {
   const [isMyChannel, setIsMyChannel] = useState(false)
   const [displayCurrency, setDisplayCurrency] = usePreferredCurrency()
   const [rates, setRates] = useState<Record<string, number>>({})
+  const [priceItems, setPriceItems] = useState<ChannelPriceRow[]>([])
   const router = useRouter()
   const supabase = createClient()
 
@@ -50,6 +52,12 @@ export default function ChannelProfilePage() {
       } else {
         setChannel(data)
         setIsMyChannel(data.owner_id === user.id)
+        const { data: prices } = await supabase
+          .from('channel_prices')
+          .select('id, channel_id, type, description, price, currency, sort_order')
+          .eq('channel_id', data.id)
+          .order('sort_order', { ascending: true })
+        setPriceItems((prices || []) as ChannelPriceRow[])
       }
       setLoading(false)
     }
@@ -214,6 +222,22 @@ export default function ChannelProfilePage() {
         <Surface padding="md" style={{ marginBottom: '12px' }}>
           <h2 className="ui-card-title mb-2">О канале</h2>
           <p className="ui-body">{channel.description}</p>
+        </Surface>
+      )}
+
+      {priceItems.length > 0 && (
+        <Surface padding="md" style={{ marginBottom: '12px' }}>
+          <h2 className="ui-card-title mb-3">Прайс-лист</h2>
+          <div className="flex flex-col gap-2">
+            {priceItems.map((item) => (
+              <div key={item.id} className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="ui-body">{formatPriceListLine(item)}</div>
+                  {item.description && <div className="ui-meta">{item.description}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
         </Surface>
       )}
 

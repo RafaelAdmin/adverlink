@@ -9,7 +9,16 @@ import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
 import TelegramAnalyticsConnect from '@/app/dashboard/components/TelegramAnalyticsConnect'
 import SocialOauthVerification from '@/app/dashboard/components/SocialOauthVerification'
 import CurrencySelector from '@/app/dashboard/components/CurrencySelector'
+import ChannelPriceListEditor from '@/app/dashboard/components/ChannelPriceListEditor'
 import { CurrencyCode } from '@/lib/currency'
+import {
+  deriveChannelStartingPrice,
+  draftsFromPriceRows,
+  replaceChannelPrices,
+  sanitizeDraftPrices,
+  type ChannelPriceRow,
+  type DraftChannelPrice,
+} from '@/lib/channel-prices'
 import PageHeader from '@/components/ui/PageHeader'
 import Surface from '@/components/ui/Surface'
 import Button from '@/components/ui/Button'
@@ -23,6 +32,7 @@ export default function EditChannelPage() {
   const [success, setSuccess] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [priceDrafts, setPriceDrafts] = useState<DraftChannelPrice[]>([])
   const router = useRouter()
   const params = useParams()
   const supabase = createClient()
@@ -42,6 +52,14 @@ export default function EditChannelPage() {
       if (!data) { router.push('/dashboard'); return }
       setOwnerId(user.id)
       setChannel(data)
+
+      const { data: prices } = await supabase
+        .from('channel_prices')
+        .select('id, channel_id, type, description, price, currency, sort_order')
+        .eq('channel_id', data.id)
+        .order('sort_order', { ascending: true })
+
+      setPriceDrafts(draftsFromPriceRows((prices || []) as ChannelPriceRow[]))
       setLoading(false)
     }
     load()
@@ -54,8 +72,24 @@ export default function EditChannelPage() {
 
     const name = (channel.name || '').trim().slice(0, 100)
     const description = (channel.description || '').trim().slice(0, 1000)
-    const adPrice = Math.max(0, Number(channel.ad_price) || 0)
     const avgViews = Math.max(0, Number(channel.avg_views) || 0)
+    const isTelegram = channel.platform === 'telegram' || !channel.platform
+    const priceItems = isTelegram ? sanitizeDraftPrices(priceDrafts) : []
+    const startingPrice = isTelegram
+      ? deriveChannelStartingPrice(priceItems)
+      : {
+          ad_price: Math.max(0, Number(channel.ad_price) || 0),
+          ad_price_currency: channel.ad_price_currency || 'USD',
+        }
+
+    if (isTelegram) {
+      const { error: pricesError } = await replaceChannelPrices(supabase, channel.id, priceItems)
+      if (pricesError) {
+        setSaving(false)
+        setError(pricesError)
+        return
+      }
+    }
 
     const { error } = await supabase
       .from('channels')
@@ -63,8 +97,8 @@ export default function EditChannelPage() {
         name,
         description,
         avg_views: avgViews,
-        ad_price: adPrice,
-        ad_price_currency: channel.ad_price_currency || 'USD',
+        ad_price: startingPrice.ad_price,
+        ad_price_currency: startingPrice.ad_price_currency,
         language: channel.language,
         country: channel.country,
       })
@@ -164,7 +198,7 @@ export default function EditChannelPage() {
         </label>
 
         {/* Охваты и цена */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className={`grid ${channel.platform === 'telegram' || !channel.platform ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
           <label className="ui-field">
             <span className="ui-field__label">Средние охваты</span>
             <input
@@ -174,6 +208,7 @@ export default function EditChannelPage() {
               className="ui-input"
             />
           </label>
+          {channel.platform !== 'telegram' && channel.platform ? (
           <label className="ui-field">
             <span className="ui-field__label">Цена рекламы</span>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -192,7 +227,17 @@ export default function EditChannelPage() {
             </div>
             <span className="ui-field__hint">Цена сохраняется в выбранной валюте</span>
           </label>
+          ) : null}
         </div>
+
+        {(channel.platform === 'telegram' || !channel.platform) && (
+          <ChannelPriceListEditor
+            items={priceDrafts}
+            onChange={setPriceDrafts}
+            defaultCurrency={(channel.ad_price_currency || 'USD') as CurrencyCode}
+            compactHint={false}
+          />
+        )}
 
         {/* Язык и страна */}
         <div className="grid grid-cols-2 gap-4">

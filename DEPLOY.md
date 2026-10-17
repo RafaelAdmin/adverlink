@@ -72,6 +72,10 @@ Production notes:
 - [ ] TikTok and Meta OAuth env vars set in Vercel
 - [ ] Redirect URIs registered exactly (https, www, no trailing slash mismatch)
 
+## Channel price list
+
+- [ ] Apply `supabase/channel-prices.sql` in Supabase SQL Editor. This extends the existing `channel_prices` table (`currency`, `sort_order`, RLS). Do not create a second prices table.
+
 ## Telegram analytics bot
 
 - [ ] Apply `supabase/telegram-analytics.sql` in Supabase SQL Editor

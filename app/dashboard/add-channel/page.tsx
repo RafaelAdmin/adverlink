@@ -18,6 +18,13 @@ import PageHeader from '@/components/ui/PageHeader'
 import Surface from '@/components/ui/Surface'
 import Button from '@/components/ui/Button'
 import AddChannelProgressStepper from '@/app/dashboard/components/AddChannelProgressStepper'
+import ChannelPriceListEditor from '@/app/dashboard/components/ChannelPriceListEditor'
+import {
+  deriveChannelStartingPrice,
+  replaceChannelPrices,
+  sanitizeDraftPrices,
+  type DraftChannelPrice,
+} from '@/lib/channel-prices'
 
 export default function AddChannelPage() {
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null)
@@ -37,6 +44,8 @@ export default function AddChannelPage() {
   const [channelCount, setChannelCount] = useState(0)
   const [userIsPro, setUserIsPro] = useState(false)
   const [limitsLoading, setLimitsLoading] = useState(true)
+  const [showPriceStep, setShowPriceStep] = useState(false)
+  const [priceDrafts, setPriceDrafts] = useState<DraftChannelPrice[]>([])
   const router = useRouter()
   const supabase = createClient()
   const { isPro } = useDashboard()
@@ -72,6 +81,8 @@ export default function AddChannelPage() {
     setAvatarUrl('')
     setError(null)
     setFetchSuccess(false)
+    setShowPriceStep(false)
+    setPriceDrafts([])
   }
 
   const handleBackToPlatforms = () => {
@@ -138,8 +149,7 @@ export default function AddChannelPage() {
     setFetching(false)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const createChannel = async (drafts: DraftChannelPrice[] = priceDrafts) => {
     if (!user) return
 
     if (!canAddChannel(userIsPro, channelCount)) {
@@ -151,6 +161,14 @@ export default function AddChannelPage() {
     setError(null)
 
     const username = telegramUsername.replace(/^@/, '').trim()
+    const isTelegram = selectedPlatform === 'telegram' || !selectedPlatform
+    const priceItems = isTelegram ? sanitizeDraftPrices(drafts) : []
+    const startingPrice = isTelegram
+      ? deriveChannelStartingPrice(priceItems)
+      : {
+          ad_price: adPrice ? Number(adPrice) : null,
+          ad_price_currency: adPriceCurrency,
+        }
 
     const { data: newChannel, error: insertError } = await supabase
       .from('channels')
@@ -161,8 +179,8 @@ export default function AddChannelPage() {
         description: description.trim() || null,
         subscriber_count: subscriberCount ? Number(subscriberCount) : 0,
         avg_views: avgViews ? Number(avgViews) : 0,
-        ad_price: adPrice ? Number(adPrice) : null,
-        ad_price_currency: adPriceCurrency,
+        ad_price: startingPrice.ad_price,
+        ad_price_currency: startingPrice.ad_price_currency,
         avatar_url: avatarUrl || null,
         platform: selectedPlatform || 'telegram',
         verification_status: 'pending',
@@ -171,14 +189,36 @@ export default function AddChannelPage() {
       .select('id')
       .single()
 
-    setSubmitting(false)
-
-    if (insertError) {
-      setError(insertError.message)
+    if (insertError || !newChannel) {
+      setSubmitting(false)
+      setError(insertError?.message || 'Не удалось сохранить канал')
       return
     }
 
+    if (isTelegram && priceItems.length > 0) {
+      const { error: pricesError } = await replaceChannelPrices(supabase, newChannel.id, priceItems)
+      if (pricesError) {
+        setSubmitting(false)
+        setError(pricesError)
+        return
+      }
+    }
+
+    setSubmitting(false)
     router.push(`/dashboard/verify-channel/${newChannel.id}`)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) return
+
+    if (selectedPlatform === 'telegram') {
+      setError(null)
+      setShowPriceStep(true)
+      return
+    }
+
+    await createChannel()
   }
 
   if (!user || limitsLoading) {
@@ -201,7 +241,7 @@ export default function AddChannelPage() {
 
         <ChannelLimitBanner used={channelCount} isPro={userIsPro} />
 
-        <AddChannelProgressStepper currentStep={1} className="mb-6" />
+        <AddChannelProgressStepper currentStep={1} className="mb-6" variant="default" />
 
         <PageHeader title="Добавить канал" description="Выбери социальную сеть" />
 
@@ -366,6 +406,7 @@ export default function AddChannelPage() {
   }
 
   const isYouTube = selectedPlatform === 'youtube'
+  const isTelegram = selectedPlatform === 'telegram'
   const isOauthPlatform = selectedPlatform === 'instagram' || selectedPlatform === 'tiktok'
   const platformLabel =
     selectedPlatform === 'telegram'
@@ -375,6 +416,56 @@ export default function AddChannelPage() {
         : selectedPlatform === 'instagram'
           ? 'Instagram'
           : 'TikTok'
+
+  if (isTelegram && showPriceStep) {
+    return (
+      <div className="dashboard-form-inner">
+        <button
+          type="button"
+          onClick={() => setShowPriceStep(false)}
+          className="ui-meta mb-6 inline-flex items-center gap-2 hover:opacity-80 transition"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+        >
+          ← Назад к данным канала
+        </button>
+
+        <AddChannelProgressStepper currentStep={3} className="mb-6" variant="telegram" />
+
+        <PageHeader
+          title="Прайс-лист"
+          description="Добавьте услуги, если готовы. Это можно сделать позже."
+        />
+
+        <Surface padding="lg" className="flex flex-col gap-5">
+          <ChannelPriceListEditor
+            items={priceDrafts}
+            onChange={setPriceDrafts}
+            defaultCurrency={adPriceCurrency}
+          />
+
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+
+          <div className="flex flex-col gap-3">
+            <Button type="button" onClick={() => void createChannel()} disabled={submitting} fullWidth>
+              {submitting ? 'Сохранение...' : 'Продолжить к верификации'}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={submitting}
+              onClick={() => {
+                setPriceDrafts([])
+                void createChannel([])
+              }}
+              fullWidth
+            >
+              Пропустить и добавить позже
+            </Button>
+          </div>
+        </Surface>
+      </div>
+    )
+  }
 
   return (
     <div className="dashboard-form-inner">
@@ -387,7 +478,11 @@ export default function AddChannelPage() {
         ← Выбрать другую соцсеть
       </button>
 
-      <AddChannelProgressStepper currentStep={2} className="mb-6" />
+      <AddChannelProgressStepper
+        currentStep={2}
+        className="mb-6"
+        variant={isTelegram ? 'telegram' : 'default'}
+      />
 
       <PageHeader
         title="Добавить канал"
@@ -519,6 +614,7 @@ export default function AddChannelPage() {
           </label>
         </div>
 
+        {!isTelegram && (
         <label className="ui-field">
           <span className="ui-field__label">Цена рекламы</span>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -538,6 +634,13 @@ export default function AddChannelPage() {
           </div>
           <span className="ui-field__hint">Укажите цену в удобной валюте</span>
         </label>
+        )}
+
+        {isTelegram && (
+          <p className="ui-meta" style={{ margin: 0 }}>
+            Прайс-лист можно заполнить на следующем шаге или позже.
+          </p>
+        )}
 
         <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-3">
           <p className="text-yellow-400 text-xs">
@@ -552,7 +655,7 @@ export default function AddChannelPage() {
         )}
 
         <Button type="submit" disabled={submitting || !name || !telegramUsername} fullWidth>
-          {submitting ? 'Сохранение...' : 'Добавить канал'}
+          {submitting ? 'Сохранение...' : isTelegram ? 'Далее' : 'Добавить канал'}
         </Button>
         </Surface>
       </form>

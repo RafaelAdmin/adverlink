@@ -247,3 +247,14 @@ export type CurrencyCode = 'USD' | 'EUR' | 'AMD' | 'GEL' | 'RUB'
 export type UserRole = 'creator' | 'advertiser'
 
 export type Platform = 'telegram' | 'youtube' | 'instagram' | 'tiktok'
+
+export type ChannelPrice = {
+  id: string
+  channel_id: string
+  type: string
+  description: string | null
+  price: number
+  currency: string
+  sort_order: number
+  created_at: string
+}
