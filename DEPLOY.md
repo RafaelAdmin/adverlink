@@ -42,6 +42,13 @@ TELEGRAM_BOT_TOKEN=
 2. Add environment variables
 3. Railway auto-detects Next.js
 
+## Telegram analytics bot
+
+- [ ] Apply `supabase/telegram-analytics.sql` in Supabase SQL Editor
+- [ ] Set env: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `CRON_SECRET`, `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+- [ ] Set `TELEGRAM_WEBHOOK_URL=https://www.adverlink.am/api/telegram/webhook` (canonical URL, no redirect)
+- [ ] After deploy: reconnect analytics, make the bot a channel admin, verify with a test post
+
 ## Post-deployment checks
 
 - [ ] Landing page loads

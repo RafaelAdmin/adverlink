@@ -49,14 +49,17 @@ export async function POST(request: NextRequest) {
     )
 
     if (!result.ok) {
-      console.error('[telegram/webhook] ingest failed:', result.reason)
-      return NextResponse.json({ ok: true, ingested: false })
+      console.error('[Telegram webhook] Ingestion failed', result.reason)
+      return NextResponse.json(
+        { ok: false, ingested: false, reason: result.reason },
+        { status: 500 },
+      )
     }
 
     return NextResponse.json({ ok: true, ingested: true })
   } catch (error) {
-    console.error('[telegram/webhook] error:', error)
-    return NextResponse.json({ ok: true })
+    console.error('[Telegram webhook] Unexpected error', error)
+    return NextResponse.json({ ok: false }, { status: 500 })
   }
 }
 

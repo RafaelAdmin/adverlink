@@ -65,7 +65,7 @@ export async function ingestChannelPost(
         views !== null && acceptMonotonicViewUpdate(existing.current_views, views)
           ? views
           : existing.current_views
-      await supabase
+      const { error: updateError } = await supabase
         .from('telegram_posts')
         .update({
           edited_at: message.edit_date ? new Date(message.edit_date * 1000).toISOString() : now,
@@ -73,6 +73,9 @@ export async function ingestChannelPost(
           last_analytics_update: now,
         })
         .eq('id', existing.id)
+      if (updateError) {
+        return { ok: false, reason: updateError.message }
+      }
       return { ok: true, postId: existing.id }
     }
   }
@@ -108,10 +111,13 @@ export async function ingestChannelPost(
     views_unavailable: false,
   }))
 
-  await supabase.from('telegram_post_snapshots').upsert(snapshots, {
+  const { error: snapshotsError } = await supabase.from('telegram_post_snapshots').upsert(snapshots, {
     onConflict: 'post_id,checkpoint',
     ignoreDuplicates: true,
   })
+  if (snapshotsError) {
+    return { ok: false, reason: snapshotsError.message }
+  }
 
   if (snapshots.some((s) => s.checkpoint === 'publication')) {
     await captureSnapshot(supabase, post.id, 'publication', subscriberCount, views, null)
@@ -131,7 +137,7 @@ export async function captureSnapshot(
   const viewsUnavailable = views === null
   const now = new Date().toISOString()
 
-  await supabase
+  const { error: snapshotError } = await supabase
     .from('telegram_post_snapshots')
     .update({
       status: 'captured',
@@ -144,6 +150,10 @@ export async function captureSnapshot(
     .eq('checkpoint', checkpoint)
     .eq('status', 'pending')
 
+  if (snapshotError) {
+    throw new Error(snapshotError.message)
+  }
+
   const postUpdate: { last_analytics_update: string; current_views?: number } = {
     last_analytics_update: now,
   }
@@ -152,7 +162,10 @@ export async function captureSnapshot(
     postUpdate.current_views = views
   }
 
-  await supabase.from('telegram_posts').update(postUpdate).eq('id', postId)
+  const { error: postError } = await supabase.from('telegram_posts').update(postUpdate).eq('id', postId)
+  if (postError) {
+    throw new Error(postError.message)
+  }
 }
 
 export async function recalculateChannelMetrics(
@@ -245,6 +258,7 @@ async function loadDueSnapshotRows(
     .select('id, post_id, checkpoint, scheduled_at')
     .eq('status', 'pending')
     .lte('scheduled_at', now)
+    .order('scheduled_at', { ascending: true })
     .limit(batchSize)
 
   if (!due?.length) return []

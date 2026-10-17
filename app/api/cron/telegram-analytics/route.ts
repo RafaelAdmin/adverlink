@@ -3,9 +3,9 @@ import { validateCronRequest } from '@/lib/cron-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { processDueSnapshots, recalculateChannelMetrics, refreshChannelSubscribers, refreshVerifiedChannelSubscribersByUsername, type ProcessDueSnapshotsResult } from '@/lib/telegram-analytics-sync'
 
-const BATCH_SIZE = 30
-const CHANNEL_BATCH = 20
-const BASIC_CHANNEL_BATCH = 20
+const BATCH_SIZE = 100
+const CHANNEL_BATCH_SIZE = 50
+const BASIC_CHANNEL_BATCH_SIZE = 50
 
 export async function GET(request: Request) {
   const authResult = validateCronRequest(
@@ -42,7 +42,8 @@ export async function GET(request: Request) {
       .select('id, telegram_chat_id')
       .in('analytics_status', ['connected', 'collecting', 'active'])
       .not('telegram_chat_id', 'is', null)
-      .limit(CHANNEL_BATCH)
+      .order('analytics_last_sync_at', { ascending: true, nullsFirst: true })
+      .limit(CHANNEL_BATCH_SIZE)
 
     for (const channel of channels || []) {
       try {
@@ -62,7 +63,8 @@ export async function GET(request: Request) {
       .eq('verification_status', 'verified')
       .or('platform.eq.telegram,platform.is.null')
       .or('analytics_status.is.null,analytics_status.eq.disconnected,analytics_status.eq.error')
-      .limit(BASIC_CHANNEL_BATCH)
+      .order('analytics_last_sync_at', { ascending: true, nullsFirst: true })
+      .limit(BASIC_CHANNEL_BATCH_SIZE)
 
     for (const channel of verifiedBasic || []) {
       try {
