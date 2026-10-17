@@ -2,14 +2,16 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import {
   AdvertiserDealActions,
   CreatorDealActions,
   DealTimeline,
 } from '../../components/DealManagement'
-import { formatAmdWithUsd } from '@/lib/currency'
+import { formatMarketplaceOrderTotal } from '@/lib/ad-request-order'
+import MarketplaceOrderDetails from '@/app/dashboard/components/deal/MarketplaceOrderDetails'
+import StatusToast from '@/app/dashboard/components/marketplace/StatusToast'
 import { glassDealCard, normalizeDealStatus } from '@/lib/deals'
 import FinalTermsSection from '@/app/dashboard/components/deal/FinalTermsSection'
 import DealContentSection from '@/app/dashboard/components/deal/DealContentSection'
@@ -32,6 +34,8 @@ import {
 export default function DealDetailPage() {
   const params = useParams()
   const dealId = params.id as string
+  const searchParams = useSearchParams()
+  const createdToast = searchParams.get('created') === '1'
   const router = useRouter()
   const supabase = createClient()
 
@@ -180,12 +184,16 @@ export default function DealDetailPage() {
         <h1 className="text-2xl font-bold text-white">Заказ #{request.id.slice(0, 8)}</h1>
       </div>
 
+      {createdToast ? <StatusToast message="Запрос отправлен" /> : null}
+
       <DealNextAction
         request={request}
         placements={placements}
         material={material}
         role={role}
       />
+
+      <MarketplaceOrderDetails request={request} />
 
       <div style={{ ...glassDealCard, padding: '24px', marginBottom: '16px' }}>
         <h2 className="text-white font-semibold mb-4">Информация о заказе</h2>
@@ -210,7 +218,7 @@ export default function DealDetailPage() {
           </div>
           <div>
             <div className="text-white/50">Бюджет</div>
-            <div className="text-price-accent">{formatAmdWithUsd(request.budget)}</div>
+            <div className="text-price-accent">{formatMarketplaceOrderTotal(request)}</div>
           </div>
           <div>
             <div className="text-white/50">Постов</div>

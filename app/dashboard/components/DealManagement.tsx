@@ -13,6 +13,7 @@ import {
   normalizeDealStatus,
 } from '@/lib/deals'
 import { formatAmdWithUsd } from '@/lib/currency'
+import { formatMarketplaceOrderTotal } from '@/lib/ad-request-order'
 import DealChat from './DealChat'
 import BetaPaymentNoticeModal from './BetaPaymentNoticeModal'
 import { AutoCompleteCountdown, PaymentReservedBadge, RefundSummary, SplitPaymentSummary } from './DealExtras'
@@ -333,7 +334,7 @@ export function CreatorDealActions({
           </div>
           <div>
             <div className="text-white/50 mb-1">Бюджет</div>
-            <p className="text-price-accent">{formatAmdWithUsd(request.budget)}</p>
+            <p className="text-price-accent">{formatMarketplaceOrderTotal(request)}</p>
           </div>
           {channel && (
             <div>
@@ -766,7 +767,7 @@ export function AdvertiserDealActions({
           </div>
           <div>
             <div className="text-white/50 mb-1">Бюджет</div>
-            <p className="text-price-accent">{formatAmdWithUsd(request.budget)}</p>
+            <p className="text-price-accent">{formatMarketplaceOrderTotal(request)}</p>
           </div>
         </div>
       )}
@@ -1080,7 +1081,7 @@ export function CreatorDealCard({
             <DealStatusPill status={request.status} />
           </div>
           <div className="flex flex-wrap items-center gap-3 mt-1 text-sm">
-            <span className="text-price-accent">{formatAmdWithUsd(request.budget)}</span>
+            <span className="text-price-accent">{formatMarketplaceOrderTotal(request)}</span>
             <span className="text-white/40">{new Date(request.created_at).toLocaleDateString('ru-RU')}</span>
           </div>
         </div>
@@ -1158,7 +1159,7 @@ export function AdvertiserDealCard({
             <DealStatusPill status={request.status} />
           </div>
           <div className="flex flex-wrap items-center gap-3 mt-1 text-sm">
-            <span className="text-price-accent">{formatAmdWithUsd(request.budget)}</span>
+            <span className="text-price-accent">{formatMarketplaceOrderTotal(request)}</span>
             <span className="text-white/40">{new Date(request.created_at).toLocaleDateString('ru-RU')}</span>
           </div>
         </div>

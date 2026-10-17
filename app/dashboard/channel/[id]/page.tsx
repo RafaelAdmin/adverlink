@@ -12,7 +12,8 @@ import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
 import VerifiedBadge from '@/app/dashboard/components/VerifiedBadge'
 import TelegramChannelAnalyticsSection from '@/app/dashboard/components/TelegramChannelAnalyticsSection'
 import { formatEngagementRate } from '@/lib/channel-metrics'
-import { formatPriceListLine, type ChannelPriceRow } from '@/lib/channel-prices'
+import { isPriceListCurrency, type ChannelPriceRow } from '@/lib/channel-prices'
+import { formatPrice } from '@/lib/currency'
 import Surface from '@/components/ui/Surface'
 import MetricStrip from '@/components/ui/MetricStrip'
 
@@ -225,18 +226,43 @@ export default function ChannelProfilePage() {
         </Surface>
       )}
 
+      {channel.ad_price ? (
+        <Surface padding="sm" style={{ marginBottom: '12px' }}>
+          <span className="ui-meta">Цена размещения: </span>
+          <span className="ui-body">
+            от {formatPrice(Number(channel.ad_price), isPriceListCurrency(channel.ad_price_currency) ? channel.ad_price_currency : 'USD')}
+          </span>
+        </Surface>
+      ) : null}
+
+      {isTelegram && priceItems.length === 0 && (
+        <Surface padding="md" style={{ marginBottom: '12px' }}>
+          <h2 className="ui-card-title mb-2">Прайс-лист</h2>
+          <p className="ui-body">Владелец пока не добавил прайс-лист</p>
+          <p className="ui-meta" style={{ marginTop: '6px' }}>
+            Канал доступен для заказа. Цена будет согласована с владельцем.
+          </p>
+        </Surface>
+      )}
+
       {priceItems.length > 0 && (
         <Surface padding="md" style={{ marginBottom: '12px' }}>
           <h2 className="ui-card-title mb-3">Прайс-лист</h2>
-          <div className="flex flex-col gap-2">
-            {priceItems.map((item) => (
-              <div key={item.id} className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="ui-body">{formatPriceListLine(item)}</div>
-                  {item.description && <div className="ui-meta">{item.description}</div>}
+          <div className="flex flex-col gap-3">
+            {priceItems.map((item) => {
+              const currency = isPriceListCurrency(item.currency) ? item.currency : 'USD'
+              return (
+                <div key={item.id} className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="ui-body">{item.type}</div>
+                    {item.description && <div className="ui-meta">{item.description}</div>}
+                  </div>
+                  <div className="ui-body" style={{ whiteSpace: 'nowrap' }}>
+                    {formatPrice(Number(item.price), currency)}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </Surface>
       )}

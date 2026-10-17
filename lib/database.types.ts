@@ -137,6 +137,39 @@ export type AdRequest = {
   payment_provider: string | null
   payment_environment: string | null
   payment_reference: string | null
+  pricing_mode: 'price_list' | 'custom' | null
+}
+
+export type AdRequestPriceSnapshot = {
+  id: string
+  ad_request_id: string
+  channel_price_id: string | null
+  type: string
+  description: string | null
+  unit_price: number
+  currency: string
+  quantity: number
+  subtotal: number
+  sort_order: number
+  created_at: string
+}
+
+export type AdRequestPreferredDate = {
+  id: string
+  ad_request_id: string
+  preferred_on: string
+  created_at: string
+}
+
+export type AdRequestFile = {
+  id: string
+  ad_request_id: string
+  uploaded_by: string
+  original_name: string
+  mime_type: string
+  size_bytes: number
+  storage_path: string
+  created_at: string
 }
 
 export type DealPlacement = {

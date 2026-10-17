@@ -76,6 +76,12 @@ Production notes:
 
 - [ ] Apply `supabase/channel-prices.sql` in Supabase SQL Editor. This extends the existing `channel_prices` table (`currency`, `sort_order`, RLS) and adds `replace_channel_prices` for an atomic save. Do not create a second prices table.
 
+## Marketplace ad request from a channel card
+
+- [ ] Apply `supabase/ad-request-order.sql` in Supabase SQL Editor after `channel-prices.sql` and `security-fixes.sql` (needs `is_deal_participant`).
+- This adds snapshot tables, preferred dates, private file metadata, RPCs `create_marketplace_ad_request` / `prepare_ad_request_file`, and private Storage bucket `ad-request-files`.
+- Create/confirm Storage bucket `ad-request-files` is **private** (not public). Policies are in the same SQL file.
+
 ## Telegram analytics bot
 
 - [ ] Apply `supabase/telegram-analytics.sql` in Supabase SQL Editor
