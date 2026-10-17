@@ -114,7 +114,7 @@ export default function DealDetailPage() {
         .single()
 
       if (error || !deal) {
-        router.push('/dashboard')
+        router.push('/dashboard/orders')
         return
       }
 
@@ -126,9 +126,14 @@ export default function DealDetailPage() {
 
       const isCreator = ch?.owner_id === user.id
       const isAdvertiser = deal.advertiser_id === user.id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single()
 
-      if (!isCreator && !isAdvertiser) {
-        router.push('/dashboard')
+      if (!isCreator && !isAdvertiser && !profile?.is_admin) {
+        router.push('/dashboard/orders')
         return
       }
 
@@ -136,7 +141,9 @@ export default function DealDetailPage() {
       setChannel(ch)
       const userRole = isCreator ? 'creator' : 'advertiser'
       setRole(userRole)
-      await markDealViewed(supabase, dealId, userRole)
+      if (isCreator || isAdvertiser) {
+        await markDealViewed(supabase, dealId, userRole)
+      }
 
       const [{ data: placementRows }, { data: materialRow }] = await Promise.all([
         supabase
@@ -174,17 +181,17 @@ export default function DealDetailPage() {
   return (
     <div>
       <Link
-        href="/dashboard"
+        href="/dashboard/orders"
         className="text-white/50 hover:text-white transition text-sm mb-6 inline-flex items-center gap-2"
       >
-        ← Назад
+        ← Назад к заказам
       </Link>
 
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-white">Заказ #{request.id.slice(0, 8)}</h1>
       </div>
 
-      {createdToast ? <StatusToast message="Запрос отправлен" /> : null}
+      {createdToast ? <StatusToast message="Заказ отправлен" /> : null}
 
       <DealNextAction
         request={request}

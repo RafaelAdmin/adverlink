@@ -1193,7 +1193,7 @@ export function AdvertiserDealCard({
 export function DealTimeline({ request }: { request: any }) {
   const status = normalizeDealStatus(request.status)
   const events: { label: string; date?: string; color: string; show: boolean }[] = [
-    { label: 'Запрос отправлен', date: request.created_at, color: '#fbbf24', show: true },
+    { label: 'Заказ отправлен', date: request.created_at, color: '#fbbf24', show: true },
     { label: 'Заказ принят', date: request.accepted_at, color: '#4ade80', show: !!request.accepted_at },
     {
       label: request.payment_mode === 'simulated' ? 'Тестовая оплата подтверждена' : 'Оплата подтверждена',

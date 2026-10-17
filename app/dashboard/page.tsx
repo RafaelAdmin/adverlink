@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useDashboard } from './layout'
-import { CreatorDealCard, AdvertiserDealCard } from './components/DealManagement'
 import { DashboardLimitCard } from './components/LimitCounter'
 import { getMonthStart, isProPlan } from '@/lib/subscriptions'
 import PageHeader from '@/components/ui/PageHeader'
@@ -28,19 +27,14 @@ function CreatorDashboard() {
   const router = useRouter()
   const [deleteSuccess, setDeleteSuccess] = useState(false)
   const [channels, setChannels] = useState<any[]>([])
-  const [adRequests, setAdRequests] = useState<any[]>([])
   const [metrics, setMetrics] = useState({ totalSubscribers: 0, adPosts: 0 })
   const [loading, setLoading] = useState(true)
-  const [userId, setUserId] = useState('')
   const [userIsPro, setUserIsPro] = useState(false)
   const supabase = createClient()
-
-  const channelMap = Object.fromEntries(channels.map((c) => [c.id, c]))
 
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    setUserId(user.id)
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -61,14 +55,13 @@ function CreatorDashboard() {
 
     let requests: any[] = []
     if (channelIds.length > 0) {
-      const { data: reqs, error } = await supabase
+      const { data: reqs } = await supabase
         .from('ad_requests')
         .select('*')
         .in('channel_id', channelIds)
         .order('created_at', { ascending: false })
       requests = reqs || []
     }
-    setAdRequests(requests)
 
     const completed = requests.filter((r) => r.status === 'completed')
 
@@ -91,13 +84,6 @@ function CreatorDashboard() {
       return () => window.clearTimeout(timer)
     }
   }, [searchParams, router])
-
-  const handleDealUpdate = (id: string, patch: Record<string, unknown>) => {
-    setAdRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
-    if (patch.status === 'completed') {
-      setMetrics((m) => ({ ...m, adPosts: m.adPosts + 1 }))
-    }
-  }
 
   const metricCards = [
     { label: 'Всего каналов', value: channels.length.toLocaleString() },
@@ -297,27 +283,6 @@ function CreatorDashboard() {
         </div>
       )}
 
-      <div className="mt-10">
-        <h2 className="text-xl font-bold text-white mb-4">Управление заказами</h2>
-        {adRequests.length === 0 ? (
-          <div className="text-center ui-meta" style={surfaceStyle('16px')}>
-            Пока нет заказов
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {adRequests.map((request) => (
-              <CreatorDealCard
-                key={request.id}
-                request={request}
-                channelMap={channelMap}
-                userId={userId}
-                onUpdate={handleDealUpdate}
-                linkToDeal
-              />
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   )
 }
@@ -326,9 +291,6 @@ function AdvertiserDashboard() {
   const { isPro } = useDashboard()
   const router = useRouter()
   const [campaigns, setCampaigns] = useState<any[]>([])
-  const [adOrders, setAdOrders] = useState<any[]>([])
-  const [orderChannelMap, setOrderChannelMap] = useState<Record<string, any>>({})
-  const [userId, setUserId] = useState('')
   const [responseCounts, setResponseCounts] = useState<Record<string, number>>({})
   const [metrics, setMetrics] = useState({ activeCampaigns: 0, completedDeals: 0, spent: 0 })
   const [loading, setLoading] = useState(true)
@@ -340,7 +302,6 @@ function AdvertiserDashboard() {
   const loadCampaigns = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    setUserId(user.id)
 
     const monthStart = getMonthStart().toISOString()
     const { data: profile } = await supabase
@@ -373,17 +334,6 @@ function AdvertiserDashboard() {
       .order('created_at', { ascending: false })
 
     const orderList = orders || []
-    setAdOrders(orderList)
-
-    const channelIds = [...new Set(orderList.map((o) => o.channel_id).filter(Boolean))]
-    if (channelIds.length > 0) {
-      const { data: chData } = await supabase.from('channels').select('*').in('id', channelIds)
-      const map: Record<string, any> = {}
-      ;(chData || []).forEach((c) => {
-        map[c.id] = c
-      })
-      setOrderChannelMap(map)
-    }
 
     const { data: completedRequests } = await supabase
       .from('ad_requests')
@@ -442,13 +392,6 @@ function AdvertiserDashboard() {
     }
   }
 
-  const handleOrderUpdate = (id: string, patch: Record<string, unknown>) => {
-    setAdOrders((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
-    if (patch.status === 'completed') {
-      setMetrics((m) => ({ ...m, completedDeals: m.completedDeals + 1 }))
-    }
-  }
-
   const getCampaignStatus = (status: string) => {
     if (status === 'active' || status === 'collecting') {
       return { label: 'Сбор заявок', className: 'bg-green-500/20 text-green-400' }
@@ -495,28 +438,6 @@ function AdvertiserDashboard() {
           + Создать кампанию
         </button>
       </Surface>
-
-      <div className="mb-6">
-        <h2 className="ui-section-title mb-3">Мои заказы</h2>
-        {adOrders.length === 0 ? (
-          <div className="text-center ui-meta" style={surfaceStyle('16px')}>
-            Заказов пока нет. Отправьте запрос на рекламу в маркетплейсе.
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {adOrders.map((order) => (
-              <AdvertiserDealCard
-                key={order.id}
-                request={order}
-                channelMap={orderChannelMap}
-                userId={userId}
-                onUpdate={handleOrderUpdate}
-                linkToDeal
-              />
-            ))}
-          </div>
-        )}
-      </div>
 
       <div>
         <h2 className="ui-section-title mb-3">История кампаний</h2>

@@ -1,4 +1,5 @@
 import type { createClient } from '@/lib/supabase'
+import { hasAdvertiserOrderNotice, hasCreatorOrderNotice } from '@/lib/my-orders'
 
 type SupabaseClient = ReturnType<typeof createClient>
 
@@ -8,12 +9,6 @@ export function notifyNotificationsChanged() {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event('adverlink-notifications-changed'))
   }
-}
-
-function isUnviewed(viewedAt: string | null | undefined, activityAt: string | null | undefined) {
-  if (!viewedAt) return true
-  const activity = activityAt || EPOCH
-  return activity > viewedAt
 }
 
 async function getUserDealIds(supabase: SupabaseClient, userId: string) {
@@ -75,9 +70,7 @@ export async function fetchNotificationFlags(supabase: SupabaseClient, userId: s
       .in('channel_id', channelIds)
       .in('status', ['new', 'payment_pending'])
 
-    hasCreatorRequests = (creatorReqs || []).some((r) =>
-      isUnviewed(r.creator_viewed_at, r.updated_at || r.created_at),
-    )
+    hasCreatorRequests = (creatorReqs || []).some((r) => hasCreatorOrderNotice(r))
   }
 
   const { data: advReqs } = await supabase
@@ -85,12 +78,7 @@ export async function fetchNotificationFlags(supabase: SupabaseClient, userId: s
     .select('status, advertiser_viewed_at, updated_at, created_at, campaign_id')
     .eq('advertiser_id', userId)
 
-  hasAdvertiserRequests = (advReqs || []).some((r) => {
-    const needsReview = r.status === 'submitted'
-    const newApplication = r.status === 'new' && r.campaign_id
-    if (!needsReview && !newApplication) return false
-    return isUnviewed(r.advertiser_viewed_at, r.updated_at || r.created_at)
-  })
+  hasAdvertiserRequests = (advReqs || []).some((r) => hasAdvertiserOrderNotice(r))
 
   return { hasUnreadMessages, hasCreatorRequests, hasAdvertiserRequests }
 }

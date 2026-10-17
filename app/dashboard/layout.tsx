@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { applySpaceAppearance } from '@/lib/theme'
 import { fetchNotificationFlags } from '@/lib/notifications'
+import { getDashboardNavItems, isDashboardNavActive } from '@/lib/dashboard-nav'
 import ProfileCard from './components/ProfileCard'
 import BreathingBackground from './components/BreathingBackground'
 import UserAvatar from './components/UserAvatar'
@@ -134,6 +135,7 @@ function GlobalSearch() {
 
   const pages = [
     { label: 'Мои каналы', href: '/dashboard', icon: '📺', keywords: 'каналы мои добавить канал' },
+    { label: 'Мои заказы', href: '/dashboard/orders', icon: '📋', keywords: 'заказы мои сделка заказ' },
     { label: 'Маркетплейс', href: '/dashboard/marketplace', icon: '🛒', keywords: 'маркетплейс каталог реклама поиск' },
     { label: 'Статистика', href: '/dashboard/statistics', icon: '📊', keywords: 'статистика аналитика доход просмотры' },
     { label: 'Отзывы', href: '/dashboard/reviews', icon: '⭐', keywords: 'отзывы рейтинг оценка' },
@@ -679,7 +681,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     )
   }
 
-  const isActive = (path: string) => pathname === path
+  const navItems = getDashboardNavItems(role)
+  const ordersNotify =
+    (role === 'creator' ? hasCreatorRequests : hasAdvertiserRequests) || hasUnreadMessages
 
   return (
     <DashboardContext.Provider value={{ role, toggleRole, user, search, avatarUrl, avatarFrameColor, isPro, refreshPlan }}>
@@ -732,27 +736,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '0 4px 6px' }} />
 
-          {role === 'creator' ? (
-            <>
-              <SidebarItem icon="ti-brand-telegram" label="Мои каналы" href="/dashboard" active={isActive('/dashboard')} notifyDot={hasCreatorRequests || hasUnreadMessages} onNavigate={closeSidebar} />
-              <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} onNavigate={closeSidebar} />
-              <SidebarItem icon="ti-chart-line" label="Статистика" href="/dashboard/statistics" active={isActive('/dashboard/statistics')} onNavigate={closeSidebar} />
-              <SidebarItem icon="ti-star" label="Отзывы" href="/dashboard/reviews" active={isActive('/dashboard/reviews')} onNavigate={closeSidebar} />
-              <SidebarItem icon="ti-users" label="Друзья" href="/dashboard/friends" active={isActive('/dashboard/friends')} onNavigate={closeSidebar} />
-              <SidebarItem icon="ti-diamond" label="Подписки" href="/dashboard/subscriptions" active={isActive('/dashboard/subscriptions')} onNavigate={closeSidebar} />
-              <SidebarItem icon="ti-settings" label="Настройки" href="/dashboard/settings" active={isActive('/dashboard/settings')} onNavigate={closeSidebar} />
-            </>
-          ) : (
-            <>
-              <SidebarItem icon="ti-layout-dashboard" label="Мои кампании" href="/dashboard" active={isActive('/dashboard')} notifyDot={hasAdvertiserRequests || hasUnreadMessages} onNavigate={closeSidebar} />
-              <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} onNavigate={closeSidebar} />
-              <SidebarItem icon="ti-chart-line" label="Статистика" href="/dashboard/statistics" active={isActive('/dashboard/statistics')} onNavigate={closeSidebar} />
-              <SidebarItem icon="ti-star" label="Отзывы" href="/dashboard/reviews" active={isActive('/dashboard/reviews')} onNavigate={closeSidebar} />
-              <SidebarItem icon="ti-users" label="Друзья" href="/dashboard/friends" active={isActive('/dashboard/friends')} onNavigate={closeSidebar} />
-              <SidebarItem icon="ti-diamond" label="Подписки" href="/dashboard/subscriptions" active={isActive('/dashboard/subscriptions')} onNavigate={closeSidebar} />
-              <SidebarItem icon="ti-settings" label="Настройки" href="/dashboard/settings" active={isActive('/dashboard/settings')} onNavigate={closeSidebar} />
-            </>
-          )}
+          {navItems.map((item) => (
+            <SidebarItem
+              key={item.key}
+              icon={item.icon}
+              label={item.label}
+              href={item.href}
+              active={isDashboardNavActive(pathname, item.href)}
+              notifyDot={item.key === 'orders' ? ordersNotify : undefined}
+              onNavigate={closeSidebar}
+            />
+          ))}
 
           <div className="flex-1" />
 
