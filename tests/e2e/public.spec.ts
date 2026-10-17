@@ -23,6 +23,13 @@ test.describe('Public pages', () => {
     expect(page.url()).toContain('/auth/login')
   })
 
+  test('check-email page loads', async ({ page }) => {
+    const response = await page.goto('/auth/check-email')
+    expect(response?.status()).toBeLessThan(500)
+    await expect(page.getByRole('heading', { name: 'Проверьте почту' })).toBeVisible()
+    await expect(page.getByRole('button', { name: /Отправить письмо ещё раз/i })).toBeVisible()
+  })
+
   test('login page loads', async ({ page }) => {
     const response = await page.goto('/auth/login')
     expect(response?.status()).toBeLessThan(500)

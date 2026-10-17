@@ -36,10 +36,19 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
+  const redirectUnconfirmed = () => {
+    const check = new URL('/auth/check-email', request.url)
+    if (user?.email) check.searchParams.set('email', user.email)
+    return NextResponse.redirect(check)
+  }
+
   // Protect /dashboard routes
   if (pathname.startsWith('/dashboard')) {
     if (!user) {
       return NextResponse.redirect(new URL('/auth/login', request.url))
+    }
+    if (!user.email_confirmed_at) {
+      return redirectUnconfirmed()
     }
   }
 
@@ -58,6 +67,9 @@ export async function proxy(request: NextRequest) {
 
     if (!profile?.is_admin) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    if (!user.email_confirmed_at) {
+      return redirectUnconfirmed()
     }
   }
 

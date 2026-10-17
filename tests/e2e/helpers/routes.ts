@@ -3,6 +3,8 @@ export const PUBLIC_ROUTE_CHECKS = [
   { path: '/', name: 'landing' },
   { path: '/login', name: 'login alias', allowRedirect: true },
   { path: '/auth/login', name: 'auth login' },
+  { path: '/auth/check-email', name: 'check email' },
+  { path: '/auth/login/password', name: 'reset password' },
   { path: '/marketplace', name: 'marketplace' },
   { path: '/faq', name: 'faq' },
   { path: '/about', name: 'about' },

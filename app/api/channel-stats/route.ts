@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
+import { requireProReportAccess } from '@/lib/report-access'
 
 export async function GET(request: NextRequest) {
   const session = await requireAuth()
@@ -39,6 +40,9 @@ export async function GET(request: NextRequest) {
   if (!isOwner && !isAdmin) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
+
+  const access = await requireProReportAccess(session)
+  if (!access.ok) return access.response
 
   let fromDate = new Date()
   fromDate.setDate(fromDate.getDate() - 30)

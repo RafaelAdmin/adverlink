@@ -1,9 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { describeSignUpIdentityConflict, mapAuthErrorMessage } from '@/lib/auth-errors'
+import {
+  CHECK_EMAIL_PATH,
+  getClientAuthCallbackUrl,
+  isEmailConfirmed,
+  isStrongEnoughPassword,
+  isValidEmail,
+  MIN_PASSWORD_LENGTH,
+  PASSWORD_RESET_NEXT_PATH,
+} from '@/lib/auth-urls'
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -35,7 +45,7 @@ const socialButtonStyle: React.CSSProperties = {
   transition: 'all 0.2s',
 }
 
-export default function LoginPage() {
+function LoginPageInner() {
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -46,7 +56,15 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+
+  useEffect(() => {
+    const flagged = searchParams.get('error')
+    if (flagged === 'invalid_link') {
+      setError(mapAuthErrorMessage(searchParams.get('detail') || 'Ссылка недействительна или истекла'))
+    }
+  }, [searchParams])
 
   const switchMode = (next: 'login' | 'register' | 'forgot') => {
     setMode(next)
@@ -58,14 +76,14 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/dashboard` },
+      options: { redirectTo: getClientAuthCallbackUrl() },
     })
   }
 
   const handleAppleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'apple',
-      options: { redirectTo: `${window.location.origin}/dashboard` },
+      options: { redirectTo: getClientAuthCallbackUrl() },
     })
   }
 
@@ -74,35 +92,87 @@ export default function LoginPage() {
     setError('')
     setSuccess('')
 
+    const trimmedEmail = email.trim()
+
+    if (!isValidEmail(trimmedEmail)) {
+      setError('Укажите корректный email-адрес')
+      setLoading(false)
+      return
+    }
+
     if (mode === 'forgot') {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/login/password`,
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+        redirectTo: getClientAuthCallbackUrl(PASSWORD_RESET_NEXT_PATH),
       })
-      if (resetError) setError(resetError.message)
-      else setSuccess(`Ссылка отправлена на ${email}`)
+      if (resetError) setError(mapAuthErrorMessage(resetError.message))
+      else setSuccess(`Если аккаунт существует, ссылка отправлена на ${trimmedEmail}`)
       setLoading(false)
       return
     }
 
     if (mode === 'login') {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-      if (signInError) setError('Неверный email или пароль')
-      else router.push('/dashboard')
-    } else {
-      if (!agreedToTerms) {
-        setError('Нужно принять условия использования')
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: trimmedEmail,
+        password,
+      })
+      if (signInError) {
+        const mapped = mapAuthErrorMessage(signInError.message)
+        setError(mapped)
+        if (signInError.message.toLowerCase().includes('email not confirmed')) {
+          router.push(`${CHECK_EMAIL_PATH}?email=${encodeURIComponent(trimmedEmail)}`)
+        }
         setLoading(false)
         return
       }
-      const { error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: fullName } },
-      })
-      if (signUpError) setError(signUpError.message)
-      else setSuccess('Аккаунт создан! Проверьте email для подтверждения.')
+      if (data.user && !isEmailConfirmed(data.user)) {
+        router.push(`${CHECK_EMAIL_PATH}?email=${encodeURIComponent(trimmedEmail)}`)
+        setLoading(false)
+        return
+      }
+      router.push('/dashboard')
+      setLoading(false)
+      return
     }
 
+    if (!agreedToTerms) {
+      setError('Нужно принять условия использования')
+      setLoading(false)
+      return
+    }
+    if (!isStrongEnoughPassword(password)) {
+      setError(`Пароль должен содержать не менее ${MIN_PASSWORD_LENGTH} символов`)
+      setLoading(false)
+      return
+    }
+
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: trimmedEmail,
+      password,
+      options: {
+        emailRedirectTo: getClientAuthCallbackUrl(),
+        data: { full_name: fullName.trim() || undefined },
+      },
+    })
+
+    if (signUpError) {
+      setError(mapAuthErrorMessage(signUpError.message))
+      setLoading(false)
+      return
+    }
+
+    if (describeSignUpIdentityConflict(data.user?.identities?.length)) {
+      setError('Этот email уже зарегистрирован. Войдите или восстановите пароль.')
+      setLoading(false)
+      return
+    }
+
+    if (data.session && data.user && isEmailConfirmed(data.user)) {
+      router.push('/dashboard')
+      setLoading(false)
+      return
+    }
+
+    router.push(`${CHECK_EMAIL_PATH}?email=${encodeURIComponent(trimmedEmail)}`)
     setLoading(false)
   }
 
@@ -638,5 +708,13 @@ export default function LoginPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="text-white/50 p-8">Загрузка...</div>}>
+      <LoginPageInner />
+    </Suspense>
   )
 }

@@ -87,57 +87,6 @@ function SidebarItem({
   )
 }
 
-function LockedAnalyticsItem({ onNavigate }: { onNavigate: () => void }) {
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onNavigate}
-      onKeyDown={(e) => e.key === 'Enter' && onNavigate()}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        padding: '10px 16px',
-        borderRadius: '12px',
-        cursor: 'pointer',
-        opacity: 0.45,
-        border: '1px dashed rgba(234,179,8,0.25)',
-        background: 'rgba(234,179,8,0.04)',
-        transition: 'all 0.2s',
-        marginTop: '2px',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.opacity = '0.75'
-        e.currentTarget.style.background = 'rgba(234,179,8,0.08)'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.opacity = '0.45'
-        e.currentTarget.style.background = 'rgba(234,179,8,0.04)'
-      }}
-    >
-      <i className="ti ti-report-analytics ui-nav-item__icon" />
-      <span className="ui-meta" style={{ flex: 1, fontSize: '14px' }}>
-        Аналитика
-      </span>
-      <span
-        style={{
-          background: 'rgba(234,179,8,0.15)',
-          border: '1px solid rgba(234,179,8,0.35)',
-          color: '#fbbf24',
-          fontSize: '10px',
-          fontWeight: '700',
-          padding: '2px 7px',
-          borderRadius: '20px',
-          flexShrink: 0,
-        }}
-      >
-        PRO
-      </span>
-    </div>
-  )
-}
-
 function RoleToggle({ role, onToggle }: { role: Role; onToggle: () => void }) {
   return (
     <div className="ui-role-switch" data-testid="role-switch" data-active-role={role}>
@@ -643,6 +592,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         router.push('/auth/login')
         return
       }
+      if (!user.email_confirmed_at) {
+        const emailQuery = user.email ? `?email=${encodeURIComponent(user.email)}` : ''
+        router.push(`/auth/check-email${emailQuery}`)
+        return
+      }
       setUser(user)
 
       const { gradient } = applySpaceAppearance(role)
@@ -783,9 +737,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <SidebarItem icon="ti-brand-telegram" label="Мои каналы" href="/dashboard" active={isActive('/dashboard')} notifyDot={hasCreatorRequests || hasUnreadMessages} onNavigate={closeSidebar} />
               <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} onNavigate={closeSidebar} />
               <SidebarItem icon="ti-chart-line" label="Статистика" href="/dashboard/statistics" active={isActive('/dashboard/statistics')} onNavigate={closeSidebar} />
-              {isPro && (
-                <SidebarItem icon="ti-report-analytics" label="Аналитика" href="/dashboard/analytics" active={isActive('/dashboard/analytics')} onNavigate={closeSidebar} />
-              )}
               <SidebarItem icon="ti-star" label="Отзывы" href="/dashboard/reviews" active={isActive('/dashboard/reviews')} onNavigate={closeSidebar} />
               <SidebarItem icon="ti-users" label="Друзья" href="/dashboard/friends" active={isActive('/dashboard/friends')} onNavigate={closeSidebar} />
               <SidebarItem icon="ti-diamond" label="Подписки" href="/dashboard/subscriptions" active={isActive('/dashboard/subscriptions')} onNavigate={closeSidebar} />
@@ -796,9 +747,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <SidebarItem icon="ti-layout-dashboard" label="Мои кампании" href="/dashboard" active={isActive('/dashboard')} notifyDot={hasAdvertiserRequests || hasUnreadMessages} onNavigate={closeSidebar} />
               <SidebarItem icon="ti-shopping-bag" label="Маркетплейс" href="/dashboard/marketplace" active={isActive('/dashboard/marketplace')} onNavigate={closeSidebar} />
               <SidebarItem icon="ti-chart-line" label="Статистика" href="/dashboard/statistics" active={isActive('/dashboard/statistics')} onNavigate={closeSidebar} />
-              {isPro && (
-                <SidebarItem icon="ti-report-analytics" label="Аналитика" href="/dashboard/analytics" active={isActive('/dashboard/analytics')} onNavigate={closeSidebar} />
-              )}
               <SidebarItem icon="ti-star" label="Отзывы" href="/dashboard/reviews" active={isActive('/dashboard/reviews')} onNavigate={closeSidebar} />
               <SidebarItem icon="ti-users" label="Друзья" href="/dashboard/friends" active={isActive('/dashboard/friends')} onNavigate={closeSidebar} />
               <SidebarItem icon="ti-diamond" label="Подписки" href="/dashboard/subscriptions" active={isActive('/dashboard/subscriptions')} onNavigate={closeSidebar} />
@@ -807,15 +755,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
 
           <div className="flex-1" />
-
-          {!isPro && (
-            <LockedAnalyticsItem
-              onNavigate={() => {
-                closeSidebar()
-                router.push('/dashboard/subscriptions')
-              }}
-            />
-          )}
 
           <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '8px 4px' }} />
 

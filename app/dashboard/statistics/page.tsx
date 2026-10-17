@@ -7,6 +7,7 @@ import { formatAmdWithUsd } from '@/lib/currency'
 import { countsAsRealRevenue } from '@/lib/deal-payments'
 import PageHeader from '@/components/ui/PageHeader'
 import Surface from '@/components/ui/Surface'
+import DetailedReportSection from '../components/DetailedReportSection'
 
 function useAccentColor() {
   const [color, setColor] = useState('#9333ea')
@@ -511,6 +512,8 @@ export default function StatisticsPage() {
             ))}
           </div>
         )}
+
+        <DetailedReportAnchor />
       </div>
     )
   }
@@ -581,6 +584,8 @@ export default function StatisticsPage() {
             ))}
           </div>
         )}
+
+        <DetailedReportAnchor />
       </div>
     )
   }
@@ -589,5 +594,20 @@ export default function StatisticsPage() {
     <div>
       <PageHeader title="Статистика" description="Не удалось загрузить данные" />
     </div>
+  )
+}
+
+function DetailedReportAnchor() {
+  return (
+    <section
+      aria-label="Детальный отчёт"
+      style={{
+        marginTop: '48px',
+        paddingTop: '32px',
+        borderTop: '1px solid var(--border-subtle)',
+      }}
+    >
+      <DetailedReportSection />
+    </section>
   )
 }

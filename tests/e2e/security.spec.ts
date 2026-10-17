@@ -1,6 +1,15 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('API security smoke tests', () => {
+  test('POST /api/auth/resend-confirmation rejects invalid email', async ({ request }) => {
+    const response = await request.post('/api/auth/resend-confirmation', {
+      data: { email: 'not-an-email' },
+    })
+    expect(response.status()).toBe(400)
+    const body = await response.json()
+    expect(body.ok).toBe(false)
+  })
+
   test('POST /api/subscribe without auth returns 401', async ({ request }) => {
     const response = await request.post('/api/subscribe', {
       data: { plan: 'pro' },
@@ -21,6 +30,20 @@ test.describe('API security smoke tests', () => {
     const response = await request.post('/api/telegram/verify', {
       data: { channelId: '00000000-0000-0000-0000-000000000000', code: 'TEST' },
     })
+    expect(response.status()).toBe(401)
+    const body = await response.json()
+    expect(body.error).toBe('Unauthorized')
+  })
+
+  test('GET /api/channel-stats without auth returns 401', async ({ request }) => {
+    const response = await request.get('/api/channel-stats?channelId=00000000-0000-0000-0000-000000000000')
+    expect(response.status()).toBe(401)
+    const body = await response.json()
+    expect(body.error).toBe('Unauthorized')
+  })
+
+  test('GET /api/advertiser-report without auth returns 401', async ({ request }) => {
+    const response = await request.get('/api/advertiser-report')
     expect(response.status()).toBe(401)
     const body = await response.json()
     expect(body.error).toBe('Unauthorized')

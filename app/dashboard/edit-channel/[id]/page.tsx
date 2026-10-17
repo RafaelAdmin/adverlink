@@ -6,7 +6,6 @@ import { createClient } from '@/lib/supabase'
 import { useRouter, useParams } from 'next/navigation'
 import { getChannelHandle } from '@/lib/channel-helpers'
 import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
-import ProReportGenerator from '@/app/dashboard/components/ProReportGenerator'
 import TelegramAnalyticsConnect from '@/app/dashboard/components/TelegramAnalyticsConnect'
 import CurrencySelector from '@/app/dashboard/components/CurrencySelector'
 import { CurrencyCode } from '@/lib/currency'
@@ -23,7 +22,6 @@ export default function EditChannelPage() {
   const [success, setSuccess] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [isPro, setIsPro] = useState(false)
   const router = useRouter()
   const params = useParams()
   const supabase = createClient()
@@ -32,13 +30,6 @@ export default function EditChannelPage() {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/auth/login'); return }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('subscription_plan, is_admin')
-        .eq('id', user.id)
-        .single()
-      setIsPro(profile?.subscription_plan === 'pro' || profile?.is_admin === true)
 
       const { data } = await supabase
         .from('channels')
@@ -234,9 +225,13 @@ export default function EditChannelPage() {
         </Button>
       </Surface>
 
-      <div style={{ marginTop: '24px' }}>
-        <ProReportGenerator channel={channel} isPro={isPro} />
-      </div>
+      <p className="ui-meta" style={{ marginTop: '24px' }}>
+        Детальный отчёт по каналу доступен в{' '}
+        <Link href="/dashboard/statistics" className="text-price-accent">
+          Статистике
+        </Link>
+        .
+      </p>
 
       <TelegramAnalyticsConnect
         channelId={channel.id}
