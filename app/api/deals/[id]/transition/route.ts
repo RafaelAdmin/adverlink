@@ -16,10 +16,6 @@ export async function POST(
     const { id: dealId } = await context.params
     const { session, role } = await withDealContext(dealId)
 
-    if (session.isAdmin) {
-      throw new DealActionError('Admin must use dedicated endpoints', 403)
-    }
-
     if (!role) {
       throw new DealActionError('Forbidden', 403)
     }
