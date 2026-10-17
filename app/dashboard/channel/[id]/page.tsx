@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { getExchangeRates } from '@/lib/currency'
 import { usePreferredCurrency } from '@/lib/usePreferredCurrency'
-import { getChannelHandle, getChannelLink, getPlatformLabel } from '@/lib/channel-helpers'
+import { getChannelHandle, getChannelLink, getPlatformLabel, isChannelVerified } from '@/lib/channel-helpers'
 import CurrencySelector from '@/app/dashboard/components/CurrencySelector'
 import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
 import VerifiedBadge from '@/app/dashboard/components/VerifiedBadge'
@@ -86,7 +86,7 @@ export default function ChannelProfilePage() {
     )
   }
 
-  const isVerified = channel.is_verified || channel.verification_status === 'verified'
+  const isVerified = isChannelVerified(channel)
   const isTelegram = channel.platform === 'telegram' || !channel.platform
   const engagementLabel = formatEngagementRate(channel.subscriber_count, channel.avg_views)
 

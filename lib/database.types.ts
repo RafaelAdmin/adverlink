@@ -41,6 +41,8 @@ export type Channel = {
   is_verified: boolean
   is_active: boolean
   verification_status: string
+  verification_expires_at: string | null
+  external_account_id: string | null
   platform: string
   platform_url: string | null
   telegram_chat_id: number | null

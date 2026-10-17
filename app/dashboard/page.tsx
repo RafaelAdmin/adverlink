@@ -11,6 +11,7 @@ import { getMonthStart, isProPlan } from '@/lib/subscriptions'
 import PageHeader from '@/components/ui/PageHeader'
 import MetricStrip from '@/components/ui/MetricStrip'
 import Surface, { surfaceStyle } from '@/components/ui/Surface'
+import { isChannelVerified } from '@/lib/channel-helpers'
 
 export default function DashboardPage() {
   const { role } = useDashboard()
@@ -246,7 +247,7 @@ function CreatorDashboard() {
                 </div>
 
                 <div className="channel-stat-col" style={{ minWidth: '100px', display: 'flex', justifyContent: 'center' }}>
-                  {channel.is_verified ? (
+                  {isChannelVerified(channel) ? (
                     <div
                       style={{
                         display: 'flex',

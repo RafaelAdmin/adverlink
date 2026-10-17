@@ -42,6 +42,36 @@ TELEGRAM_BOT_TOKEN=
 2. Add environment variables
 3. Railway auto-detects Next.js
 
+## TikTok and Instagram OAuth verification
+
+Apply `supabase/social-oauth-verification.sql` in the Supabase SQL Editor.
+
+Add these Vercel environment variables (values only, no quotes):
+
+```
+TIKTOK_CLIENT_KEY=
+TIKTOK_CLIENT_SECRET=
+TIKTOK_REDIRECT_URI=https://www.adverlink.am/api/social-verification/tiktok/callback
+META_APP_ID=
+META_APP_SECRET=
+INSTAGRAM_REDIRECT_URI=https://www.adverlink.am/api/social-verification/instagram/callback
+```
+
+Redirect URIs to register:
+
+- TikTok Developers (Login Kit for Web): `https://www.adverlink.am/api/social-verification/tiktok/callback`
+- Meta for Developers (Instagram API with Instagram Login): `https://www.adverlink.am/api/social-verification/instagram/callback`
+
+Production notes:
+
+- TikTok and Meta require app review/approval before unverified users can complete Login Kit / Instagram Login in production.
+- Meta also requires a Privacy Policy URL and a Data Deletion URL. Use `https://www.adverlink.am/legal/privacy` and `https://www.adverlink.am/legal/data-deletion`.
+- Until review is approved, test only with TikTok sandbox / target users and Meta test users / roles on the app.
+
+- [ ] `supabase/social-oauth-verification.sql` executed
+- [ ] TikTok and Meta OAuth env vars set in Vercel
+- [ ] Redirect URIs registered exactly (https, www, no trailing slash mismatch)
+
 ## Telegram analytics bot
 
 - [ ] Apply `supabase/telegram-analytics.sql` in Supabase SQL Editor

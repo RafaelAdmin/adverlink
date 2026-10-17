@@ -35,6 +35,24 @@ test.describe('API security smoke tests', () => {
     expect(body.error).toBe('Unauthorized')
   })
 
+  test('GET /api/social-verification/tiktok/start without auth redirects to login', async ({ request }) => {
+    const response = await request.get('/api/social-verification/tiktok/start?channelId=00000000-0000-0000-0000-000000000000', {
+      maxRedirects: 0,
+    })
+    expect([302, 307, 308]).toContain(response.status())
+    const location = response.headers()['location'] || ''
+    expect(location).toMatch(/auth\/login/)
+  })
+
+  test('GET /api/social-verification/instagram/callback without session redirects to login', async ({ request }) => {
+    const response = await request.get('/api/social-verification/instagram/callback?code=test&state=test', {
+      maxRedirects: 0,
+    })
+    expect([302, 307, 308]).toContain(response.status())
+    const location = response.headers()['location'] || ''
+    expect(location).toMatch(/auth\/login/)
+  })
+
   test('GET /api/channel-stats without auth returns 401', async ({ request }) => {
     const response = await request.get('/api/channel-stats?channelId=00000000-0000-0000-0000-000000000000')
     expect(response.status()).toBe(401)

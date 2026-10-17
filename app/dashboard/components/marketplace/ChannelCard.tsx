@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import type { Channel } from '@/lib/database.types'
 import { CurrencyCode, formatConvertedPrice } from '@/lib/currency'
-import { getChannelHandle } from '@/lib/channel-helpers'
+import { getChannelHandle, isChannelVerified } from '@/lib/channel-helpers'
 import PlatformBadge from '../PlatformBadge'
 import VerifiedBadge from '../VerifiedBadge'
 import ChannelAvatar from './ChannelAvatar'
@@ -45,7 +45,7 @@ export default function ChannelCard({
         <div className="flex-1 min-w-0">
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             <span className="ui-card-title truncate">{channel.name}</span>
-            {(channel.is_verified || channel.verification_status === 'verified') && (
+            {isChannelVerified(channel) && (
               <VerifiedBadge gradId={`verifiedGrad-card-${channel.id}`} />
             )}
             {(channel.owner_profile?.subscription_plan === 'pro' || channel.owner_profile?.is_admin === true) && (

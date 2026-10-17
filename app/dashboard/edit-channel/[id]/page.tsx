@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { useRouter, useParams } from 'next/navigation'
-import { getChannelHandle } from '@/lib/channel-helpers'
+import { getChannelHandle, getSocialVerificationUiState, isChannelVerified } from '@/lib/channel-helpers'
 import PlatformBadge from '@/app/dashboard/components/PlatformBadge'
 import TelegramAnalyticsConnect from '@/app/dashboard/components/TelegramAnalyticsConnect'
+import SocialOauthVerification from '@/app/dashboard/components/SocialOauthVerification'
 import CurrencySelector from '@/app/dashboard/components/CurrencySelector'
 import { CurrencyCode } from '@/lib/currency'
 import PageHeader from '@/components/ui/PageHeader'
@@ -130,9 +131,13 @@ export default function EditChannelPage() {
             </div>
             <div className="ui-meta">{getChannelHandle(channel)}</div>
             <div className={`text-xs mt-1 ${
-              channel.verification_status === 'verified' ? 'text-green-400' : 'text-yellow-400'
+              isChannelVerified(channel) ? 'text-green-400' : 'text-yellow-400'
             }`}>
-              {channel.verification_status === 'verified' ? '✓ Верифицирован' : '⏳ На проверке'}
+              {getSocialVerificationUiState(channel) === 'verified'
+                ? '✓ Верифицирован'
+                : getSocialVerificationUiState(channel) === 'expired'
+                  ? 'Срок подтверждения истёк'
+                  : '⏳ На проверке'}
             </div>
           </div>
         </div>
@@ -225,6 +230,17 @@ export default function EditChannelPage() {
         </Button>
       </Surface>
 
+      {(channel.platform === 'instagram' || channel.platform === 'tiktok') && (
+        <div style={{ marginTop: '24px' }}>
+          <Suspense fallback={null}>
+            <SocialOauthVerification
+              channel={channel}
+              nextPath={`/dashboard/edit-channel/${channel.id}`}
+            />
+          </Suspense>
+        </div>
+      )}
+
       <p className="ui-meta" style={{ marginTop: '24px' }}>
         Детальный отчёт по каналу доступен в{' '}
         <Link href="/dashboard/statistics" className="text-price-accent">
@@ -236,7 +252,7 @@ export default function EditChannelPage() {
       <TelegramAnalyticsConnect
         channelId={channel.id}
         analyticsStatus={channel.analytics_status}
-        isVerified={channel.verification_status === 'verified'}
+        isVerified={isChannelVerified(channel)}
         platform={channel.platform}
         onConnected={() =>
           setChannel({ ...channel, analytics_status: 'connected' })

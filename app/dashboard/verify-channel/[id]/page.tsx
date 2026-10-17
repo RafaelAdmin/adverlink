@@ -1,14 +1,15 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { generateVerificationCode } from '@/lib/verification'
-import { getChannelHandle } from '@/lib/channel-helpers'
+import { getChannelHandle, getPlatformLabel } from '@/lib/channel-helpers'
 import Surface from '@/components/ui/Surface'
 import Button from '@/components/ui/Button'
 import AddChannelProgressStepper from '@/app/dashboard/components/AddChannelProgressStepper'
+import SocialOauthVerification from '@/app/dashboard/components/SocialOauthVerification'
 
 export default function VerifyChannelPage() {
   const params = useParams()
@@ -47,12 +48,15 @@ export default function VerifyChannelPage() {
         return
       }
 
-      if (data.verification_code) {
-        setVerificationCode(data.verification_code)
-      } else {
-        const code = generateVerificationCode()
-        setVerificationCode(code)
-        await supabase.from('channels').update({ verification_code: code }).eq('id', channelId)
+      const oauthPlatform = data.platform === 'instagram' || data.platform === 'tiktok'
+      if (!oauthPlatform) {
+        if (data.verification_code) {
+          setVerificationCode(data.verification_code)
+        } else {
+          const code = generateVerificationCode()
+          setVerificationCode(code)
+          await supabase.from('channels').update({ verification_code: code }).eq('id', channelId)
+        }
       }
 
       setChannel(data)
@@ -119,8 +123,9 @@ export default function VerifyChannelPage() {
 
   const isTelegram = channel.platform === 'telegram' || !channel.platform
   const isYoutube = channel.platform === 'youtube'
+  const isOauth = channel.platform === 'instagram' || channel.platform === 'tiktok'
   const channelHandle = getChannelHandle(channel)
-  const flowStep = verificationResult === 'success' ? 4 : 3
+  const flowStep = verificationResult === 'success' || (isOauth && channel.verification_status === 'verified') ? 4 : 3
 
   return (
     <div className="dashboard-form-inner">
@@ -134,14 +139,31 @@ export default function VerifyChannelPage() {
       <AddChannelProgressStepper currentStep={flowStep} className="mb-6" />
 
       <h1 className="ui-page-title mb-2">
-        {isYoutube ? 'Верификация YouTube канала' : 'Верификация канала'}
+        {isOauth
+          ? `Подтверждение ${getPlatformLabel(channel.platform)}`
+          : isYoutube
+            ? 'Верификация YouTube канала'
+            : 'Верификация канала'}
       </h1>
       <p className="ui-meta mb-8">
-        {isYoutube
-          ? `Подтвердите владение каналом ${channel.name}`
-          : `Подтвердите владение каналом ${channelHandle}`}
+        {isOauth
+          ? `Подтвердите контроль аккаунта ${channel.name || channelHandle}`
+          : isYoutube
+            ? `Подтвердите владение каналом ${channel.name}`
+            : `Подтвердите владение каналом ${channelHandle}`}
       </p>
 
+      {isOauth && (
+        <Suspense fallback={<div className="ui-meta">Загрузка...</div>}>
+          <SocialOauthVerification
+            channel={channel}
+            nextPath={`/dashboard/verify-channel/${channel.id}`}
+          />
+        </Suspense>
+      )}
+
+      {!isOauth && (
+      <>
       {step === 1 && isYoutube && (
         <Surface padding="lg" className="mb-4">
           <h2 className="ui-section-title mb-5">Шаг 1: Подтвердите свой YouTube канал</h2>
@@ -369,6 +391,8 @@ export default function VerifyChannelPage() {
             </div>
           )}
         </Surface>
+      )}
+      </>
       )}
     </div>
   )

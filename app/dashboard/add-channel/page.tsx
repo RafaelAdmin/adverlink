@@ -282,15 +282,16 @@ export default function AddChannelPage() {
 
           <button
             type="button"
-            disabled
-            className="ui-surface ui-surface--pad-md"
+            disabled={atChannelLimit}
+            onClick={() => !atChannelLimit && setSelectedPlatform('instagram')}
+            className="ui-surface ui-surface--hover ui-surface--pad-md"
             style={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               gap: '12px',
-              cursor: 'not-allowed',
-              opacity: 0.5,
+              cursor: atChannelLimit ? 'not-allowed' : 'pointer',
+              opacity: atChannelLimit ? 0.45 : 1,
               position: 'relative',
               border: 'none',
               textAlign: 'center',
@@ -317,25 +318,26 @@ export default function AddChannelPage() {
             </div>
             <div style={{
               position: 'absolute', top: '12px', right: '12px',
-              background: 'rgba(255,255,255,0.08)',
+              background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.3)',
               borderRadius: '20px', padding: '2px 8px',
-              color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: '600',
+              color: '#4ade80', fontSize: '10px', fontWeight: '600',
             }}>
-              Скоро
+              Доступно
             </div>
           </button>
 
           <button
             type="button"
-            disabled
-            className="ui-surface ui-surface--pad-md"
+            disabled={atChannelLimit}
+            onClick={() => !atChannelLimit && setSelectedPlatform('tiktok')}
+            className="ui-surface ui-surface--hover ui-surface--pad-md"
             style={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               gap: '12px',
-              cursor: 'not-allowed',
-              opacity: 0.5,
+              cursor: atChannelLimit ? 'not-allowed' : 'pointer',
+              opacity: atChannelLimit ? 0.45 : 1,
               position: 'relative',
               border: 'none',
               textAlign: 'center',
@@ -351,11 +353,11 @@ export default function AddChannelPage() {
             </div>
             <div style={{
               position: 'absolute', top: '12px', right: '12px',
-              background: 'rgba(255,255,255,0.08)',
+              background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.3)',
               borderRadius: '20px', padding: '2px 8px',
-              color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: '600',
+              color: '#4ade80', fontSize: '10px', fontWeight: '600',
             }}>
-              Скоро
+              Доступно
             </div>
           </button>
         </div>
@@ -364,6 +366,15 @@ export default function AddChannelPage() {
   }
 
   const isYouTube = selectedPlatform === 'youtube'
+  const isOauthPlatform = selectedPlatform === 'instagram' || selectedPlatform === 'tiktok'
+  const platformLabel =
+    selectedPlatform === 'telegram'
+      ? 'Telegram'
+      : selectedPlatform === 'youtube'
+        ? 'YouTube'
+        : selectedPlatform === 'instagram'
+          ? 'Instagram'
+          : 'TikTok'
 
   return (
     <div className="dashboard-form-inner">
@@ -381,9 +392,11 @@ export default function AddChannelPage() {
       <PageHeader
         title="Добавить канал"
         description={
-          isYouTube
-            ? 'Введи URL или @handle YouTube-канала — мы автоматически подтянем данные.'
-            : 'Введи username канала — мы автоматически подтянем данные из Telegram.'
+          isOauthPlatform
+            ? `Укажите @username ${platformLabel}. Контроль аккаунта подтверждается официальным входом, без пароля в AdverLink.`
+            : isYouTube
+              ? 'Введи URL или @handle YouTube-канала — мы автоматически подтянем данные.'
+              : 'Введи username канала — мы автоматически подтянем данные из Telegram.'
         }
         actions={
           <span style={{
@@ -395,7 +408,7 @@ export default function AddChannelPage() {
             padding: '3px 10px',
             borderRadius: 'var(--radius-md)',
           }}>
-            {selectedPlatform === 'telegram' ? '✈️ Telegram' : '▶️ YouTube'}
+            {platformLabel}
           </span>
         }
       />
@@ -404,7 +417,11 @@ export default function AddChannelPage() {
         <Surface padding="lg" className="flex flex-col gap-5">
         <label className="ui-field">
           <span className="ui-field__label">
-            {isYouTube ? 'YouTube канал URL или @handle' : 'Telegram username канала'}
+            {isOauthPlatform
+              ? `${platformLabel} @username`
+              : isYouTube
+                ? 'YouTube канал URL или @handle'
+                : 'Telegram username канала'}
           </span>
           <div className="flex gap-2">
             <input
@@ -414,16 +431,24 @@ export default function AddChannelPage() {
                 setTelegramUsername(e.target.value)
                 setFetchSuccess(false)
               }}
-              placeholder={isYouTube ? '@channelname или youtube.com/channel/...' : '@channelname'}
+              placeholder={
+                isOauthPlatform
+                  ? '@username'
+                  : isYouTube
+                    ? '@channelname или youtube.com/channel/...'
+                    : '@channelname'
+              }
               className="ui-input flex-1"
             />
-            <Button
-              type="button"
-              onClick={isYouTube ? fetchFromYouTube : fetchFromTelegram}
-              disabled={fetching || !telegramUsername}
-            >
-              {fetching ? 'Загрузка...' : '🔍 Найти'}
-            </Button>
+            {!isOauthPlatform && (
+              <Button
+                type="button"
+                onClick={isYouTube ? fetchFromYouTube : fetchFromTelegram}
+                disabled={fetching || !telegramUsername}
+              >
+                {fetching ? 'Загрузка...' : '🔍 Найти'}
+              </Button>
+            )}
           </div>
           {fetchSuccess && (
             <p className="text-green-400 text-xs">
@@ -516,7 +541,9 @@ export default function AddChannelPage() {
 
         <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-3">
           <p className="text-yellow-400 text-xs">
-            ⏳ После добавления канал будет на проверке. Зелёная галочка верификации появится после проверки администратором.
+            {isOauthPlatform
+              ? 'После добавления подтвердите контроль аккаунта официальным входом TikTok или Instagram. Пароль в AdverLink не нужен.'
+              : '⏳ После добавления канал будет на проверке. Зелёная галочка верификации появится после проверки администратором.'}
           </p>
         </div>
 

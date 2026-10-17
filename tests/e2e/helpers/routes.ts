@@ -12,6 +12,7 @@ export const PUBLIC_ROUTE_CHECKS = [
   { path: '/legal/privacy', name: 'privacy' },
   { path: '/legal/offer', name: 'offer' },
   { path: '/legal/refunds', name: 'refunds' },
+  { path: '/legal/data-deletion', name: 'data deletion' },
 ] as const
 
 /** Footer / nav links on the landing page worth checking. */

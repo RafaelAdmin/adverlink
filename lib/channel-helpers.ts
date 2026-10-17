@@ -25,6 +25,16 @@ export function getChannelLink(channel: any): string {
     return `https://youtube.com/@${username.replace('@', '')}`
   }
 
+  if (platform === 'instagram') {
+    if (username.startsWith('http')) return username
+    return `https://instagram.com/${username.replace('@', '')}`
+  }
+
+  if (platform === 'tiktok') {
+    if (username.startsWith('http')) return username
+    return `https://www.tiktok.com/@${username.replace('@', '')}`
+  }
+
   return `https://t.me/${username.replace('@', '')}`
 }
 
@@ -55,9 +65,37 @@ export function getPlatformLabel(platform: string): string {
   }
 }
 
-export function isChannelVerified(channel: {
-  is_verified?: boolean | null
-  verification_status?: string | null
-}): boolean {
+export function isChannelVerified(
+  channel: {
+    is_verified?: boolean | null
+    verification_status?: string | null
+    verification_expires_at?: string | number | Date | null
+  },
+  now = Date.now(),
+): boolean {
+  const expiresAt = channel.verification_expires_at
+  if (expiresAt != null && expiresAt !== '') {
+    const expires = typeof expiresAt === 'number' ? expiresAt : new Date(expiresAt).getTime()
+    if (Number.isFinite(expires) && expires <= now) return false
+  }
   return Boolean(channel.is_verified) || channel.verification_status === 'verified'
+}
+
+export function getSocialVerificationUiState(
+  channel: {
+    platform?: string | null
+    is_verified?: boolean | null
+    verification_status?: string | null
+    verification_expires_at?: string | number | Date | null
+  },
+  now = Date.now(),
+): 'unverified' | 'verified' | 'expired' | 'error' {
+  const expiresAt = channel.verification_expires_at
+  if (expiresAt != null && expiresAt !== '') {
+    const expires = typeof expiresAt === 'number' ? expiresAt : new Date(expiresAt).getTime()
+    if (Number.isFinite(expires) && expires <= now) return 'expired'
+  }
+  if (channel.verification_status === 'error') return 'error'
+  if (isChannelVerified(channel, now)) return 'verified'
+  return 'unverified'
 }
