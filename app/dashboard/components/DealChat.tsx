@@ -1,33 +1,6 @@
 /*
-Enable Realtime in Supabase:
-Go to Supabase Dashboard → Database → Replication
-Enable replication for the 'messages' table
-
-Run in Supabase SQL Editor:
-create table if not exists messages (
-  id uuid default gen_random_uuid() primary key,
-  deal_id uuid references ad_requests(id) on delete cascade,
-  sender_id uuid references profiles(id),
-  content text not null,
-  created_at timestamp with time zone default now()
-);
-alter table messages enable row level security;
-
-create table if not exists deal_chat_reads (
-  user_id uuid references profiles(id) on delete cascade,
-  deal_id uuid references ad_requests(id) on delete cascade,
-  last_read_at timestamp with time zone not null default now(),
-  primary key (user_id, deal_id)
-);
-alter table deal_chat_reads enable row level security;
-
-alter table ad_requests add column if not exists creator_viewed_at timestamp with time zone;
-alter table ad_requests add column if not exists advertiser_viewed_at timestamp with time zone;
-
-create policy "Users manage own chat reads"
-on deal_chat_reads for all
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+Realtime: Supabase Dashboard → Database → Replication → enable `messages`.
+Table DDL: supabase/security-fixes.sql (messages) and supabase/deal-chat-reads.sql.
 */
 
 import { useEffect, useRef, useState } from 'react'
