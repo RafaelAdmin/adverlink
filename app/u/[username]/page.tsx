@@ -45,17 +45,16 @@ export default function PublicProfilePage() {
 
       const [channelsRes, reviewsRes, campaignsRes] = await Promise.all([
         supabase
-          .from('channels')
+          .from('marketplace_channels')
           .select('id, name, telegram_username, avatar_url, subscriber_count, is_verified, ad_price, verification_status, platform')
-          .eq('owner_id', profileData.id)
-          .eq('is_active', true),
+          .eq('owner_id', profileData.id),
         supabase
           .from('reviews')
           .select('rating, comment, created_at')
           .eq('reviewee_id', profileData.id)
           .order('created_at', { ascending: false }),
         supabase
-          .from('campaigns')
+          .from('marketplace_campaigns')
           .select('id, name, category, budget, description, status')
           .eq('advertiser_id', profileData.id)
           .eq('status', 'active'),

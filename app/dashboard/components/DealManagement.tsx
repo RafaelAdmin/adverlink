@@ -190,10 +190,10 @@ export function CreatorDealActions({
     if (!request.campaign_id) return
     const loadBrief = async () => {
       const { data } = await supabase
-        .from('campaigns')
+        .from('marketplace_campaigns')
         .select('brief')
         .eq('id', request.campaign_id)
-        .single()
+        .maybeSingle()
       setCampaignBrief(data?.brief || null)
     }
     loadBrief()

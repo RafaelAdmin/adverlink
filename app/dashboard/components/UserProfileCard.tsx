@@ -36,13 +36,12 @@ export default function UserProfileCard({ profileId, onClose }: UserProfileCardP
       const [profileRes, channelsRes, reviewsRes, campaignsRes, friendshipRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', profileId).single(),
         supabase
-          .from('channels')
+          .from('marketplace_channels')
           .select('id, name, telegram_username, avatar_url, subscriber_count, is_verified, platform')
-          .eq('owner_id', profileId)
-          .eq('is_active', true),
+          .eq('owner_id', profileId),
         supabase.from('reviews').select('rating').eq('reviewee_id', profileId),
         supabase
-          .from('campaigns')
+          .from('marketplace_campaigns')
           .select('id, name, status, budget, category, description, created_at')
           .eq('advertiser_id', profileId)
           .eq('status', 'active'),

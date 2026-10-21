@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { fetchOwnedOrMarketplaceChannel } from '@/lib/marketplace-public'
 import { getExchangeRates } from '@/lib/currency'
 import { usePreferredCurrency } from '@/lib/usePreferredCurrency'
 import { getChannelHandle, getChannelLink, getPlatformLabel, isChannelVerified } from '@/lib/channel-helpers'
@@ -42,17 +43,13 @@ export default function ChannelProfilePage() {
         return
       }
 
-      const { data, error: fetchError } = await supabase
-        .from('channels')
-        .select('*')
-        .eq('id', id)
-        .single()
+      const { channel: data, isOwner } = await fetchOwnedOrMarketplaceChannel(supabase, id, user.id)
 
-      if (fetchError || !data) {
+      if (!data) {
         setError('Канал не найден')
       } else {
         setChannel(data)
-        setIsMyChannel(data.owner_id === user.id)
+        setIsMyChannel(isOwner)
         const { data: prices } = await supabase
           .from('channel_prices')
           .select('id, channel_id, type, description, price, currency, sort_order')

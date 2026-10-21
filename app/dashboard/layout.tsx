@@ -157,8 +157,8 @@ function GlobalSearch() {
     if (!showUserCard) return
     const loadStats = async () => {
       const [{ count: ch }, { count: camp }, { count: rev }] = await Promise.all([
-        supabase.from('channels').select('*', { count: 'exact', head: true }).eq('owner_id', showUserCard.id),
-        supabase.from('campaigns').select('*', { count: 'exact', head: true }).eq('advertiser_id', showUserCard.id),
+        supabase.from('marketplace_channels').select('*', { count: 'exact', head: true }).eq('owner_id', showUserCard.id),
+        supabase.from('marketplace_campaigns').select('*', { count: 'exact', head: true }).eq('advertiser_id', showUserCard.id),
         supabase.from('reviews').select('*', { count: 'exact', head: true }).eq('reviewee_id', showUserCard.id),
       ])
       setUserCardStats({
@@ -193,7 +193,7 @@ function GlobalSearch() {
 
       const [{ data: channels }, { data: users }] = await Promise.all([
         supabase
-          .from('channels')
+          .from('marketplace_channels')
           .select('id, name, telegram_username, avatar_url, subscriber_count')
           .ilike('name', `%${query}%`)
           .limit(5),

@@ -79,21 +79,13 @@ function MarketplacePageInner() {
 
       if (role === 'creator') {
         const { data: camps } = await supabase
-          .from('campaigns')
-          .select(`
-            *,
-            advertiser_profile:profiles!advertiser_id(full_name, avatar_url, subscription_plan, is_admin)
-          `)
-          .in('status', ['active', 'collecting', 'in_progress'])
+          .from('marketplace_campaigns')
+          .select('*')
         setActiveCampaigns(camps || [])
       } else {
         const { data: ch } = await supabase
-          .from('channels')
-          .select(`
-            *,
-            owner_profile:profiles!owner_id(subscription_plan, is_admin)
-          `)
-          .eq('is_active', true)
+          .from('marketplace_channels')
+          .select('*')
         setChannels(ch || [])
         const { data: myChannels } = await supabase.from('channels').select('id').eq('owner_id', user.id)
         setMyChannelIds((myChannels || []).map((c) => c.id))

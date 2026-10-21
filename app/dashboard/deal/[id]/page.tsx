@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { fetchOwnedOrMarketplaceChannel } from '@/lib/marketplace-public'
 import {
   AdvertiserDealActions,
   CreatorDealActions,
@@ -118,13 +119,11 @@ export default function DealDetailPage() {
         return
       }
 
-      const { data: ch } = await supabase
-        .from('channels')
-        .select('*')
-        .eq('id', deal.channel_id)
-        .single()
+      const { channel: ch, isOwner } = deal.channel_id
+        ? await fetchOwnedOrMarketplaceChannel(supabase, deal.channel_id, user.id)
+        : { channel: null, isOwner: false }
 
-      const isCreator = ch?.owner_id === user.id
+      const isCreator = isOwner || ch?.owner_id === user.id
       const isAdvertiser = deal.advertiser_id === user.id
       const { data: profile } = await supabase
         .from('profiles')

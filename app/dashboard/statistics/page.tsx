@@ -386,7 +386,7 @@ export default function StatisticsPage() {
 
           if (channelIds.length > 0) {
             const { data: channelsData } = await supabase
-              .from('channels')
+              .from('marketplace_channels')
               .select('id, avg_views, owner_id')
               .in('id', channelIds)
 

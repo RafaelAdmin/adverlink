@@ -66,7 +66,7 @@ export default function RequestAdPage() {
 
       const [{ data: profile }, { data, error }, { data: prices }] = await Promise.all([
         supabase.from('profiles').select('full_name, username').eq('id', authUser.id).single(),
-        supabase.from('channels').select('*').eq('id', channelId).single(),
+        supabase.from('marketplace_channels').select('*').eq('id', channelId).single(),
         supabase
           .from('channel_prices')
           .select('id, channel_id, type, description, price, currency, sort_order')

@@ -270,8 +270,8 @@ export default function FriendsPage() {
       await Promise.all(
         filtered.map(async (p) => {
           const [{ count: ch }, { count: camp }] = await Promise.all([
-            supabase.from('channels').select('*', { count: 'exact', head: true }).eq('owner_id', p.id),
-            supabase.from('campaigns').select('*', { count: 'exact', head: true }).eq('advertiser_id', p.id),
+            supabase.from('marketplace_channels').select('*', { count: 'exact', head: true }).eq('owner_id', p.id),
+            supabase.from('marketplace_campaigns').select('*', { count: 'exact', head: true }).eq('advertiser_id', p.id),
           ])
           stats[p.id] = { channels: ch || 0, campaigns: camp || 0 }
         }),
