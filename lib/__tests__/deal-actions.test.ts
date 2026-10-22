@@ -68,6 +68,18 @@ describe('generic transition policy', () => {
     expect(() => assertGenericTransitionAllowed('creator', 'new', 'cancelled')).not.toThrow()
   })
 
+  it('blocks advertiser from accepting a marketplace order', () => {
+    expect(() => assertGenericTransitionAllowed('advertiser', 'new', 'accepted')).toThrow(
+      /cannot accept a marketplace order/,
+    )
+  })
+
+  it('allows advertiser to accept a campaign application', () => {
+    expect(() =>
+      assertGenericTransitionAllowed('advertiser', 'new', 'accepted', { campaignId: 'camp-1' }),
+    ).not.toThrow()
+  })
+
   it('allows creator payment_pending -> accepted and cancelled', () => {
     expect(() => assertGenericTransitionAllowed('creator', 'payment_pending', 'accepted')).not.toThrow()
     expect(() => assertGenericTransitionAllowed('creator', 'payment_pending', 'cancelled')).not.toThrow()

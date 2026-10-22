@@ -110,9 +110,9 @@ export default function SimulatedDealPaymentSection({
     return (
       <div style={{ ...glassDealCard, padding: '24px', marginBottom: '16px' }}>
         <h2 className="text-white font-semibold mb-2">Оплата</h2>
-        <p className="text-green-300 font-medium mb-2">Тестовая оплата прошла успешно</p>
+        <p className="text-green-300 font-medium mb-2">Оплата выполнена. Ожидайте выполнения заказа</p>
         <p className="text-white/60 text-sm">
-          Деньги не списывались. Сделка переведена на следующий этап.
+          Оплата в тестовом режиме. Реальные средства не списывались.
         </p>
       </div>
     )
@@ -162,7 +162,7 @@ export default function SimulatedDealPaymentSection({
         style={{ ...dealBtn.confirm, width: '100%', opacity: submitting ? 0.6 : 1 }}
         onClick={handlePay}
       >
-        {submitting ? 'Обрабатываем оплату...' : 'Оплатить (тестовый режим)'}
+        {submitting ? 'Обрабатываем оплату...' : 'Оплатить заказ'}
       </button>
     </div>
   )

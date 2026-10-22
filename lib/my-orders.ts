@@ -35,6 +35,10 @@ export type OrderListRecord = {
   budget?: number | string | null
   budget_currency?: string | null
   status: string
+  payment_status?: string | null
+  paid_at?: string | null
+  accepted_at?: string | null
+  auto_completed?: boolean | null
   campaign_id?: string | null
   creator_viewed_at?: string | null
   advertiser_viewed_at?: string | null

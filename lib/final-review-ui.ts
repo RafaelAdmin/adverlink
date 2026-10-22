@@ -127,7 +127,15 @@ export function getDealNextAction(
       return role === 'creator' ? 'Автор выполняет заказ' : 'Автор выполняет заказ'
     }
     if (status === 'accepted') {
-      return role === 'creator' ? 'Автор может начать работу' : 'Ожидание начала работы'
+      if (request.payment_status !== 'paid') {
+        return role === 'advertiser'
+          ? 'Рекламодателю нужно оплатить заказ'
+          : 'Ожидание оплаты рекламодателем'
+      }
+      return role === 'creator' ? 'Автор может начать выполнение' : 'Ожидание начала работы'
+    }
+    if (status === 'new' || status === 'payment_pending') {
+      return role === 'creator' ? 'Новый запрос' : 'Заявка отправлена'
     }
     return 'Сделка в процессе'
   }

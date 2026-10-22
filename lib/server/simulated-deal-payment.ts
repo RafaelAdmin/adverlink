@@ -63,8 +63,8 @@ export function validateSimulatedDealPayment(
     return { ok: false, reason: 'Deal cannot be paid in current state', status: 400 }
   }
 
-  if (deal.terms_status !== 'accepted') {
-    return { ok: false, reason: 'Final terms must be accepted by both sides before payment', status: 400 }
+  if (status !== 'accepted') {
+    return { ok: false, reason: 'Deal must be accepted before payment', status: 400 }
   }
 
   if (!resolveDealPaymentAmount(deal)) {
@@ -82,6 +82,19 @@ export function validateSimulatedDealPayment(
     finalReviewStartedAt: deal.final_review_started_at,
     autoCompleteDeadline: deal.auto_complete_deadline,
     termsLockedAt: deal.terms_locked_at,
+  }
+
+  if (deal.payment_status === 'paid') {
+    return { ok: true, alreadyPaid: true }
+  }
+
+  const simpleMarketplace = !deal.campaign_id && isLegacyLifecycleDeal(bundleLifecycle)
+  if (simpleMarketplace) {
+    return { ok: true, alreadyPaid: false }
+  }
+
+  if (deal.terms_status !== 'accepted') {
+    return { ok: false, reason: 'Final terms must be accepted by both sides before payment', status: 400 }
   }
 
   if (isLegacyLifecycleDeal(bundleLifecycle)) {
@@ -119,7 +132,21 @@ export async function executeSimulatedDealPayment(dealId: string, advertiserId: 
   const now = new Date().toISOString()
   const paymentReference = generateSimulatedPaymentReference()
 
-  const update = {
+  const simpleMarketplace =
+    !bundle.deal.campaign_id &&
+    isLegacyLifecycleDeal({
+      status: bundle.deal.status,
+      termsStatus: bundle.deal.terms_status,
+      contentMode: bundle.deal.content_mode,
+      contentStatus: bundle.deal.content_status,
+      placementsCount: bundle.deal.placements_count,
+      placements: [],
+      allPlacementsPublishedAt: bundle.deal.all_placements_published_at,
+      finalReviewStartedAt: bundle.deal.final_review_started_at,
+      autoCompleteDeadline: bundle.deal.auto_complete_deadline,
+      termsLockedAt: bundle.deal.terms_locked_at,
+    })
+  const update: Record<string, unknown> = {
     payment_mode: 'simulated',
     payment_status: 'paid',
     payment_amount: amount.amount,
@@ -128,14 +155,21 @@ export async function executeSimulatedDealPayment(dealId: string, advertiserId: 
     payment_provider: SIMULATED_PAYMENT_PROVIDER,
     payment_environment: SIMULATED_PAYMENT_ENVIRONMENT,
     payment_reference: paymentReference,
-    terms_status: 'locked',
-    terms_locked_at: now,
     updated_at: now,
   }
 
-  const updated = await conditionalDealUpdate(dealId, update, (q) =>
-    q.eq('terms_status', 'accepted').neq('payment_status', 'paid'),
-  )
+  if (!simpleMarketplace) {
+    update.terms_status = 'locked'
+    update.terms_locked_at = now
+  }
+
+  const updated = await conditionalDealUpdate(dealId, update, (q) => {
+    let next = q.eq('status', 'accepted').neq('payment_status', 'paid')
+    if (!simpleMarketplace) {
+      next = next.eq('terms_status', 'accepted')
+    }
+    return next
+  })
 
   if (!updated) {
     bundle = await reloadDealBundle(dealId)

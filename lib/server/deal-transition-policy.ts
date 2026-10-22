@@ -90,10 +90,15 @@ export function parseGenericTransitionBody(body: unknown): GenericTransitionPayl
   return payload
 }
 
+export type GenericTransitionContext = {
+  campaignId?: string | null
+}
+
 export function assertGenericTransitionAllowed(
   role: DealParticipantRole,
   fromStatus: string,
   toStatus: DealStatus,
+  context: GenericTransitionContext = {},
 ): void {
   const from = normalizeDealStatus(fromStatus)
   assertDealStatusTransition(from, toStatus)
@@ -104,6 +109,10 @@ export function assertGenericTransitionAllowed(
 
   if (from === 'submitted' && toStatus === 'in_progress') {
     throw new DealActionError('Use request-revision endpoint for submitted -> in_progress', 403)
+  }
+
+  if (role === 'advertiser' && toStatus === 'accepted' && !context.campaignId) {
+    throw new DealActionError('Advertiser cannot accept a marketplace order', 403)
   }
 
   const map = role === 'creator' ? GENERIC_CREATOR_TRANSITIONS : GENERIC_ADVERTISER_TRANSITIONS

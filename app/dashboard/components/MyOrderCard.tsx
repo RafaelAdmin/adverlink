@@ -15,6 +15,7 @@ import {
   type OrderSpace,
 } from '@/lib/my-orders'
 import { markDealViewed } from '@/lib/notifications'
+import { getOrderFlowStatusLabel } from '@/lib/order-flow'
 import { createClient } from '@/lib/supabase'
 
 export default function MyOrderCard({
@@ -72,7 +73,13 @@ export default function MyOrderCard({
       <button type="button" onClick={() => void openOrder()} className="text-left" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="ui-card-title">{channelName}</div>
-          <DealStatusPill status={order.status} />
+          <DealStatusPill
+            status={order.status}
+            label={getOrderFlowStatusLabel(
+              { status: order.status, campaign_id: order.campaign_id, payment_status: order.payment_status },
+              space,
+            )}
+          />
         </div>
         {space === 'creator' ? (
           <div className="ui-meta" style={{ marginTop: '4px' }}>{order.advertiser_name || 'Рекламодатель'}</div>

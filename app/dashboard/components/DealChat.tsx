@@ -100,11 +100,14 @@ export default function DealChat({ dealId, currentUserId }: DealChatProps) {
     setSending(true)
     setNewMessage('')
 
-    await supabase.from('messages').insert({
+    const { error } = await supabase.from('messages').insert({
       deal_id: dealId,
       sender_id: currentUserId,
       content,
     })
+    if (error) {
+      setNewMessage(content)
+    }
 
     setSending(false)
   }

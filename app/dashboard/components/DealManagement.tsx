@@ -27,8 +27,17 @@ import {
   postRequestRevision,
 } from '@/lib/deal-api-client'
 import { coerceAdRequestRow } from '@/lib/final-terms-ui'
+import { canCreatorStartExecution, isDealChatAvailable } from '@/lib/order-flow'
 
-export function DealStatusPill({ status, large }: { status: string; large?: boolean }) {
+export function DealStatusPill({
+  status,
+  large,
+  label,
+}: {
+  status: string
+  large?: boolean
+  label?: string
+}) {
   const badge = getDealStatusBadge(status)
   return (
     <span
@@ -42,7 +51,7 @@ export function DealStatusPill({ status, large }: { status: string; large?: bool
         whiteSpace: 'nowrap',
       }}
     >
-      {badge.label}
+      {label || badge.label}
     </span>
   )
 }
@@ -347,7 +356,7 @@ export function CreatorDealActions({
         </div>
       )}
 
-      <ProgressTracker steps={getCreatorSteps(request.status)} />
+      {showDetails ? <ProgressTracker steps={getCreatorSteps(request.status)} /> : null}
 
       {(status === 'payment_pending' || rawStatus === 'new') && (
         <div style={{ marginBottom: '12px' }}>
@@ -393,35 +402,40 @@ export function CreatorDealActions({
 
       {status === 'accepted' && (
         <div>
-          <span style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80', padding: '6px 12px', borderRadius: '20px', fontSize: '13px' }}>
-            Заказ принят ✓
-          </span>
           {campaignBrief && (
             <div className="mt-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
               <div className="text-blue-400 text-xs mb-1">Бриф от рекламодателя</div>
               <p className="text-white/80 text-sm whitespace-pre-wrap">{campaignBrief}</p>
             </div>
           )}
-          <label className="block mt-4">
-            <span className="text-white/50 text-xs mb-2 block">Количество постов</span>
-            <input
-              type="number"
-              min={1}
-              value={postsCount}
-              onChange={(e) => setPostsCount(Number(e.target.value) || 1)}
-              className="ui-input w-full"
-            />
-          </label>
-          <button
-            type="button"
-            disabled={saving}
-            className="ui-btn ui-btn--primary w-full mt-4 disabled:opacity-50"
-            onClick={async () => {
-              await patch({ status: 'in_progress', posts_count: postsCount })
-            }}
-          >
-            Начать работу
-          </button>
+          {canCreatorStartExecution(request, 'creator') ? (
+            <>
+              {request.campaign_id ? (
+                <label className="block mt-4">
+                  <span className="text-white/50 text-xs mb-2 block">Количество постов</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={postsCount}
+                    onChange={(e) => setPostsCount(Number(e.target.value) || 1)}
+                    className="ui-input w-full"
+                  />
+                </label>
+              ) : null}
+              <button
+                type="button"
+                disabled={saving}
+                className="ui-btn ui-btn--primary w-full mt-4 disabled:opacity-50"
+                onClick={async () => {
+                  await patch({ status: 'in_progress', posts_count: postsCount })
+                }}
+              >
+                Начать выполнение
+              </button>
+            </>
+          ) : (
+            <p className="text-white/60 text-sm mt-2 mb-0">Ожидает оплаты рекламодателем</p>
+          )}
         </div>
       )}
 
@@ -445,11 +459,11 @@ export function CreatorDealActions({
           {!hideLegacyProofSubmit && (
             <>
           <label className="block mt-4">
-            <span className="text-white/50 text-xs mb-2 block">Ссылки на посты</span>
+            <span className="text-white/50 text-xs mb-2 block">Подтверждение выполнения</span>
             <textarea
               value={proofLinks}
               onChange={(e) => setProofLinks(e.target.value)}
-              placeholder="Вставьте ссылки на опубликованные посты (каждая с новой строки)"
+              placeholder="Ссылки на опубликованную рекламу (каждая с новой строки)"
               rows={4}
               className="ui-input ui-textarea w-full"
             />
@@ -491,7 +505,7 @@ export function CreatorDealActions({
               }
             }}
           >
-            Отправить на проверку
+            Отправить подтверждение выполнения
           </button>
             </>
           )}
@@ -501,7 +515,7 @@ export function CreatorDealActions({
       {status === 'submitted' && !useNewLifecycleWorkflow && (
         <div>
           <span style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa', padding: '6px 12px', borderRadius: '20px', fontSize: '13px' }}>
-            Отправлено на проверку ⏳
+            Ожидает подтверждения рекламодателя
           </span>
           <ProofLinksList links={request.proof_links} />
           {request.creator_note && (
@@ -533,7 +547,11 @@ export function CreatorDealActions({
           <DealStatusPill status="resolved_creator" large />
           <p className="text-white/60 text-sm mt-3">Спор решён в пользу автора</p>
           {!useNewLifecycleWorkflow && (
-            <SplitPaymentSummary budget={request.budget} commissionPercent={request.platform_commission || 10} />
+            <SplitPaymentSummary
+              budget={request.payment_amount ?? request.budget}
+              commissionPercent={request.platform_commission || 10}
+              settled
+            />
           )}
         </div>
       )}
@@ -560,7 +578,11 @@ export function CreatorDealActions({
             </p>
           )}
           {!useNewLifecycleWorkflow && (
-            <SplitPaymentSummary budget={request.budget} commissionPercent={request.platform_commission || 10} />
+            <SplitPaymentSummary
+              budget={request.payment_amount ?? request.budget}
+              commissionPercent={request.platform_commission || 10}
+              settled
+            />
           )}
           <ProofLinksList links={request.proof_links} />
           {!reviewDone && !showReview && (
@@ -747,9 +769,9 @@ export function AdvertiserDealActions({
         budget={request.budget}
         channel={channel}
         saving={saving}
-        title="Подтвердить выполнение"
-        subtitle="Завершение сделки на этапе Beta"
-        confirmLabel="Завершить сделку"
+        title="Подтвердить выполнение заказа"
+        subtitle="После подтверждения сделка будет завершена"
+        confirmLabel="Подтвердить выполнение заказа"
       />
       {showDetails && (
         <div className="space-y-3 text-sm mb-4">
@@ -772,7 +794,7 @@ export function AdvertiserDealActions({
         </div>
       )}
 
-      <ProgressTracker steps={getAdvertiserSteps(request.status)} />
+      {showDetails ? <ProgressTracker steps={getAdvertiserSteps(request.status)} /> : null}
 
       {status === 'new' && !request.campaign_id && (
         <p className="text-white/50 text-sm mt-2">Заявка отправлена — ожидает ответа создателя</p>
@@ -837,33 +859,23 @@ export function AdvertiserDealActions({
         </div>
       )}
 
-      {status === 'accepted' && (
-        <p className="text-white/60 text-sm mt-2">
-          <span style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', marginRight: '8px' }}>
-            Принято ✓
-          </span>
-          Создатель принял заказ и скоро начнёт работу
-        </p>
+      {status === 'accepted' && request.payment_status === 'paid' && (
+        <p className="text-white/60 text-sm mt-2 mb-0">Оплата выполнена. Ожидайте выполнения заказа.</p>
       )}
 
       {status === 'in_progress' && (
-        <p className="text-white/60 text-sm mt-2">
-          <span style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', marginRight: '8px' }}>
-            В работе 🔄
-          </span>
-          Создатель работает над вашим заказом
-        </p>
+        <p className="text-white/60 text-sm mt-2 mb-0">Владелец канала выполняет заказ.</p>
       )}
 
       {status === 'submitted' && !useNewLifecycleWorkflow && (
         <div>
           <span style={{ background: 'rgba(147,51,234,0.15)', color: '#a78bfa', padding: '6px 12px', borderRadius: '20px', fontSize: '13px' }}>
-            На проверке 👀
+            Ожидает подтверждения рекламодателя
           </span>
           <ProofLinksList links={request.proof_links} />
           {request.creator_note && (
             <p className="text-white/60 text-sm mt-3">
-              <span className="text-white/40">Комментарий создателя: </span>
+              <span className="text-white/40">Комментарий: </span>
               {request.creator_note}
             </p>
           )}
@@ -876,10 +888,7 @@ export function AdvertiserDealActions({
                 style={{ ...dealBtn.confirm, opacity: saving ? 0.6 : 1 }}
                 onClick={() => setShowPaymentModal(true)}
               >
-                Подтвердить выполнение
-              </button>
-              <button type="button" style={dealBtn.dispute} onClick={() => setShowDispute(true)}>
-                Есть замечания
+                Подтвердить выполнение заказа
               </button>
               <button type="button" style={dealBtn.dispute} onClick={() => setShowDisputeForm(true)}>
                 Открыть спор
@@ -962,7 +971,11 @@ export function AdvertiserDealActions({
             </p>
           )}
           {!useNewLifecycleWorkflow && (
-            <SplitPaymentSummary budget={request.budget} commissionPercent={request.platform_commission || 10} />
+            <SplitPaymentSummary
+              budget={request.payment_amount ?? request.budget}
+              commissionPercent={request.platform_commission || 10}
+              settled
+            />
           )}
           <ProofLinksList links={request.proof_links} />
           {!reviewDone && !showReview && (
@@ -999,7 +1012,11 @@ export function AdvertiserDealActions({
           <DealStatusPill status="resolved_creator" large />
           <p className="text-white/60 text-sm mt-3">Спор решён в пользу автора</p>
           {!useNewLifecycleWorkflow && (
-            <SplitPaymentSummary budget={request.budget} commissionPercent={request.platform_commission || 10} />
+            <SplitPaymentSummary
+              budget={request.payment_amount ?? request.budget}
+              commissionPercent={request.platform_commission || 10}
+              settled
+            />
           )}
         </div>
       )}
@@ -1101,7 +1118,7 @@ export function CreatorDealCard({
             userId={userId}
             onUpdate={(patch) => onUpdate(request.id, patch)}
           />
-          {request.status !== 'new' && request.status !== 'rejected' && userId && (
+          {isDealChatAvailable(request) && userId && (
             <div style={{ marginTop: '16px' }}>
               <DealChat dealId={request.id} currentUserId={userId} />
             </div>
@@ -1179,7 +1196,7 @@ export function AdvertiserDealCard({
             userId={userId}
             onUpdate={(patch) => onUpdate(request.id, patch)}
           />
-          {request.status !== 'new' && request.status !== 'rejected' && userId && (
+          {isDealChatAvailable(request) && userId && (
             <div style={{ marginTop: '16px' }}>
               <DealChat dealId={request.id} currentUserId={userId} />
             </div>
@@ -1193,17 +1210,29 @@ export function AdvertiserDealCard({
 export function DealTimeline({ request }: { request: any }) {
   const status = normalizeDealStatus(request.status)
   const events: { label: string; date?: string; color: string; show: boolean }[] = [
-    { label: 'Заказ отправлен', date: request.created_at, color: '#fbbf24', show: true },
-    { label: 'Заказ принят', date: request.accepted_at, color: '#4ade80', show: !!request.accepted_at },
+    { label: 'Запрос создан', date: request.created_at, color: '#fbbf24', show: true },
+    { label: 'Заказ принят', date: request.accepted_at, color: '#4ade80', show: !!request.accepted_at && status !== 'rejected' },
+    { label: 'Запрос отклонён', date: request.updated_at, color: '#f87171', show: status === 'rejected' || status === 'cancelled' },
     {
-      label: request.payment_mode === 'simulated' ? 'Тестовая оплата подтверждена' : 'Оплата подтверждена',
+      label: request.payment_mode === 'simulated' ? 'Оплата выполнена (тестовая)' : 'Оплата выполнена',
       date: request.paid_at ?? undefined,
       color: '#22c55e',
       show: Boolean(request.paid_at && request.payment_status === 'paid'),
     },
-    { label: 'Работа начата', date: request.accepted_at, color: '#60a5fa', show: ['in_progress', 'submitted', 'completed'].includes(status) },
-    { label: 'Отправлено на проверку', date: request.updated_at, color: '#a78bfa', show: ['submitted', 'completed'].includes(status) },
-    { label: 'Заказ завершён', date: request.completed_at, color: '#22c55e', show: status === 'completed' && !!request.completed_at },
+    { label: 'Работа начата', date: undefined, color: '#60a5fa', show: ['in_progress', 'submitted', 'completed'].includes(status) },
+    { label: 'Подтверждение выполнения отправлено', date: status === 'submitted' ? request.updated_at : undefined, color: '#a78bfa', show: ['submitted', 'completed'].includes(status) },
+    {
+      label: request.auto_completed ? 'Заказ автоподтверждён' : 'Заказ подтверждён',
+      date: request.completed_at,
+      color: '#22c55e',
+      show: status === 'completed' && !!request.completed_at,
+    },
+    {
+      label: 'Выплата зафиксирована (90% владельцу канала, 10% AdverLink)',
+      date: request.completed_at,
+      color: '#fb923c',
+      show: status === 'completed' && request.payment_status === 'paid',
+    },
   ]
 
   return (

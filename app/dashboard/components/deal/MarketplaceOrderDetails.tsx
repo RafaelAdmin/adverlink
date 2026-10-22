@@ -30,7 +30,13 @@ type FileRow = {
   storage_path: string
 }
 
-export default function MarketplaceOrderDetails({ request }: { request: AdRequest }) {
+export default function MarketplaceOrderDetails({
+  request,
+  channelName,
+}: {
+  request: AdRequest
+  channelName?: string | null
+}) {
   const supabase = createClient()
   const [lines, setLines] = useState<SnapshotRow[]>([])
   const [dates, setDates] = useState<string[]>([])
@@ -77,7 +83,8 @@ export default function MarketplaceOrderDetails({ request }: { request: AdReques
 
   return (
     <div style={{ ...glassDealCard, padding: '24px', marginBottom: '16px' }}>
-      <h2 className="text-white font-semibold mb-4">Запрос из маркетплейса</h2>
+      <h2 className="text-white font-semibold mb-4">Детали заказа</h2>
+      {channelName ? <p className="text-white/50 text-sm mb-3">{channelName}</p> : null}
 
       <div className="mb-4">
         <div className="text-white/50 text-sm mb-1">Итоговая сумма</div>
@@ -115,6 +122,13 @@ export default function MarketplaceOrderDetails({ request }: { request: AdReques
           </div>
         )}
       </div>
+
+      {request.message ? (
+        <div className="mb-4">
+          <div className="text-white/50 text-sm mb-1">Описание</div>
+          <p className="text-white/80 text-sm whitespace-pre-wrap m-0">{request.message}</p>
+        </div>
+      ) : null}
 
       <div className="mb-4">
         <div className="text-white/50 text-sm mb-2">Предпочтительные даты</div>

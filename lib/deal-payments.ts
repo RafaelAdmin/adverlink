@@ -1,5 +1,5 @@
 import type { AdRequest } from '@/lib/database.types'
-import { isLegacyLifecycleDeal, type DealLifecycleContext } from '@/lib/deal-lifecycle'
+import { isLegacyLifecycleDeal, normalizeDealStatus, type DealLifecycleContext } from '@/lib/deal-lifecycle'
 
 export type PaymentMode = 'simulated' | 'real'
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
@@ -37,17 +37,30 @@ export type ResolvedDealPaymentAmount = {
 }
 
 export function resolveDealPaymentAmount(
-  deal: Pick<AdRequest, 'final_price' | 'placements_count'> & {
-    final_price_currency: string | null
+  deal: {
+    final_price?: number | null
+    final_price_currency?: string | null
+    placements_count?: number | null
+    budget?: number | null
+    budget_currency?: string | null
+    posts_count?: number | null
   },
 ): ResolvedDealPaymentAmount | null {
-  if (deal.final_price == null || deal.final_price < 0) return null
-  if (!deal.final_price_currency) return null
-  return {
-    amount: deal.final_price,
-    currency: deal.final_price_currency,
-    placementsCount: deal.placements_count ?? 1,
+  if (deal.final_price != null && deal.final_price >= 0 && deal.final_price_currency) {
+    return {
+      amount: Number(deal.final_price),
+      currency: deal.final_price_currency,
+      placementsCount: deal.placements_count ?? deal.posts_count ?? 1,
+    }
   }
+  if (deal.budget != null && Number(deal.budget) >= 0 && deal.budget_currency) {
+    return {
+      amount: Number(deal.budget),
+      currency: deal.budget_currency,
+      placementsCount: deal.placements_count ?? deal.posts_count ?? 1,
+    }
+  }
+  return null
 }
 
 export function isDealPaymentComplete(
@@ -60,9 +73,17 @@ export function isDealAwaitingSimulatedPayment(
   deal: AdRequest,
   ctx: DealLifecycleContext,
 ): boolean {
+  if (deal.payment_status === 'paid' || isDealPaymentComplete(deal)) return false
+  const status = normalizeDealStatus(deal.status)
+  if (['cancelled', 'rejected', 'completed', 'disputed'].includes(status)) return false
+  if (status !== 'accepted') return false
+
+  if (!deal.campaign_id && isLegacyLifecycleDeal(ctx)) {
+    return Boolean(resolveDealPaymentAmount(deal))
+  }
+
   if (isLegacyLifecycleDeal(ctx)) return false
   if (deal.terms_status !== 'accepted') return false
-  if (isDealPaymentComplete(deal)) return false
   return true
 }
 

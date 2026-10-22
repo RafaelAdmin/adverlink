@@ -10,7 +10,6 @@ import {
   CreatorDealActions,
   DealTimeline,
 } from '../../components/DealManagement'
-import { formatMarketplaceOrderTotal } from '@/lib/ad-request-order'
 import MarketplaceOrderDetails from '@/app/dashboard/components/deal/MarketplaceOrderDetails'
 import StatusToast from '@/app/dashboard/components/marketplace/StatusToast'
 import { glassDealCard, normalizeDealStatus } from '@/lib/deals'
@@ -19,7 +18,7 @@ import DealContentSection from '@/app/dashboard/components/deal/DealContentSecti
 import PlacementsSection from '@/app/dashboard/components/deal/PlacementsSection'
 import FinalReviewSection from '@/app/dashboard/components/deal/FinalReviewSection'
 import SimulatedDealPaymentSection from '@/app/dashboard/components/deal/SimulatedDealPaymentSection'
-import DealNextAction from '@/app/dashboard/components/deal/DealNextAction'
+import OrderProgress from '@/app/dashboard/components/deal/OrderProgress'
 import DealChat from '@/app/dashboard/components/DealChat'
 import { markDealViewed } from '@/lib/notifications'
 import type { AdRequest, Channel, DealMaterial, DealPlacement } from '@/lib/database.types'
@@ -31,6 +30,13 @@ import {
   shouldUsePlacementsWorkflow,
   type PlacementTelegramAnalytics,
 } from '@/lib/placements-ui'
+import {
+  getOrderFlowStatusLabel,
+  getOrderNextStepCopy,
+  isDealChatAvailable,
+  isMarketplaceOrderDeal,
+  ORDER_CHAT_LOCKED_COPY,
+} from '@/lib/order-flow'
 
 export default function DealDetailPage() {
   const params = useParams()
@@ -171,11 +177,15 @@ export default function DealDetailPage() {
   }
 
   const status = normalizeDealStatus(request.status)
-  const usePlacementsWorkflow = shouldUsePlacementsWorkflow(request, placements)
+  const marketplace = isMarketplaceOrderDeal(request)
+  const usePlacementsWorkflow = !marketplace && shouldUsePlacementsWorkflow(request, placements)
+  const chatOpen = isDealChatAvailable(request)
+  const statusLabel = getOrderFlowStatusLabel(request, role)
+  const nextCopy = getOrderNextStepCopy(request, role)
   const showActionsPanel =
     !usePlacementsWorkflow ||
     status === 'completed' ||
-    ['new', 'payment_pending', 'accepted'].includes(status)
+    ['new', 'payment_pending', 'accepted', 'in_progress', 'submitted'].includes(status)
 
   return (
     <div>
@@ -186,160 +196,25 @@ export default function DealDetailPage() {
         ← Назад к заказам
       </Link>
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Заказ #{request.id.slice(0, 8)}</h1>
+      <div className="mb-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-white mb-1">Заказ #{request.id.slice(0, 8)}</h1>
+            <p className="text-white font-medium m-0">{channel?.name || 'Канал'}</p>
+            {channel?.telegram_username ? (
+              <p className="text-white/40 text-sm m-0">@{channel.telegram_username}</p>
+            ) : null}
+          </div>
+          <span className="text-sm text-white/80 bg-white/10 rounded-full px-3 py-1">{statusLabel}</span>
+        </div>
+        <OrderProgress deal={request} />
+        {nextCopy ? <p className="text-white/55 text-sm mt-1 mb-0">{nextCopy}</p> : null}
       </div>
 
       {createdToast ? <StatusToast message="Заказ отправлен" /> : null}
 
-      <DealNextAction
-        request={request}
-        placements={placements}
-        material={material}
-        role={role}
-      />
-
-      <MarketplaceOrderDetails request={request} />
-
-      <div style={{ ...glassDealCard, padding: '24px', marginBottom: '16px' }}>
-        <h2 className="text-white font-semibold mb-4">Информация о заказе</h2>
-        <div className="flex items-center gap-4 mb-4">
-          {channel?.avatar_url ? (
-            <img src={channel.avatar_url} alt="" className="w-12 h-12 rounded-full object-cover" />
-          ) : (
-            <div className="w-12 h-12 rounded-full avatar-accent-fallback flex items-center justify-center text-white font-bold">
-              {channel?.name?.[0] || '?'}
-            </div>
-          )}
-          <div>
-            <div className="text-white font-medium">{channel?.name || '—'}</div>
-            <div className="text-white/40 text-sm">@{channel?.telegram_username}</div>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div>
-            <div className="text-white/50">Рекламодатель</div>
-            <div className="text-white">{request.advertiser_name}</div>
-            <div className="text-white/60">{request.advertiser_contact}</div>
-          </div>
-          <div>
-            <div className="text-white/50">Бюджет</div>
-            <div className="text-price-accent">{formatMarketplaceOrderTotal(request)}</div>
-          </div>
-          <div>
-            <div className="text-white/50">Постов</div>
-            <div className="text-white">{request.posts_count || 1}</div>
-          </div>
-          <div>
-            <div className="text-white/50">Создан</div>
-            <div className="text-white">{new Date(request.created_at).toLocaleString('ru-RU')}</div>
-          </div>
-          {request.accepted_at && (
-            <div>
-              <div className="text-white/50">Принят</div>
-              <div className="text-white">{new Date(request.accepted_at).toLocaleString('ru-RU')}</div>
-            </div>
-          )}
-          {request.completed_at && (
-            <div>
-              <div className="text-white/50">Завершён</div>
-              <div className="text-white">{new Date(request.completed_at).toLocaleString('ru-RU')}</div>
-            </div>
-          )}
-        </div>
-        <div className="mt-4">
-          <div className="text-white/50 text-sm mb-1">Сообщение</div>
-          <p className="text-white/80 text-sm">{request.message}</p>
-        </div>
-      </div>
-
-      <FinalTermsSection
-        dealId={dealId}
-        request={request}
-        currentUserId={userId}
-        onUpdate={handleUpdate}
-        onRefresh={refreshDealState}
-      />
-
-      <SimulatedDealPaymentSection
-        dealId={dealId}
-        request={request}
-        placements={placements}
-        role={role}
-        onDealUpdate={handleUpdate}
-        onRefresh={refreshDealState}
-      />
-
-      <DealContentSection
-        dealId={dealId}
-        request={request}
-        material={material}
-        placements={placements}
-        role={role}
-        onDealUpdate={handleUpdate}
-        onMaterialUpdate={setMaterial}
-        onPlacementsUpdate={setPlacements}
-        onRefresh={refreshDealState}
-      />
-
-      <PlacementsSection
-        dealId={dealId}
-        request={request}
-        placements={placements}
-        role={role}
-        channel={channel}
-        telegramAnalytics={telegramAnalytics}
-        onDealUpdate={handleUpdate}
-        onPlacementsUpdate={setPlacements}
-        onRefresh={refreshDealState}
-      />
-
-      <FinalReviewSection
-        dealId={dealId}
-        request={request}
-        placements={placements}
-        role={role}
-        onDealUpdate={handleUpdate}
-        onPlacementsUpdate={setPlacements}
-        onRefresh={refreshDealState}
-      />
-
-      {userId && request && (
-        <div style={{ marginTop: '0', marginBottom: '16px' }}>
-          <DealChat dealId={request.id} currentUserId={userId} />
-        </div>
-      )}
-
-      <div style={{ ...glassDealCard, padding: '24px', marginBottom: '16px' }}>
-        <h2 className="text-white font-semibold mb-4">История</h2>
-        <DealTimeline request={request} />
-      </div>
-
-      {!usePlacementsWorkflow &&
-        (status === 'submitted' || status === 'completed') &&
-        request.proof_links &&
-        request.proof_links.length > 0 && (
-        <div style={{ ...glassDealCard, padding: '24px', marginBottom: '16px' }}>
-          <h2 className="text-white font-semibold mb-4">Доказательства выполнения</h2>
-          {request.proof_links.map((link, i) => (
-            <a
-              key={i}
-              href={link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 ui-surface ui-surface--pad-sm mb-2 text-sky-400 no-underline"
-            >
-              <i className="ti ti-brand-telegram" />
-              Пост в Telegram
-              <i className="ti ti-external-link" style={{ marginLeft: 'auto' }} />
-            </a>
-          ))}
-        </div>
-      )}
-
       {showActionsPanel && (
-        <div style={{ ...glassDealCard, padding: '24px' }}>
-          <h2 className="text-white font-semibold mb-4">Действия</h2>
+        <div style={{ ...glassDealCard, padding: '20px', marginBottom: '16px' }}>
           {role === 'creator' ? (
             <CreatorDealActions
               request={request}
@@ -363,6 +238,96 @@ export default function DealDetailPage() {
           )}
         </div>
       )}
+
+      <SimulatedDealPaymentSection
+        dealId={dealId}
+        request={request}
+        placements={placements}
+        role={role}
+        onDealUpdate={handleUpdate}
+        onRefresh={refreshDealState}
+      />
+
+      <MarketplaceOrderDetails request={request} channelName={channel?.name} />
+
+      {!marketplace && (
+        <div style={{ ...glassDealCard, padding: '20px', marginBottom: '16px' }}>
+          <h2 className="text-white font-semibold mb-3">Детали заказа</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div>
+              <div className="text-white/50">Рекламодатель</div>
+              <div className="text-white">{request.advertiser_name}</div>
+            </div>
+            <div>
+              <div className="text-white/50">Создан</div>
+              <div className="text-white">{new Date(request.created_at).toLocaleString('ru-RU')}</div>
+            </div>
+          </div>
+          {request.message ? (
+            <p className="text-white/80 text-sm mt-3 mb-0 whitespace-pre-wrap">{request.message}</p>
+          ) : null}
+        </div>
+      )}
+
+      {!marketplace && (
+        <>
+          <FinalTermsSection
+            dealId={dealId}
+            request={request}
+            currentUserId={userId}
+            onUpdate={handleUpdate}
+            onRefresh={refreshDealState}
+          />
+
+          <DealContentSection
+            dealId={dealId}
+            request={request}
+            material={material}
+            placements={placements}
+            role={role}
+            onDealUpdate={handleUpdate}
+            onMaterialUpdate={setMaterial}
+            onPlacementsUpdate={setPlacements}
+            onRefresh={refreshDealState}
+          />
+
+          <PlacementsSection
+            dealId={dealId}
+            request={request}
+            placements={placements}
+            role={role}
+            channel={channel}
+            telegramAnalytics={telegramAnalytics}
+            onDealUpdate={handleUpdate}
+            onPlacementsUpdate={setPlacements}
+            onRefresh={refreshDealState}
+          />
+
+          <FinalReviewSection
+            dealId={dealId}
+            request={request}
+            placements={placements}
+            role={role}
+            onDealUpdate={handleUpdate}
+            onPlacementsUpdate={setPlacements}
+            onRefresh={refreshDealState}
+          />
+        </>
+      )}
+
+      <div style={{ ...glassDealCard, padding: '20px', marginBottom: '16px' }}>
+        <h2 className="text-white font-semibold mb-3">Чат</h2>
+        {chatOpen && userId ? (
+          <DealChat dealId={request.id} currentUserId={userId} />
+        ) : (
+          <p className="text-white/55 text-sm m-0">{ORDER_CHAT_LOCKED_COPY}</p>
+        )}
+      </div>
+
+      <div style={{ ...glassDealCard, padding: '20px', marginBottom: '16px' }}>
+        <h2 className="text-white font-semibold mb-4">История выполнения</h2>
+        <DealTimeline request={request} />
+      </div>
     </div>
   )
 }

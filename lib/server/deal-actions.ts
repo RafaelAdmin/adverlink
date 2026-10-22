@@ -20,6 +20,7 @@ import {
   type DealStatus,
 } from '@/lib/deal-lifecycle'
 import { incrementCampaignSlots } from '@/lib/campaigns'
+import { isSimulatedPaymentsEnabled } from '@/lib/deal-payments'
 import type { DealParticipantRole } from '@/lib/server/deal-auth'
 import { DealActionError } from '@/lib/server/deal-errors'
 import {
@@ -109,7 +110,20 @@ export async function executeGenericDealTransition(
   const bundle = await reloadDealBundle(dealId)
   const fromStatus = normalizeDealStatus(bundle.deal.status)
 
-  assertGenericTransitionAllowed(role, fromStatus, payload.toStatus)
+  assertGenericTransitionAllowed(role, fromStatus, payload.toStatus, {
+    campaignId: bundle.deal.campaign_id,
+  })
+
+  if (payload.toStatus === 'in_progress' && role === 'creator') {
+    const marketplace = !bundle.deal.campaign_id && isLegacyLifecycleDeal(bundle.lifecycle)
+    if (
+      marketplace &&
+      isSimulatedPaymentsEnabled() &&
+      bundle.deal.payment_status !== 'paid'
+    ) {
+      throw new DealActionError('Payment is required before starting work', 400)
+    }
+  }
 
   const now = new Date().toISOString()
   const update: Record<string, unknown> = {

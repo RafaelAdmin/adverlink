@@ -1,22 +1,32 @@
 'use client'
 
-import { calcPaymentSplit, getAutoCompleteCountdown } from '@/lib/deals'
+import { calcPaymentSplit, getAutoCompleteCountdown, getAutoCompleteDeadline } from '@/lib/deals'
 import { formatAmdWithUsd } from '@/lib/currency'
 
-export function SplitPaymentSummary({ budget, commissionPercent = 10 }: { budget: number | null | undefined; commissionPercent?: number }) {
+export function SplitPaymentSummary({
+  budget,
+  commissionPercent = 10,
+  settled = false,
+}: {
+  budget: number | null | undefined
+  commissionPercent?: number
+  settled?: boolean
+}) {
   const split = calcPaymentSplit(budget, commissionPercent)
   return (
     <div style={{ marginTop: '16px' }}>
       <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginBottom: '10px', textAlign: 'center' }}>
-        Ориентировочное распределение (без онлайн-оплаты)
+        {settled
+          ? 'Выплата и комиссия AdverLink'
+          : 'Ориентировочное распределение (без онлайн-оплаты)'}
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
       <div style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.25)', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
-        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '4px' }}>Платформа {split.commissionPercent}%</div>
+        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '4px' }}>AdverLink {split.commissionPercent}%</div>
         <div style={{ color: '#fb923c', fontWeight: '700', fontSize: '16px' }}>{split.platform.toLocaleString()} AMD</div>
       </div>
       <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
-        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '4px' }}>Создатель {100 - split.commissionPercent}%</div>
+        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '4px' }}>Владелец канала {100 - split.commissionPercent}%</div>
         <div style={{ color: '#4ade80', fontWeight: '700', fontSize: '16px' }}>{split.creator.toLocaleString()} AMD</div>
       </div>
       <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
@@ -41,13 +51,15 @@ export function RefundSummary({ budget }: { budget: number | null | undefined })
 
 export function AutoCompleteCountdown({ updatedAt }: { updatedAt: string | null | undefined }) {
   const countdown = getAutoCompleteCountdown(updatedAt)
+  const deadline = getAutoCompleteDeadline(updatedAt)
   if (!countdown) return null
   const color = countdown.urgent ? '#f87171' : 'rgba(255,255,255,0.5)'
+  const deadlineLabel = deadline ? deadline.toLocaleString('ru-RU') : ''
   return (
     <p style={{ color, fontSize: '13px', marginTop: '12px' }}>
       {countdown.expired
-        ? 'Автоподтверждение ожидается...'
-        : `Автоподтверждение через: ${countdown.hours}ч ${countdown.minutes}м`}
+        ? `Срок автоподтверждения истёк${deadlineLabel ? ` (${deadlineLabel})` : ''}`
+        : `Автоподтверждение через ${countdown.hours}ч ${countdown.minutes}м${deadlineLabel ? ` — ${deadlineLabel}` : ''}`}
     </p>
   )
 }

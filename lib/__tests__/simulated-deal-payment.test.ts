@@ -71,6 +71,24 @@ describe('resolveDealPaymentAmount', () => {
       placementsCount: 2,
     })
   })
+
+  it('falls back to marketplace budget when final terms are unset', () => {
+    expect(
+      resolveDealPaymentAmount(
+        baseDeal({
+          final_price: null,
+          final_price_currency: null,
+          budget: 120,
+          budget_currency: 'USD',
+          posts_count: 3,
+        }),
+      ),
+    ).toEqual({
+      amount: 120,
+      currency: 'USD',
+      placementsCount: 2,
+    })
+  })
 })
 
 describe('revenue classification', () => {
@@ -110,6 +128,25 @@ describe('validateSimulatedDealPayment', () => {
     const result = validateSimulatedDealPayment(baseDeal(), 'other-user', 'advertiser')
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.status).toBe(403)
+  })
+
+  it('allows marketplace order payment after accept without terms negotiation', () => {
+    expect(
+      validateSimulatedDealPayment(
+        baseDeal({
+          campaign_id: null,
+          terms_status: 'none',
+          content_mode: null,
+          placements_count: null,
+          final_price: null,
+          final_price_currency: null,
+          budget: 80,
+          budget_currency: 'USD',
+        }),
+        'adv-1',
+        'advertiser',
+      ),
+    ).toEqual({ ok: true, alreadyPaid: false })
   })
 
   it('rejects payment before terms accepted', () => {
