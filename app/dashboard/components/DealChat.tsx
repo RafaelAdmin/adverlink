@@ -1,5 +1,6 @@
 /*
-Realtime: Supabase Dashboard → Database → Replication → enable `messages`.
+Realtime: apply supabase/deal-realtime-publication.sql so `messages` (and `ad_requests`)
+are in the supabase_realtime publication. Chat listens to INSERT on this deal only.
 Table DDL: supabase/security-fixes.sql (messages) and supabase/deal-chat-reads.sql.
 */
 

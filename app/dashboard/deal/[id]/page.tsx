@@ -23,6 +23,7 @@ import DealChat from '@/app/dashboard/components/DealChat'
 import { markDealViewed } from '@/lib/notifications'
 import type { AdRequest, Channel, DealMaterial, DealPlacement } from '@/lib/database.types'
 import { coerceAdRequestRow } from '@/lib/final-terms-ui'
+import { useDealRowRealtime } from '@/lib/use-deal-realtime'
 import { coerceMaterial } from '@/lib/deal-content-ui'
 import {
   coercePlacements,
@@ -55,7 +56,9 @@ export default function DealDetailPage() {
   >({})
   const [userId, setUserId] = useState('')
   const [role, setRole] = useState<'creator' | 'advertiser' | null>(null)
+  const [isParticipant, setIsParticipant] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [toast, setToast] = useState<string | null>(createdToast ? 'Заказ отправлен' : null)
 
   const loadTelegramAnalytics = useCallback(
     async (rows: DealPlacement[]) => {
@@ -131,6 +134,7 @@ export default function DealDetailPage() {
 
       const isCreator = isOwner || ch?.owner_id === user.id
       const isAdvertiser = deal.advertiser_id === user.id
+      setIsParticipant(isCreator || isAdvertiser)
       const { data: profile } = await supabase
         .from('profiles')
         .select('is_admin')
@@ -167,6 +171,16 @@ export default function DealDetailPage() {
     }
     load()
   }, [dealId, loadTelegramAnalytics, router, supabase])
+
+  useDealRowRealtime(dealId, Boolean(userId && isParticipant), () => {
+    void refreshDealState()
+  })
+
+  useEffect(() => {
+    if (!toast) return
+    const timer = window.setTimeout(() => setToast(null), 4500)
+    return () => window.clearTimeout(timer)
+  }, [toast])
 
   const handleUpdate = (patch: Partial<AdRequest>) => {
     setRequest((prev) => (prev ? { ...prev, ...patch } : prev))
@@ -211,7 +225,7 @@ export default function DealDetailPage() {
         {nextCopy ? <p className="text-white/55 text-sm mt-1 mb-0">{nextCopy}</p> : null}
       </div>
 
-      {createdToast ? <StatusToast message="Заказ отправлен" /> : null}
+      {toast ? <StatusToast message={toast} /> : null}
 
       {showActionsPanel && (
         <div style={{ ...glassDealCard, padding: '20px', marginBottom: '16px' }}>
@@ -232,6 +246,8 @@ export default function DealDetailPage() {
               channel={channel}
               userId={userId}
               onUpdate={handleUpdate}
+              onRefresh={refreshDealState}
+              onCompleted={() => setToast('Заказ подтверждён. Сделка завершена')}
               showDetails={false}
               useNewLifecycleWorkflow={usePlacementsWorkflow}
             />

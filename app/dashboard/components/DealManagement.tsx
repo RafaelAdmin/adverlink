@@ -232,6 +232,7 @@ export function CreatorDealActions({
     }
 
     setSaving(false)
+    if (ok && onRefresh) await onRefresh()
     return ok
   }
 
@@ -385,8 +386,6 @@ export function CreatorDealActions({
               const ok = await patch({ status: 'cancelled', payment_status: 'refunded' })
               if (!ok) {
                 setAcceptError('Не удалось отклонить заказ. Обновите страницу и попробуйте снова.')
-              } else if (onRefresh) {
-                await onRefresh()
               }
             }}
           >
@@ -661,6 +660,8 @@ export function AdvertiserDealActions({
   channel,
   userId,
   onUpdate,
+  onRefresh,
+  onCompleted,
   showDetails = true,
   useNewLifecycleWorkflow = false,
 }: {
@@ -668,6 +669,8 @@ export function AdvertiserDealActions({
   channel?: any
   userId: string
   onUpdate: (patch: Record<string, unknown>) => void
+  onRefresh?: () => Promise<void>
+  onCompleted?: () => void
   showDetails?: boolean
   useNewLifecycleWorkflow?: boolean
 }) {
@@ -676,7 +679,6 @@ export function AdvertiserDealActions({
   const [showDispute, setShowDispute] = useState(false)
   const [showDisputeForm, setShowDisputeForm] = useState(false)
   const [disputeReason, setDisputeReason] = useState('')
-  const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [advertiserNote, setAdvertiserNote] = useState(request.advertiser_note || '')
   const [showReview, setShowReview] = useState(false)
   const [reviewDone, setReviewDone] = useState(false)
@@ -711,6 +713,7 @@ export function AdvertiserDealActions({
     }
 
     setSaving(false)
+    if (ok && onRefresh) await onRefresh()
     return ok
   }
 
@@ -740,8 +743,10 @@ export function AdvertiserDealActions({
     setSaving(true)
     const result = await postConfirmCompletion(request.id)
     const ok = applyDealApiPatch(onUpdate, result)
+    if (ok && onRefresh) await onRefresh()
     setSaving(false)
     if (ok) {
+      onCompleted?.()
       try {
         await fetch('/api/notify', {
           method: 'POST',
@@ -763,21 +768,6 @@ export function AdvertiserDealActions({
 
   return (
     <div>
-      <DealPaymentModal
-        open={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        onConfirm={async () => {
-          const ok = await confirmPayment()
-          if (ok) setShowPaymentModal(false)
-          return ok
-        }}
-        budget={request.budget}
-        channel={channel}
-        saving={saving}
-        title="Подтвердить выполнение заказа"
-        subtitle="После подтверждения сделка будет завершена"
-        confirmLabel="Подтвердить выполнение заказа"
-      />
       {showDetails && (
         <div className="space-y-3 text-sm mb-4">
           {channel && (
@@ -891,9 +881,9 @@ export function AdvertiserDealActions({
                 type="button"
                 disabled={saving}
                 style={{ ...dealBtn.confirm, opacity: saving ? 0.6 : 1 }}
-                onClick={() => setShowPaymentModal(true)}
+                onClick={() => void confirmPayment()}
               >
-                Подтвердить выполнение заказа
+                {saving ? 'Подтверждаем…' : 'Подтвердить выполнение заказа'}
               </button>
               <button type="button" style={dealBtn.dispute} onClick={() => setShowDisputeForm(true)}>
                 Открыть спор
@@ -1233,7 +1223,10 @@ export function DealTimeline({ request }: { request: any }) {
       show: status === 'completed' && !!request.completed_at,
     },
     {
-      label: 'Выплата зафиксирована (90% владельцу канала, 10% AdverLink)',
+      label:
+        request.payment_mode === 'simulated'
+          ? 'Выплата зафиксирована (тестовая, 90/10)'
+          : 'Выплата зафиксирована (90% владельцу канала, 10% AdverLink)',
       date: request.completed_at,
       color: '#fb923c',
       show: status === 'completed' && request.payment_status === 'paid',
