@@ -36,6 +36,7 @@ export async function POST(
       ...serializeDealResponse(result.bundle),
       paymentAlreadyPaid: result.alreadyPaid,
       paymentReference: 'paymentReference' in result ? result.paymentReference : undefined,
+      paymentLedger: 'ledger' in result ? result.ledger : undefined,
     })
   } catch (error) {
     return dealActionErrorResponse(error)

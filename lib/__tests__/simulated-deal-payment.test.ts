@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  buildSimulatedPaymentLedger,
   countsAsRealRevenue,
   isDealAwaitingSimulatedPayment,
   isDealPaymentComplete,
@@ -87,6 +88,18 @@ describe('resolveDealPaymentAmount', () => {
       amount: 120,
       currency: 'USD',
       placementsCount: 2,
+    })
+  })
+})
+
+describe('stub ledger', () => {
+  it('debits the advertiser and credits 90/10', () => {
+    expect(buildSimulatedPaymentLedger(100, 'USD')).toEqual({
+      debitAdvertiser: 100,
+      creditCreator: 90,
+      creditPlatform: 10,
+      commissionPercent: 10,
+      currency: 'USD',
     })
   })
 })
@@ -179,6 +192,46 @@ describe('validateSimulatedDealPayment', () => {
     const result = validateSimulatedDealPayment(baseDeal(), 'adv-1', 'advertiser')
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.status).toBe(503)
+  })
+
+  it('still allows marketplace stub payment when the flag is off', () => {
+    vi.stubEnv('SIMULATED_PAYMENTS_ENABLED', 'false')
+    expect(
+      validateSimulatedDealPayment(
+        baseDeal({
+          campaign_id: null,
+          terms_status: 'none',
+          content_mode: null,
+          placements_count: null,
+          final_price: null,
+          final_price_currency: null,
+          budget: 80,
+          budget_currency: 'USD',
+        }),
+        'adv-1',
+        'advertiser',
+      ),
+    ).toEqual({ ok: true, alreadyPaid: false })
+  })
+
+  it('allows marketplace payment while work is already in progress', () => {
+    expect(
+      validateSimulatedDealPayment(
+        baseDeal({
+          status: 'in_progress',
+          campaign_id: null,
+          terms_status: 'none',
+          content_mode: null,
+          placements_count: null,
+          final_price: null,
+          final_price_currency: null,
+          budget: 80,
+          budget_currency: 'USD',
+        }),
+        'adv-1',
+        'advertiser',
+      ),
+    ).toEqual({ ok: true, alreadyPaid: false })
   })
 })
 

@@ -36,22 +36,21 @@ export function simulatedPaymentsOn(side: 'client' | 'server' = 'client'): boole
 export function canAdvertiserPayOrder(
   deal: OrderFlowDeal,
   role: OrderFlowRole,
-  side: 'client' | 'server' = 'client',
 ): boolean {
   if (role !== 'advertiser') return false
-  if (!simulatedPaymentsOn(side)) return false
-  if (normalizeDealStatus(deal.status) !== 'accepted') return false
+  if (!isMarketplaceOrderDeal(deal) && !simulatedPaymentsOn('client')) return false
+  const status = normalizeDealStatus(deal.status)
+  if (status !== 'accepted' && status !== 'in_progress') return false
   return !isOrderPaymentRecorded(deal)
 }
 
 export function canCreatorStartExecution(
   deal: OrderFlowDeal,
   role: OrderFlowRole,
-  side: 'client' | 'server' = 'client',
 ): boolean {
   if (role !== 'creator') return false
   if (normalizeDealStatus(deal.status) !== 'accepted') return false
-  if (simulatedPaymentsOn(side) && isMarketplaceOrderDeal(deal) && !isOrderPaymentRecorded(deal)) {
+  if (isMarketplaceOrderDeal(deal) && !isOrderPaymentRecorded(deal)) {
     return false
   }
   return true
@@ -61,7 +60,10 @@ export function canCreatorSubmitCompletion(
   deal: OrderFlowDeal,
   role: OrderFlowRole,
 ): boolean {
-  return role === 'creator' && normalizeDealStatus(deal.status) === 'in_progress'
+  if (role !== 'creator') return false
+  if (normalizeDealStatus(deal.status) !== 'in_progress') return false
+  if (isMarketplaceOrderDeal(deal) && !isOrderPaymentRecorded(deal)) return false
+  return true
 }
 
 export function canAdvertiserConfirmCompletion(

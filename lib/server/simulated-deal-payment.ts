@@ -4,8 +4,10 @@ import {
   normalizeDealStatus,
 } from '@/lib/deal-lifecycle'
 import {
+  buildSimulatedPaymentLedger,
   generateSimulatedPaymentReference,
   isDealPaymentComplete,
+  isMarketplaceStubPaymentDeal,
   isSimulatedPaymentsEnabled,
   resolveDealPaymentAmount,
   SIMULATED_PAYMENT_ENVIRONMENT,
@@ -42,10 +44,6 @@ export function validateSimulatedDealPayment(
   advertiserId: string,
   role: 'advertiser' | 'creator',
 ): SimulatedPaymentValidation {
-  if (!isSimulatedPaymentsEnabled()) {
-    return { ok: false, reason: 'Simulated payments are disabled', status: 503 }
-  }
-
   if (role !== 'advertiser') {
     return { ok: false, reason: 'Advertiser only', status: 403 }
   }
@@ -63,14 +61,6 @@ export function validateSimulatedDealPayment(
     return { ok: false, reason: 'Deal cannot be paid in current state', status: 400 }
   }
 
-  if (status !== 'accepted') {
-    return { ok: false, reason: 'Deal must be accepted before payment', status: 400 }
-  }
-
-  if (!resolveDealPaymentAmount(deal)) {
-    return { ok: false, reason: 'Agreed payment amount is missing', status: 400 }
-  }
-
   const bundleLifecycle = {
     status: deal.status,
     termsStatus: deal.terms_status,
@@ -83,12 +73,28 @@ export function validateSimulatedDealPayment(
     autoCompleteDeadline: deal.auto_complete_deadline,
     termsLockedAt: deal.terms_locked_at,
   }
+  const simpleMarketplace = isMarketplaceStubPaymentDeal(deal, bundleLifecycle)
+
+  if (!simpleMarketplace && !isSimulatedPaymentsEnabled()) {
+    return { ok: false, reason: 'Simulated payments are disabled', status: 503 }
+  }
+
+  if (simpleMarketplace) {
+    if (status !== 'accepted' && status !== 'in_progress') {
+      return { ok: false, reason: 'Deal must be accepted before payment', status: 400 }
+    }
+  } else if (status !== 'accepted') {
+    return { ok: false, reason: 'Deal must be accepted before payment', status: 400 }
+  }
+
+  if (!resolveDealPaymentAmount(deal)) {
+    return { ok: false, reason: 'Agreed payment amount is missing', status: 400 }
+  }
 
   if (deal.payment_status === 'paid') {
     return { ok: true, alreadyPaid: true }
   }
 
-  const simpleMarketplace = !deal.campaign_id && isLegacyLifecycleDeal(bundleLifecycle)
   if (simpleMarketplace) {
     return { ok: true, alreadyPaid: false }
   }
@@ -103,10 +109,6 @@ export function validateSimulatedDealPayment(
 
   if (!canLockTerms(bundleLifecycle)) {
     return { ok: false, reason: 'Payment is not available for this deal', status: 400 }
-  }
-
-  if (deal.payment_status === 'paid') {
-    return { ok: true, alreadyPaid: true }
   }
 
   return { ok: true, alreadyPaid: false }
@@ -131,21 +133,9 @@ export async function executeSimulatedDealPayment(dealId: string, advertiserId: 
 
   const now = new Date().toISOString()
   const paymentReference = generateSimulatedPaymentReference()
-
-  const simpleMarketplace =
-    !bundle.deal.campaign_id &&
-    isLegacyLifecycleDeal({
-      status: bundle.deal.status,
-      termsStatus: bundle.deal.terms_status,
-      contentMode: bundle.deal.content_mode,
-      contentStatus: bundle.deal.content_status,
-      placementsCount: bundle.deal.placements_count,
-      placements: [],
-      allPlacementsPublishedAt: bundle.deal.all_placements_published_at,
-      finalReviewStartedAt: bundle.deal.final_review_started_at,
-      autoCompleteDeadline: bundle.deal.auto_complete_deadline,
-      termsLockedAt: bundle.deal.terms_locked_at,
-    })
+  const ledger = buildSimulatedPaymentLedger(amount.amount, amount.currency)
+  const simpleMarketplace = isMarketplaceStubPaymentDeal(bundle.deal, bundle.lifecycle)
+  const fromStatus = normalizeDealStatus(bundle.deal.status)
   const update: Record<string, unknown> = {
     payment_mode: 'simulated',
     payment_status: 'paid',
@@ -164,9 +154,11 @@ export async function executeSimulatedDealPayment(dealId: string, advertiserId: 
   }
 
   const updated = await conditionalDealUpdate(dealId, update, (q) => {
-    let next = q.eq('status', 'accepted').neq('payment_status', 'paid')
-    if (!simpleMarketplace) {
-      next = next.eq('terms_status', 'accepted')
+    let next = q.neq('payment_status', 'paid')
+    if (simpleMarketplace) {
+      next = next.in('status', ['accepted', 'in_progress'])
+    } else {
+      next = next.eq('status', fromStatus).eq('terms_status', 'accepted')
     }
     return next
   })
@@ -185,9 +177,10 @@ export async function executeSimulatedDealPayment(dealId: string, advertiserId: 
       paymentReference,
       amount: amount.amount,
       currency: amount.currency,
+      ledger,
     })
   }
 
   bundle = await reloadDealBundle(dealId)
-  return { bundle, alreadyPaid: false as const, paymentReference }
+  return { bundle, alreadyPaid: false as const, paymentReference, ledger }
 }

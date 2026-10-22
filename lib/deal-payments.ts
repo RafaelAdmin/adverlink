@@ -1,4 +1,5 @@
 import type { AdRequest } from '@/lib/database.types'
+import { calcPaymentSplit, PLATFORM_COMMISSION_PERCENT } from '@/lib/deals'
 import { isLegacyLifecycleDeal, normalizeDealStatus, type DealLifecycleContext } from '@/lib/deal-lifecycle'
 
 export type PaymentMode = 'simulated' | 'real'
@@ -69,19 +70,52 @@ export function isDealPaymentComplete(
   return deal.payment_status === 'paid' && deal.terms_status === 'locked' && Boolean(deal.terms_locked_at)
 }
 
+export function isMarketplaceStubPaymentDeal(
+  deal: Pick<AdRequest, 'campaign_id'> | { campaign_id?: string | null },
+  ctx?: DealLifecycleContext,
+): boolean {
+  if (deal.campaign_id) return false
+  if (!ctx) return true
+  return isLegacyLifecycleDeal(ctx)
+}
+
+export type SimulatedPaymentLedger = {
+  debitAdvertiser: number
+  creditCreator: number
+  creditPlatform: number
+  commissionPercent: number
+  currency: string
+}
+
+export function buildSimulatedPaymentLedger(
+  amount: number,
+  currency: string,
+  commissionPercent = PLATFORM_COMMISSION_PERCENT,
+): SimulatedPaymentLedger {
+  const split = calcPaymentSplit(amount, commissionPercent)
+  return {
+    debitAdvertiser: split.total,
+    creditCreator: split.creator,
+    creditPlatform: split.platform,
+    commissionPercent: split.commissionPercent,
+    currency,
+  }
+}
+
 export function isDealAwaitingSimulatedPayment(
   deal: AdRequest,
   ctx: DealLifecycleContext,
 ): boolean {
   if (deal.payment_status === 'paid' || isDealPaymentComplete(deal)) return false
   const status = normalizeDealStatus(deal.status)
-  if (['cancelled', 'rejected', 'completed', 'disputed'].includes(status)) return false
-  if (status !== 'accepted') return false
+  if (['cancelled', 'rejected', 'completed', 'disputed', 'submitted'].includes(status)) return false
 
-  if (!deal.campaign_id && isLegacyLifecycleDeal(ctx)) {
+  if (isMarketplaceStubPaymentDeal(deal, ctx)) {
+    if (status !== 'accepted' && status !== 'in_progress') return false
     return Boolean(resolveDealPaymentAmount(deal))
   }
 
+  if (status !== 'accepted') return false
   if (isLegacyLifecycleDeal(ctx)) return false
   if (deal.terms_status !== 'accepted') return false
   return true

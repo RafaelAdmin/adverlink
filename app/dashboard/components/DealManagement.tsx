@@ -27,7 +27,7 @@ import {
   postRequestRevision,
 } from '@/lib/deal-api-client'
 import { coerceAdRequestRow } from '@/lib/final-terms-ui'
-import { canCreatorStartExecution, isDealChatAvailable } from '@/lib/order-flow'
+import { canCreatorStartExecution, canCreatorSubmitCompletion, isDealChatAvailable } from '@/lib/order-flow'
 
 export function DealStatusPill({
   status,
@@ -456,7 +456,12 @@ export function CreatorDealActions({
               <p className="text-white/70 text-sm">{request.advertiser_note}</p>
             </div>
           )}
-          {!hideLegacyProofSubmit && (
+          {!hideLegacyProofSubmit && !canCreatorSubmitCompletion(request, 'creator') && (
+            <p className="text-white/60 text-sm mt-3 mb-0">
+              Отправить пруф можно после оплаты заказа рекламодателем.
+            </p>
+          )}
+          {!hideLegacyProofSubmit && canCreatorSubmitCompletion(request, 'creator') && (
             <>
           <label className="block mt-4">
             <span className="text-white/50 text-xs mb-2 block">Подтверждение выполнения</span>

@@ -20,7 +20,6 @@ import {
   type DealStatus,
 } from '@/lib/deal-lifecycle'
 import { incrementCampaignSlots } from '@/lib/campaigns'
-import { isSimulatedPaymentsEnabled } from '@/lib/deal-payments'
 import type { DealParticipantRole } from '@/lib/server/deal-auth'
 import { DealActionError } from '@/lib/server/deal-errors'
 import {
@@ -114,14 +113,15 @@ export async function executeGenericDealTransition(
     campaignId: bundle.deal.campaign_id,
   })
 
-  if (payload.toStatus === 'in_progress' && role === 'creator') {
-    const marketplace = !bundle.deal.campaign_id && isLegacyLifecycleDeal(bundle.lifecycle)
-    if (
-      marketplace &&
-      isSimulatedPaymentsEnabled() &&
-      bundle.deal.payment_status !== 'paid'
-    ) {
+  const marketplaceStub =
+    !bundle.deal.campaign_id && isLegacyLifecycleDeal(bundle.lifecycle)
+
+  if (marketplaceStub && bundle.deal.payment_status !== 'paid') {
+    if (payload.toStatus === 'in_progress' && role === 'creator') {
       throw new DealActionError('Payment is required before starting work', 400)
+    }
+    if (payload.toStatus === 'submitted' && role === 'creator') {
+      throw new DealActionError('Payment is required before submitting proof', 400)
     }
   }
 

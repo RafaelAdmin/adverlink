@@ -61,6 +61,15 @@ describe('marketplace order flow', () => {
     expect(canAdvertiserConfirmCompletion({ status: 'submitted' }, 'creator')).toBe(false)
     expect(canAdvertiserConfirmCompletion({ status: 'submitted' }, 'advertiser')).toBe(true)
     expect(canCreatorSubmitCompletion({ status: 'in_progress' }, 'advertiser')).toBe(false)
+    expect(canCreatorSubmitCompletion({ status: 'in_progress', campaign_id: null }, 'creator')).toBe(
+      false,
+    )
+    expect(
+      canCreatorSubmitCompletion(
+        { status: 'in_progress', campaign_id: null, payment_status: 'paid' },
+        'creator',
+      ),
+    ).toBe(true)
     expect(isMarketplaceOrderDeal(acceptedUnpaid)).toBe(true)
   })
 })
