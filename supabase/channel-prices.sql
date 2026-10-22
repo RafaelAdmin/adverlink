@@ -2,6 +2,24 @@
 -- Do not create a second price-list table.
 -- Safe to re-run.
 
+create or replace function public.current_user_is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and is_admin = true
+  );
+$$;
+
+revoke all on function public.current_user_is_admin() from public;
+grant execute on function public.current_user_is_admin() to anon, authenticated, service_role;
+
 create table if not exists public.channel_prices (
   id uuid default gen_random_uuid() primary key,
   channel_id uuid references public.channels(id) on delete cascade,
@@ -25,10 +43,7 @@ create policy "channel_prices_select" on public.channel_prices
       where c.id = channel_id
         and (c.is_active = true or c.owner_id = auth.uid())
     )
-    or exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.is_admin = true
-    )
+    or public.current_user_is_admin()
   );
 
 drop policy if exists "channel_prices_insert_own" on public.channel_prices;
@@ -60,12 +75,7 @@ create policy "channel_prices_delete_own" on public.channel_prices
 
 drop policy if exists "channel_prices_admin_all" on public.channel_prices;
 create policy "channel_prices_admin_all" on public.channel_prices
-  for all using (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.is_admin = true
-    )
-  );
+  for all using (public.current_user_is_admin());
 
 create index if not exists channel_prices_channel_sort_idx
   on public.channel_prices (channel_id, sort_order);

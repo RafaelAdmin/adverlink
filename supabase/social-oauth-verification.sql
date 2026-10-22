@@ -2,6 +2,24 @@
 -- Run in Supabase SQL Editor after schema.sql and security-fixes.sql.
 -- Does not store access_token or refresh_token.
 
+create or replace function public.current_user_is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and is_admin = true
+  );
+$$;
+
+revoke all on function public.current_user_is_admin() from public;
+grant execute on function public.current_user_is_admin() to anon, authenticated, service_role;
+
 alter table public.channels
   add column if not exists external_account_id text,
   add column if not exists verification_expires_at timestamptz;
@@ -58,16 +76,13 @@ create policy "social_verifications_select_own" on public.social_account_verific
       select 1 from public.channels c
       where c.id = channel_id and c.owner_id = auth.uid()
     )
-    or exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.is_admin = true
-    )
+    or public.current_user_is_admin()
   );
 
 drop policy if exists "social_verifications_admin_all" on public.social_account_verifications;
 create policy "social_verifications_admin_all" on public.social_account_verifications
   for all using (
-    exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+    public.current_user_is_admin()
   );
 
 -- No policies on oauth_verification_sessions: authenticated clients cannot read PKCE verifiers.
@@ -90,9 +105,7 @@ begin
     if current_setting('app.allow_verify', true) = '1' then
       return new;
     end if;
-    if not exists (
-      select 1 from public.profiles where id = auth.uid() and is_admin = true
-    ) then
+    if not public.current_user_is_admin() then
       raise exception 'Cannot modify privileged channel fields directly';
     end if;
   end if;

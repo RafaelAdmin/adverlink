@@ -3,6 +3,24 @@
 -- policies on profiles, channels, campaigns, reviews, or subscriptions.
 -- Idempotent. Do not run on production until explicitly confirmed.
 
+create or replace function public.current_user_is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and is_admin = true
+  );
+$$;
+
+revoke all on function public.current_user_is_admin() from public;
+grant execute on function public.current_user_is_admin() to anon, authenticated, service_role;
+
 create or replace function public.channel_is_listed(p_channel_id uuid)
 returns boolean
 language sql
@@ -103,8 +121,5 @@ create policy "channel_prices_select" on public.channel_prices
       select 1 from public.channels c
       where c.id = channel_id and c.owner_id = auth.uid()
     )
-    or exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.is_admin = true
-    )
+    or public.current_user_is_admin()
   );

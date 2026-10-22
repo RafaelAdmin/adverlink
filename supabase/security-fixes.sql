@@ -1,6 +1,24 @@
 -- Run this in Supabase SQL Editor to apply security hardening.
 -- Safe to re-run: uses IF NOT EXISTS / DROP IF EXISTS where needed.
 
+create or replace function public.current_user_is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and is_admin = true
+  );
+$$;
+
+revoke all on function public.current_user_is_admin() from public;
+grant execute on function public.current_user_is_admin() to anon, authenticated, service_role;
+
 -- ============================================================
 -- MESSAGES TABLE (deal chat)
 -- ============================================================
@@ -29,10 +47,7 @@ as $$
       and (
         ar.advertiser_id = auth.uid()
         or ch.owner_id = auth.uid()
-        or exists (
-          select 1 from public.profiles p
-          where p.id = auth.uid() and p.is_admin = true
-        )
+        or public.current_user_is_admin()
       )
   );
 $$;
@@ -50,9 +65,7 @@ create policy "messages_insert_participants" on public.messages
 
 drop policy if exists "messages_admin_all" on public.messages;
 create policy "messages_admin_all" on public.messages
-  for all using (
-    exists (select 1 from public.profiles where id = auth.uid() and is_admin = true)
-  );
+  for all using (public.current_user_is_admin());
 
 -- ============================================================
 -- PROTECT PRIVILEGED PROFILE COLUMNS
@@ -69,9 +82,7 @@ begin
     or new.level is distinct from old.level
     or new.level_deals is distinct from old.level_deals
   ) then
-    if not exists (
-      select 1 from public.profiles where id = auth.uid() and is_admin = true
-    ) then
+    if not public.current_user_is_admin() then
       raise exception 'Cannot modify privileged profile fields';
     end if;
   end if;
@@ -102,9 +113,7 @@ begin
     if current_setting('app.allow_verify', true) = '1' then
       return new;
     end if;
-    if not exists (
-      select 1 from public.profiles where id = auth.uid() and is_admin = true
-    ) then
+    if not public.current_user_is_admin() then
       raise exception 'Cannot modify privileged channel fields directly';
     end if;
   end if;

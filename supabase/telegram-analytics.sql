@@ -1,6 +1,24 @@
 -- Telegram Analytics V1 migration
 -- Safe to re-run where noted. DO NOT auto-apply to production — review first.
 
+create or replace function public.current_user_is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and is_admin = true
+  );
+$$;
+
+revoke all on function public.current_user_is_admin() from public;
+grant execute on function public.current_user_is_admin() to anon, authenticated, service_role;
+
 -- ============================================================
 -- CHANNEL ANALYTICS FIELDS
 -- ============================================================
@@ -92,7 +110,7 @@ create policy "telegram_posts_select_owner" on public.telegram_posts
       where ch.id = telegram_posts.channel_id
         and (
           ch.owner_id = auth.uid()
-          or exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+          or public.current_user_is_admin()
         )
     )
   );
@@ -100,7 +118,7 @@ create policy "telegram_posts_select_owner" on public.telegram_posts
 drop policy if exists "telegram_posts_admin_all" on public.telegram_posts;
 create policy "telegram_posts_admin_all" on public.telegram_posts
   for all using (
-    exists (select 1 from public.profiles where id = auth.uid() and is_admin = true)
+    public.current_user_is_admin()
   );
 
 drop policy if exists "telegram_post_snapshots_select_owner" on public.telegram_post_snapshots;
@@ -112,7 +130,7 @@ create policy "telegram_post_snapshots_select_owner" on public.telegram_post_sna
       where tp.id = telegram_post_snapshots.post_id
         and (
           ch.owner_id = auth.uid()
-          or exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+          or public.current_user_is_admin()
         )
     )
   );
@@ -120,7 +138,7 @@ create policy "telegram_post_snapshots_select_owner" on public.telegram_post_sna
 drop policy if exists "telegram_post_snapshots_admin_all" on public.telegram_post_snapshots;
 create policy "telegram_post_snapshots_admin_all" on public.telegram_post_snapshots
   for all using (
-    exists (select 1 from public.profiles where id = auth.uid() and is_admin = true)
+    public.current_user_is_admin()
   );
 
 -- ============================================================
@@ -136,9 +154,7 @@ as $$
 declare
   v_is_admin boolean;
 begin
-  v_is_admin := exists (
-    select 1 from public.profiles where id = auth.uid() and is_admin = true
-  );
+  v_is_admin := public.current_user_is_admin();
 
   if (
     new.verification_status is distinct from old.verification_status

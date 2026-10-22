@@ -1,47 +1,6 @@
 /*
-Run in Supabase SQL Editor for admin access:
-
-create policy "Admins can do everything on channels"
-on channels for all
-using (
-  exists (select 1 from profiles where id = auth.uid() and is_admin = true)
-);
-
-create policy "Admins can do everything on ad_requests"
-on ad_requests for all
-using (
-  exists (select 1 from profiles where id = auth.uid() and is_admin = true)
-);
-
-create policy "Admins can do everything on campaigns"
-on campaigns for all
-using (
-  exists (select 1 from profiles where id = auth.uid() and is_admin = true)
-);
-
-create policy "Admins can do everything on reviews"
-on reviews for all
-using (
-  exists (select 1 from profiles where id = auth.uid() and is_admin = true)
-);
-
-create policy "Admins can view all profiles"
-on profiles for select
-using (
-  exists (select 1 from profiles where id = auth.uid() and is_admin = true)
-);
-
-create policy "Admins can update all profiles"
-on profiles for update
-using (
-  exists (select 1 from profiles where id = auth.uid() and is_admin = true)
-);
-
-create policy "Admins can delete profiles"
-on profiles for delete
-using (
-  exists (select 1 from profiles where id = auth.uid() and is_admin = true)
-);
+Admin table access uses public.current_user_is_admin() (SECURITY DEFINER).
+Do not SELECT public.profiles from a profiles policy — that recurses under RLS.
 */
 
 'use client'

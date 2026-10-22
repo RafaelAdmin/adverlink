@@ -14,6 +14,25 @@
 -- Same family of pattern as app.allow_verify / app.allow_analytics_sync.
 --
 -- Safe to re-run where noted (IF NOT EXISTS / DROP IF EXISTS).
+
+create or replace function public.current_user_is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and is_admin = true
+  );
+$$;
+
+revoke all on function public.current_user_is_admin() from public;
+grant execute on function public.current_user_is_admin() to anon, authenticated, service_role;
+
 -- ============================================================
 -- A. AD_REQUESTS — orthogonal lifecycle columns
 -- ============================================================
@@ -158,9 +177,7 @@ declare
   v_trusted boolean;
   v_lifecycle_touched boolean;
 begin
-  v_is_admin := exists (
-    select 1 from public.profiles where id = auth.uid() and is_admin = true
-  );
+  v_is_admin := public.current_user_is_admin();
   v_trusted := current_user in ('service_role', 'postgres')
     or current_setting('app.allow_deal_lifecycle', true) = '1'
     or v_is_admin;
@@ -341,7 +358,7 @@ drop policy if exists "deal_placements_admin_all" on public.deal_placements;
 drop policy if exists "deal_placements_admin_select" on public.deal_placements;
 create policy "deal_placements_admin_select" on public.deal_placements
   for select using (
-    exists (select 1 from public.profiles where id = auth.uid() and is_admin = true)
+    public.current_user_is_admin()
   );
 
 drop policy if exists "deal_materials_select_participant" on public.deal_materials;
@@ -352,7 +369,7 @@ drop policy if exists "deal_materials_admin_all" on public.deal_materials;
 drop policy if exists "deal_materials_admin_select" on public.deal_materials;
 create policy "deal_materials_admin_select" on public.deal_materials
   for select using (
-    exists (select 1 from public.profiles where id = auth.uid() and is_admin = true)
+    public.current_user_is_admin()
   );
 
 -- Table privileges: revoke everything from browser roles; grant SELECT only.

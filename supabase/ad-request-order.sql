@@ -2,6 +2,24 @@
 -- Safe to re-run. Does not create a second price-list table.
 -- Requires: public.ad_requests, public.channel_prices, public.is_deal_participant().
 
+create or replace function public.current_user_is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and is_admin = true
+  );
+$$;
+
+revoke all on function public.current_user_is_admin() from public;
+grant execute on function public.current_user_is_admin() to anon, authenticated, service_role;
+
 alter table public.ad_requests
   add column if not exists pricing_mode text;
 
@@ -128,7 +146,7 @@ begin
 
   if current_user in ('service_role', 'postgres')
     or current_setting('app.allow_deal_lifecycle', true) = '1'
-    or exists (select 1 from public.profiles where id = auth.uid() and is_admin = true)
+    or public.current_user_is_admin()
   then
     return new;
   end if;

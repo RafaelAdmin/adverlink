@@ -15,6 +15,24 @@ alter table public.subscriptions enable row level security;
 alter table public.deals enable row level security;
 alter table public.deal_messages enable row level security;
 
+create or replace function public.current_user_is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and is_admin = true
+  );
+$$;
+
+revoke all on function public.current_user_is_admin() from public;
+grant execute on function public.current_user_is_admin() to anon, authenticated, service_role;
+
 -- =============================================================================
 -- Privileged-column triggers
 -- =============================================================================
@@ -31,9 +49,7 @@ begin
     or new.level_deals is distinct from old.level_deals
     or new.avatar_frame_color is distinct from old.avatar_frame_color
   ) then
-    if not exists (
-      select 1 from public.profiles where id = auth.uid() and is_admin = true
-    ) then
+    if not public.current_user_is_admin() then
       raise exception 'Cannot modify privileged profile fields';
     end if;
   end if;
@@ -53,9 +69,7 @@ as $$
 declare
   v_is_admin boolean;
 begin
-  v_is_admin := exists (
-    select 1 from public.profiles where id = auth.uid() and is_admin = true
-  );
+  v_is_admin := public.current_user_is_admin();
 
   if (
     new.verification_status is distinct from old.verification_status
@@ -109,6 +123,7 @@ create trigger protect_channel_columns_trigger
 -- =============================================================================
 -- profiles
 -- =============================================================================
+drop policy if exists "Admins full access profiles" on public.profiles;
 drop policy if exists "profiles_select_all" on public.profiles;
 drop policy if exists "profiles_insert_own" on public.profiles;
 drop policy if exists "profiles_update_own" on public.profiles;
@@ -125,8 +140,8 @@ create policy "profiles_update_own" on public.profiles
 
 create policy "profiles_admin_all" on public.profiles
   for all
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true))
-  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+  using (public.current_user_is_admin())
+  with check (public.current_user_is_admin());
 
 -- =============================================================================
 -- categories
@@ -139,8 +154,8 @@ create policy "categories_select_all" on public.categories
 
 create policy "categories_admin_all" on public.categories
   for all
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true))
-  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+  using (public.current_user_is_admin())
+  with check (public.current_user_is_admin());
 
 -- =============================================================================
 -- channels (table): owner + admin only
@@ -154,7 +169,7 @@ drop policy if exists "channels_admin_all" on public.channels;
 create policy "channels_select" on public.channels
   for select using (
     owner_id = auth.uid()
-    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+    or public.current_user_is_admin()
   );
 
 create policy "channels_insert_own" on public.channels
@@ -175,8 +190,8 @@ create policy "channels_delete_own" on public.channels
 
 create policy "channels_admin_all" on public.channels
   for all
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true))
-  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+  using (public.current_user_is_admin())
+  with check (public.current_user_is_admin());
 
 -- =============================================================================
 -- campaigns (table): owner + admin only
@@ -190,7 +205,7 @@ drop policy if exists "campaigns_admin_all" on public.campaigns;
 create policy "campaigns_select" on public.campaigns
   for select using (
     advertiser_id = auth.uid()
-    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+    or public.current_user_is_admin()
   );
 
 create policy "campaigns_insert_own" on public.campaigns
@@ -206,8 +221,8 @@ create policy "campaigns_delete_own" on public.campaigns
 
 create policy "campaigns_admin_all" on public.campaigns
   for all
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true))
-  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+  using (public.current_user_is_admin())
+  with check (public.current_user_is_admin());
 
 -- =============================================================================
 -- reviews
@@ -248,8 +263,8 @@ create policy "reviews_delete_own" on public.reviews
 
 create policy "reviews_admin_all" on public.reviews
   for all
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true))
-  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+  using (public.current_user_is_admin())
+  with check (public.current_user_is_admin());
 
 -- =============================================================================
 -- subscriptions
@@ -263,13 +278,13 @@ drop policy if exists "subscriptions_admin_all" on public.subscriptions;
 create policy "subscriptions_select_own" on public.subscriptions
   for select using (
     auth.uid() = user_id
-    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true)
+    or public.current_user_is_admin()
   );
 
 create policy "subscriptions_admin_all" on public.subscriptions
   for all
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true))
-  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+  using (public.current_user_is_admin())
+  with check (public.current_user_is_admin());
 
 -- =============================================================================
 -- deals + deal_messages (legacy)

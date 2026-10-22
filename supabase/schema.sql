@@ -217,6 +217,24 @@ create trigger on_auth_user_created
 -- ROW LEVEL SECURITY
 -- ================================================
 
+create or replace function public.current_user_is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and is_admin = true
+  );
+$$;
+
+revoke all on function public.current_user_is_admin() from public;
+grant execute on function public.current_user_is_admin() to anon, authenticated, service_role;
+
 alter table public.profiles enable row level security;
 alter table public.categories enable row level security;
 alter table public.channels enable row level security;
@@ -231,6 +249,7 @@ alter table public.friendships enable row level security;
 alter table public.blocked_users enable row level security;
 
 -- PROFILES
+drop policy if exists "Admins full access profiles" on public.profiles;
 create policy "profiles_select_all" on public.profiles
   for select using (true);
 create policy "profiles_insert_own" on public.profiles
@@ -238,17 +257,15 @@ create policy "profiles_insert_own" on public.profiles
 create policy "profiles_update_own" on public.profiles
   for update using (auth.uid() = id) with check (auth.uid() = id);
 create policy "profiles_admin_all" on public.profiles
-  for all using (exists (
-    select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true
-  ));
+  for all
+  using (public.current_user_is_admin())
+  with check (public.current_user_is_admin());
 
 -- CATEGORIES
 create policy "categories_select_all" on public.categories
   for select using (true);
 create policy "categories_admin_all" on public.categories
-  for all using (exists (
-    select 1 from public.profiles where id = auth.uid() and is_admin = true
-  ));
+  for all using (public.current_user_is_admin());
 
 -- CHANNELS
 create policy "channels_select" on public.channels
@@ -260,9 +277,7 @@ create policy "channels_update_own" on public.channels
 create policy "channels_delete_own" on public.channels
   for delete using (auth.uid() = owner_id);
 create policy "channels_admin_all" on public.channels
-  for all using (exists (
-    select 1 from public.profiles where id = auth.uid() and is_admin = true
-  ));
+  for all using (public.current_user_is_admin());
 
 -- CAMPAIGNS
 create policy "campaigns_select" on public.campaigns
@@ -274,16 +289,14 @@ create policy "campaigns_update_own" on public.campaigns
 create policy "campaigns_delete_own" on public.campaigns
   for delete using (auth.uid() = advertiser_id);
 create policy "campaigns_admin_all" on public.campaigns
-  for all using (exists (
-    select 1 from public.profiles where id = auth.uid() and is_admin = true
-  ));
+  for all using (public.current_user_is_admin());
 
 -- AD REQUESTS
 create policy "ad_requests_select" on public.ad_requests
   for select using (
     advertiser_id = auth.uid()
     or channel_id in (select id from public.channels where owner_id = auth.uid())
-    or exists (select 1 from public.profiles where id = auth.uid() and is_admin = true)
+    or public.current_user_is_admin()
   );
 create policy "ad_requests_insert" on public.ad_requests
   for insert with check (auth.uid() is not null);
@@ -293,23 +306,19 @@ create policy "ad_requests_update" on public.ad_requests
     or channel_id in (select id from public.channels where owner_id = auth.uid())
   );
 create policy "ad_requests_admin_all" on public.ad_requests
-  for all using (exists (
-    select 1 from public.profiles where id = auth.uid() and is_admin = true
-  ));
+  for all using (public.current_user_is_admin());
 
 -- REVIEWS
 create policy "reviews_select" on public.reviews
   for select using (
     reviewer_id = auth.uid()
     or reviewee_id = auth.uid()
-    or exists (select 1 from public.profiles where id = auth.uid() and is_admin = true)
+    or public.current_user_is_admin()
   );
 create policy "reviews_insert_own" on public.reviews
   for insert with check (auth.uid() = reviewer_id);
 create policy "reviews_admin_all" on public.reviews
-  for all using (exists (
-    select 1 from public.profiles where id = auth.uid() and is_admin = true
-  ));
+  for all using (public.current_user_is_admin());
 
 -- FRIENDSHIPS
 create policy "friendships_select" on public.friendships
