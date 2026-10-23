@@ -161,6 +161,32 @@ export async function replaceChannelPrices(
   return { error: error?.message ?? null }
 }
 
+export const YOUTUBE_PRICE_LIST_REQUIRED_ERROR =
+  'Добавьте хотя бы одну услугу с названием, ценой больше 0 и валютой'
+
+export function usesSharedChannelPriceList(platform: string | null | undefined): boolean {
+  return platform === 'telegram' || platform === 'youtube' || !platform
+}
+
+export function requiresChannelPriceList(platform: string | null | undefined): boolean {
+  return platform === 'youtube'
+}
+
+export function isValidStoredPriceRow(row: {
+  type?: string | null
+  price?: number | string | null
+  currency?: string | null
+}): boolean {
+  const price = Number(row.price)
+  return Boolean(row.type?.trim()) && Number.isFinite(price) && price > 0 && isPriceListCurrency(row.currency)
+}
+
+export function hasValidStoredPriceList(
+  rows: Array<{ type?: string | null; price?: number | string | null; currency?: string | null }> | null | undefined,
+): boolean {
+  return (rows || []).some(isValidStoredPriceRow)
+}
+
 export function formatPriceListLine(item: {
   type: string
   price: number

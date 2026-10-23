@@ -19,7 +19,7 @@ const TELEGRAM_STEPS: { id: AddChannelFlowStep; label: string; shortLabel: strin
 type AddChannelProgressStepperProps = {
   currentStep: AddChannelFlowStep
   className?: string
-  variant?: 'default' | 'telegram'
+  variant?: 'default' | 'telegram' | 'youtube'
 }
 
 export default function AddChannelProgressStepper({
@@ -27,7 +27,7 @@ export default function AddChannelProgressStepper({
   className = '',
   variant = 'default',
 }: AddChannelProgressStepperProps) {
-  const steps = variant === 'telegram' ? TELEGRAM_STEPS : DEFAULT_STEPS
+  const steps = variant === 'telegram' || variant === 'youtube' ? TELEGRAM_STEPS : DEFAULT_STEPS
 
   return (
     <nav

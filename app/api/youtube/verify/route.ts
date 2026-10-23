@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
+import { hasValidStoredPriceList } from '@/lib/channel-prices'
 import { verifyCodeInDescription } from '@/lib/verification-check'
 
 async function resolveYouTubeChannel(handle: string, apiKey: string) {
@@ -65,6 +66,18 @@ export async function POST(request: NextRequest) {
 
   if (!channel.verification_code) {
     return NextResponse.json({ verified: false, error: 'Verification code not issued' }, { status: 400 })
+  }
+
+  const { data: prices } = await supabase
+    .from('channel_prices')
+    .select('type, price, currency')
+    .eq('channel_id', channelId)
+
+  if (!hasValidStoredPriceList(prices)) {
+    return NextResponse.json(
+      { verified: false, error: 'price_list_required' },
+      { status: 400 },
+    )
   }
 
   try {

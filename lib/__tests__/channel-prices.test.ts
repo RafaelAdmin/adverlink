@@ -4,9 +4,12 @@ import {
   deriveChannelStartingPrice,
   draftsFromPriceRows,
   formatPriceListLine,
+  hasValidStoredPriceList,
   moveDraftPrice,
   replaceChannelPrices,
+  requiresChannelPriceList,
   sanitizeDraftPrices,
+  usesSharedChannelPriceList,
   withPriceListCurrency,
 } from '../channel-prices'
 
@@ -157,5 +160,23 @@ describe('draft helpers', () => {
     expect(formatPriceListLine({ type: 'Пост 24 часа в ленте', price: 25, currency: 'USD' })).toBe(
       'Пост 24 часа в ленте — $25',
     )
+  })
+})
+
+describe('youtube price list requirement helpers', () => {
+  it('treats youtube as a shared channel_prices platform that is required', () => {
+    expect(usesSharedChannelPriceList('youtube')).toBe(true)
+    expect(usesSharedChannelPriceList('telegram')).toBe(true)
+    expect(usesSharedChannelPriceList('instagram')).toBe(false)
+    expect(requiresChannelPriceList('youtube')).toBe(true)
+    expect(requiresChannelPriceList('telegram')).toBe(false)
+    expect(
+      hasValidStoredPriceList([
+        { type: 'Интеграция 60 сек', price: 150, currency: 'USD' },
+      ]),
+    ).toBe(true)
+    expect(hasValidStoredPriceList([{ type: '', price: 10, currency: 'USD' }])).toBe(false)
+    expect(hasValidStoredPriceList([{ type: 'Интеграция', price: 0, currency: 'USD' }])).toBe(false)
+    expect(hasValidStoredPriceList([])).toBe(false)
   })
 })

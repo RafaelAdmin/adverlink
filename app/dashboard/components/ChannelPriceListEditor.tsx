@@ -16,11 +16,13 @@ export default function ChannelPriceListEditor({
   onChange,
   defaultCurrency = 'USD',
   compactHint = true,
+  required = false,
 }: {
   items: DraftChannelPrice[]
   onChange: (items: DraftChannelPrice[]) => void
   defaultCurrency?: CurrencyCode
   compactHint?: boolean
+  required?: boolean
 }) {
   const listCurrency = items[0]?.currency || defaultCurrency
 
@@ -41,11 +43,15 @@ export default function ChannelPriceListEditor({
     <div className="flex flex-col gap-4">
       <div>
         <h2 className="ui-section-title mb-1">Прайс-лист</h2>
-        {compactHint && (
+        {required ? (
+          <p className="ui-meta" style={{ margin: 0 }}>
+            Нужна хотя бы одна услуга с названием, ценой больше 0 и валютой. Описание необязательно.
+          </p>
+        ) : compactHint ? (
           <p className="ui-meta" style={{ margin: 0 }}>
             Необязательно. Можно пропустить и заполнить позже в настройках канала.
           </p>
-        )}
+        ) : null}
         <p className="ui-meta" style={{ margin: '8px 0 0' }}>
           Например: {formatPriceListLine({ type: 'Пост 24 часа в ленте', price: 25, currency: 'USD' })}
           {' · '}
@@ -54,7 +60,11 @@ export default function ChannelPriceListEditor({
       </div>
 
       {items.length === 0 && (
-        <p className="ui-meta">Услуг пока нет. Канал можно добавить и без прайса.</p>
+        <p className="ui-meta">
+          {required
+            ? 'Услуг пока нет. Добавьте хотя бы одну, чтобы продолжить.'
+            : 'Услуг пока нет. Канал можно добавить и без прайса.'}
+        </p>
       )}
 
       <div className="flex flex-col gap-3">

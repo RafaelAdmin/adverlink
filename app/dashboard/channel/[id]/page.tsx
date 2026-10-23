@@ -242,6 +242,13 @@ export default function ChannelProfilePage() {
         </Surface>
       )}
 
+      {channel.platform === 'youtube' && priceItems.length === 0 && isMyChannel && (
+        <Surface padding="md" style={{ marginBottom: '12px' }}>
+          <h2 className="ui-card-title mb-2">Прайс-лист</h2>
+          <p className="ui-body">Заполните прайс-лист в настройках канала: нужна хотя бы одна услуга с ценой.</p>
+        </Surface>
+      )}
+
       {priceItems.length > 0 && (
         <Surface padding="md" style={{ marginBottom: '12px' }}>
           <h2 className="ui-card-title mb-3">Прайс-лист</h2>

@@ -12,10 +12,15 @@ import CurrencySelector from '@/app/dashboard/components/CurrencySelector'
 import ChannelPriceListEditor from '@/app/dashboard/components/ChannelPriceListEditor'
 import { CurrencyCode } from '@/lib/currency'
 import {
+  YOUTUBE_PRICE_LIST_REQUIRED_ERROR,
+  createEmptyPriceDraft,
   deriveChannelStartingPrice,
   draftsFromPriceRows,
+  hasValidStoredPriceList,
   replaceChannelPrices,
+  requiresChannelPriceList,
   sanitizeDraftPrices,
+  usesSharedChannelPriceList,
   type ChannelPriceRow,
   type DraftChannelPrice,
 } from '@/lib/channel-prices'
@@ -59,7 +64,13 @@ export default function EditChannelPage() {
         .eq('channel_id', data.id)
         .order('sort_order', { ascending: true })
 
-      setPriceDrafts(draftsFromPriceRows((prices || []) as ChannelPriceRow[]))
+      const rows = (prices || []) as ChannelPriceRow[]
+      const drafts = draftsFromPriceRows(rows)
+      setPriceDrafts(
+        drafts.length === 0 && requiresChannelPriceList(data.platform)
+          ? [createEmptyPriceDraft((data.ad_price_currency || 'USD') as CurrencyCode)]
+          : drafts,
+      )
       setLoading(false)
     }
     load()
@@ -73,16 +84,21 @@ export default function EditChannelPage() {
     const name = (channel.name || '').trim().slice(0, 100)
     const description = (channel.description || '').trim().slice(0, 1000)
     const avgViews = Math.max(0, Number(channel.avg_views) || 0)
-    const isTelegram = channel.platform === 'telegram' || !channel.platform
-    const priceItems = isTelegram ? sanitizeDraftPrices(priceDrafts) : []
-    const startingPrice = isTelegram
+    const usesPriceList = usesSharedChannelPriceList(channel.platform)
+    const priceItems = usesPriceList ? sanitizeDraftPrices(priceDrafts) : []
+    if (requiresChannelPriceList(channel.platform) && priceItems.length === 0) {
+      setSaving(false)
+      setError(YOUTUBE_PRICE_LIST_REQUIRED_ERROR)
+      return
+    }
+    const startingPrice = usesPriceList
       ? deriveChannelStartingPrice(priceItems, (channel.ad_price_currency || 'USD') as CurrencyCode)
       : {
           ad_price: Math.max(0, Number(channel.ad_price) || 0),
           ad_price_currency: channel.ad_price_currency || 'USD',
         }
 
-    if (isTelegram) {
+    if (usesPriceList) {
       const { error: pricesError } = await replaceChannelPrices(supabase, channel.id, priceItems)
       if (pricesError) {
         setSaving(false)
@@ -198,7 +214,7 @@ export default function EditChannelPage() {
         </label>
 
         {/* Охваты и цена */}
-        <div className={`grid ${channel.platform === 'telegram' || !channel.platform ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
+        <div className={`grid ${usesSharedChannelPriceList(channel.platform) ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
           <label className="ui-field">
             <span className="ui-field__label">Средние охваты</span>
             <input
@@ -208,7 +224,7 @@ export default function EditChannelPage() {
               className="ui-input"
             />
           </label>
-          {channel.platform !== 'telegram' && channel.platform ? (
+          {!usesSharedChannelPriceList(channel.platform) ? (
           <label className="ui-field">
             <span className="ui-field__label">Цена рекламы</span>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -230,13 +246,28 @@ export default function EditChannelPage() {
           ) : null}
         </div>
 
-        {(channel.platform === 'telegram' || !channel.platform) && (
-          <ChannelPriceListEditor
-            items={priceDrafts}
-            onChange={setPriceDrafts}
-            defaultCurrency={(channel.ad_price_currency || 'USD') as CurrencyCode}
-            compactHint={false}
-          />
+        {usesSharedChannelPriceList(channel.platform) && (
+          <>
+            {requiresChannelPriceList(channel.platform) &&
+            !hasValidStoredPriceList(
+              priceDrafts.map((draft) => ({
+                type: draft.type,
+                price: Number(draft.price),
+                currency: draft.currency,
+              })),
+            ) ? (
+              <p className="text-yellow-400 text-sm" style={{ margin: 0 }}>
+                Для YouTube-канала нужен прайс-лист: хотя бы одна услуга с названием, ценой больше 0 и валютой.
+              </p>
+            ) : null}
+            <ChannelPriceListEditor
+              items={priceDrafts}
+              onChange={setPriceDrafts}
+              defaultCurrency={(channel.ad_price_currency || 'USD') as CurrencyCode}
+              compactHint={false}
+              required={requiresChannelPriceList(channel.platform)}
+            />
+          </>
         )}
 
         {/* Язык и страна */}

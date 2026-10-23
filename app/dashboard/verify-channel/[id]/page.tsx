@@ -10,6 +10,20 @@ import Surface from '@/components/ui/Surface'
 import Button from '@/components/ui/Button'
 import AddChannelProgressStepper from '@/app/dashboard/components/AddChannelProgressStepper'
 import SocialOauthVerification from '@/app/dashboard/components/SocialOauthVerification'
+import ChannelPriceListEditor from '@/app/dashboard/components/ChannelPriceListEditor'
+import {
+  YOUTUBE_PRICE_LIST_REQUIRED_ERROR,
+  createEmptyPriceDraft,
+  deriveChannelStartingPrice,
+  draftsFromPriceRows,
+  hasValidStoredPriceList,
+  replaceChannelPrices,
+  sanitizeDraftPrices,
+  type ChannelPriceRow,
+  type DraftChannelPrice,
+} from '@/lib/channel-prices'
+import PageHeader from '@/components/ui/PageHeader'
+import type { CurrencyCode } from '@/lib/currency'
 
 export default function VerifyChannelPage() {
   const params = useParams()
@@ -25,6 +39,10 @@ export default function VerifyChannelPage() {
   const [verificationResult, setVerificationResult] = useState<'success' | 'fail' | null>(null)
   const [verificationFailureReason, setVerificationFailureReason] = useState<string | null>(null)
   const [step1Confirmed, setStep1Confirmed] = useState(false)
+  const [priceDrafts, setPriceDrafts] = useState<DraftChannelPrice[]>([])
+  const [needsYoutubePriceList, setNeedsYoutubePriceList] = useState(false)
+  const [savingPrices, setSavingPrices] = useState(false)
+  const [priceError, setPriceError] = useState<string | null>(null)
   const verifyInFlightRef = useRef(false)
 
   useEffect(() => {
@@ -48,6 +66,22 @@ export default function VerifyChannelPage() {
         return
       }
 
+      if (data.platform === 'youtube') {
+        const { data: prices } = await supabase
+          .from('channel_prices')
+          .select('id, channel_id, type, description, price, currency, sort_order')
+          .eq('channel_id', data.id)
+          .order('sort_order', { ascending: true })
+        const rows = (prices || []) as ChannelPriceRow[]
+        const drafts = draftsFromPriceRows(rows)
+        setPriceDrafts(
+          drafts.length > 0
+            ? drafts
+            : [createEmptyPriceDraft((data.ad_price_currency || 'USD') as CurrencyCode)],
+        )
+        setNeedsYoutubePriceList(!hasValidStoredPriceList(rows))
+      }
+
       const oauthPlatform = data.platform === 'instagram' || data.platform === 'tiktok'
       if (!oauthPlatform) {
         if (data.verification_code) {
@@ -65,8 +99,39 @@ export default function VerifyChannelPage() {
     load()
   }, [channelId, router, supabase])
 
+  const saveYoutubePriceList = async () => {
+    if (!channel) return
+    const priceItems = sanitizeDraftPrices(priceDrafts)
+    if (priceItems.length === 0) {
+      setPriceError(YOUTUBE_PRICE_LIST_REQUIRED_ERROR)
+      return
+    }
+    setSavingPrices(true)
+    setPriceError(null)
+    const { error } = await replaceChannelPrices(supabase, channel.id, priceItems)
+    if (error) {
+      setSavingPrices(false)
+      setPriceError(error)
+      return
+    }
+    const starting = deriveChannelStartingPrice(
+      priceItems,
+      (channel.ad_price_currency || 'USD') as CurrencyCode,
+    )
+    await supabase
+      .from('channels')
+      .update({
+        ad_price: starting.ad_price,
+        ad_price_currency: starting.ad_price_currency,
+      })
+      .eq('id', channel.id)
+    setSavingPrices(false)
+    setNeedsYoutubePriceList(false)
+  }
+
   const handleVerify = async () => {
     if (!channel || verifyInFlightRef.current) return
+    if (channel.platform === 'youtube' && needsYoutubePriceList) return
 
     const youtube = channel.platform === 'youtube'
 
@@ -125,10 +190,13 @@ export default function VerifyChannelPage() {
   const isYoutube = channel.platform === 'youtube'
   const isOauth = channel.platform === 'instagram' || channel.platform === 'tiktok'
   const channelHandle = getChannelHandle(channel)
-  const flowStep = isTelegram
-    ? verificationResult === 'success'
-      ? 5
-      : 4
+  const stepperVariant = isTelegram ? 'telegram' : isYoutube ? 'youtube' : 'default'
+  const flowStep = isTelegram || isYoutube
+    ? needsYoutubePriceList
+      ? 3
+      : verificationResult === 'success'
+        ? 5
+        : 4
     : verificationResult === 'success' || (isOauth && channel.verification_status === 'verified')
       ? 4
       : 3
@@ -145,23 +213,51 @@ export default function VerifyChannelPage() {
       <AddChannelProgressStepper
         currentStep={flowStep}
         className="mb-6"
-        variant={isTelegram ? 'telegram' : 'default'}
+        variant={stepperVariant}
       />
 
       <h1 className="ui-page-title mb-2">
-        {isOauth
-          ? `Подтверждение ${getPlatformLabel(channel.platform)}`
-          : isYoutube
-            ? 'Верификация YouTube канала'
-            : 'Верификация канала'}
+        {isYoutube && needsYoutubePriceList
+          ? 'Прайс-лист YouTube-канала'
+          : isOauth
+            ? `Подтверждение ${getPlatformLabel(channel.platform)}`
+            : isYoutube
+              ? 'Верификация YouTube канала'
+              : 'Верификация канала'}
       </h1>
       <p className="ui-meta mb-8">
-        {isOauth
-          ? `Подтвердите контроль аккаунта ${channel.name || channelHandle}`
-          : isYoutube
-            ? `Подтвердите владение каналом ${channel.name}`
-            : `Подтвердите владение каналом ${channelHandle}`}
+        {isYoutube && needsYoutubePriceList
+          ? `Заполните прайс-лист для ${channel.name}, затем подтвердите владение каналом.`
+          : isOauth
+            ? `Подтвердите контроль аккаунта ${channel.name || channelHandle}`
+            : isYoutube
+              ? `Подтвердите владение каналом ${channel.name}`
+              : `Подтвердите владение каналом ${channelHandle}`}
       </p>
+
+      {isYoutube && needsYoutubePriceList ? (
+        <Surface padding="lg" className="flex flex-col gap-5">
+          <PageHeader
+            title="Прайс-лист"
+            description="Перед верификацией YouTube-канала добавьте хотя бы одну услугу."
+          />
+          <ChannelPriceListEditor
+            items={priceDrafts}
+            onChange={setPriceDrafts}
+            defaultCurrency={(channel.ad_price_currency || 'USD') as CurrencyCode}
+            required
+          />
+          {priceError ? <p className="text-red-400 text-sm">{priceError}</p> : null}
+          <Button
+            type="button"
+            onClick={() => void saveYoutubePriceList()}
+            disabled={savingPrices || sanitizeDraftPrices(priceDrafts).length === 0}
+            fullWidth
+          >
+            {savingPrices ? 'Сохранение...' : 'Сохранить прайс и продолжить к верификации'}
+          </Button>
+        </Surface>
+      ) : null}
 
       {isOauth && (
         <Suspense fallback={<div className="ui-meta">Загрузка...</div>}>
@@ -172,7 +268,7 @@ export default function VerifyChannelPage() {
         </Suspense>
       )}
 
-      {!isOauth && (
+      {!isOauth && !(isYoutube && needsYoutubePriceList) && (
       <>
       {step === 1 && isYoutube && (
         <Surface padding="lg" className="mb-4">
