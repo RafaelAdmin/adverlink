@@ -17,7 +17,7 @@ import {
   deriveChannelStartingPrice,
   draftsFromPriceRows,
   hasValidStoredPriceList,
-  replaceChannelPrices,
+  replaceYoutubeChannelPrices,
   sanitizeDraftPrices,
   type ChannelPriceRow,
   type DraftChannelPrice,
@@ -108,7 +108,7 @@ export default function VerifyChannelPage() {
     }
     setSavingPrices(true)
     setPriceError(null)
-    const { error } = await replaceChannelPrices(supabase, channel.id, priceItems)
+    const { error } = await replaceYoutubeChannelPrices(supabase, channel.id, priceItems)
     if (error) {
       setSavingPrices(false)
       setPriceError(error)

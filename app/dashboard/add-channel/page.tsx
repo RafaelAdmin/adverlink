@@ -24,6 +24,7 @@ import {
   createEmptyPriceDraft,
   deriveChannelStartingPrice,
   replaceChannelPrices,
+  replaceYoutubeChannelPrices,
   sanitizeDraftPrices,
   type DraftChannelPrice,
 } from '@/lib/channel-prices'
@@ -204,7 +205,14 @@ export default function AddChannelPage() {
       return
     }
 
-    if (usesPriceList && priceItems.length > 0) {
+    if (isYouTube) {
+      const { error: pricesError } = await replaceYoutubeChannelPrices(supabase, newChannel.id, priceItems)
+      if (pricesError) {
+        setSubmitting(false)
+        setError(pricesError)
+        return
+      }
+    } else if (isTelegram && priceItems.length > 0) {
       const { error: pricesError } = await replaceChannelPrices(supabase, newChannel.id, priceItems)
       if (pricesError) {
         setSubmitting(false)

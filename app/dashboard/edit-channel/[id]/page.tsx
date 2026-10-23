@@ -18,6 +18,7 @@ import {
   draftsFromPriceRows,
   hasValidStoredPriceList,
   replaceChannelPrices,
+  replaceYoutubeChannelPrices,
   requiresChannelPriceList,
   sanitizeDraftPrices,
   usesSharedChannelPriceList,
@@ -98,7 +99,14 @@ export default function EditChannelPage() {
           ad_price_currency: channel.ad_price_currency || 'USD',
         }
 
-    if (usesPriceList) {
+    if (requiresChannelPriceList(channel.platform)) {
+      const { error: pricesError } = await replaceYoutubeChannelPrices(supabase, channel.id, priceItems)
+      if (pricesError) {
+        setSaving(false)
+        setError(pricesError)
+        return
+      }
+    } else if (usesPriceList) {
       const { error: pricesError } = await replaceChannelPrices(supabase, channel.id, priceItems)
       if (pricesError) {
         setSaving(false)

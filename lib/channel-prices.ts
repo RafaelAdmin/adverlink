@@ -164,6 +164,27 @@ export async function replaceChannelPrices(
 export const YOUTUBE_PRICE_LIST_REQUIRED_ERROR =
   'Добавьте хотя бы одну услугу с названием, ценой больше 0 и валютой'
 
+export async function replaceYoutubeChannelPrices(
+  supabase: any,
+  channelId: string,
+  items: SanitizedChannelPrice[],
+): Promise<{ error: string | null }> {
+  if (items.length === 0) {
+    return { error: YOUTUBE_PRICE_LIST_REQUIRED_ERROR }
+  }
+
+  const currencyResult = priceListCurrencyOrError(items)
+  if ('error' in currencyResult) {
+    return { error: currencyResult.error }
+  }
+
+  const { error } = await supabase.rpc('replace_youtube_channel_prices', {
+    p_channel_id: channelId,
+    p_items: items,
+  })
+  return { error: error?.message ?? null }
+}
+
 export function usesSharedChannelPriceList(platform: string | null | undefined): boolean {
   return platform === 'telegram' || platform === 'youtube' || !platform
 }

@@ -1,5 +1,6 @@
--- Require a valid channel_prices row before YouTube verification / emptying the list.
--- Uses the existing public.channel_prices table. Does not create a YouTube-only prices table.
+-- YouTube-only price list on the existing public.channel_prices table.
+-- Does NOT create or replace public.replace_channel_prices (Telegram / shared RPC).
+-- Does NOT create or replace public.verify_channel_after_check.
 -- Does not change Telegram, deals, or payment SQL.
 --
 -- Existing YouTube channels without a price list stay visible; they cannot newly
@@ -27,7 +28,7 @@ $$;
 revoke all on function public.youtube_channel_has_price_list(uuid) from public;
 grant execute on function public.youtube_channel_has_price_list(uuid) to authenticated;
 
-create or replace function public.replace_channel_prices(
+create or replace function public.replace_youtube_channel_prices(
   p_channel_id uuid,
   p_items jsonb
 )
@@ -45,7 +46,6 @@ declare
   v_currency text;
   v_list_currency text;
   v_min_price numeric;
-  v_is_youtube boolean;
 begin
   if auth.uid() is null then
     raise exception 'Not authenticated';
@@ -56,15 +56,10 @@ begin
     from public.channels c
     where c.id = p_channel_id
       and c.owner_id = auth.uid()
+      and c.platform = 'youtube'
   ) then
-    raise exception 'Not channel owner';
+    raise exception 'Not a YouTube channel owner';
   end if;
-
-  select c.platform = 'youtube'
-  into v_is_youtube
-  from public.channels c
-  where c.id = p_channel_id
-    and c.owner_id = auth.uid();
 
   if p_items is null or jsonb_typeof(p_items) <> 'array' then
     raise exception 'Price list must be a JSON array';
@@ -72,7 +67,7 @@ begin
 
   v_len := jsonb_array_length(p_items);
 
-  if coalesce(v_is_youtube, false) and v_len = 0 then
+  if v_len = 0 then
     raise exception 'YouTube channels require at least one valid price list item';
   end if;
 
@@ -116,69 +111,35 @@ begin
   delete from public.channel_prices
   where channel_id = p_channel_id;
 
-  if v_len > 0 then
-    insert into public.channel_prices (
-      channel_id,
-      type,
-      description,
-      price,
-      currency,
-      sort_order
-    )
-    select
-      p_channel_id,
-      left(btrim(item ->> 'type'), 120),
-      nullif(left(btrim(coalesce(item ->> 'description', '')), 500), ''),
-      round((item ->> 'price')::numeric, 2),
-      upper(btrim(item ->> 'currency')),
-      (ord - 1)::int
-    from jsonb_array_elements(p_items) with ordinality as t(item, ord);
-  end if;
+  insert into public.channel_prices (
+    channel_id,
+    type,
+    description,
+    price,
+    currency,
+    sort_order
+  )
+  select
+    p_channel_id,
+    left(btrim(item ->> 'type'), 120),
+    nullif(left(btrim(coalesce(item ->> 'description', '')), 500), ''),
+    round((item ->> 'price')::numeric, 2),
+    upper(btrim(item ->> 'currency')),
+    (ord - 1)::int
+  from jsonb_array_elements(p_items) with ordinality as t(item, ord);
 
   update public.channels
   set
     ad_price = v_min_price,
-    ad_price_currency = coalesce(v_list_currency, ad_price_currency)
+    ad_price_currency = v_list_currency
   where id = p_channel_id
-    and owner_id = auth.uid();
+    and owner_id = auth.uid()
+    and platform = 'youtube';
 end;
 $$;
 
-revoke all on function public.replace_channel_prices(uuid, jsonb) from public;
-grant execute on function public.replace_channel_prices(uuid, jsonb) to authenticated;
-
-create or replace function public.verify_channel_after_check(p_channel_id uuid)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  if not exists (
-    select 1 from public.channels
-    where id = p_channel_id and owner_id = auth.uid()
-  ) then
-    raise exception 'Not channel owner';
-  end if;
-
-  if exists (
-    select 1 from public.channels
-    where id = p_channel_id
-      and owner_id = auth.uid()
-      and platform = 'youtube'
-  ) and not public.youtube_channel_has_price_list(p_channel_id) then
-    raise exception 'YouTube channels require a price list before verification';
-  end if;
-
-  perform set_config('app.allow_verify', '1', true);
-
-  update public.channels
-  set verification_status = 'verified', is_verified = true
-  where id = p_channel_id and owner_id = auth.uid();
-end;
-$$;
-
-grant execute on function public.verify_channel_after_check(uuid) to authenticated;
+revoke all on function public.replace_youtube_channel_prices(uuid, jsonb) from public;
+grant execute on function public.replace_youtube_channel_prices(uuid, jsonb) to authenticated;
 
 create or replace function public.enforce_youtube_verified_has_prices()
 returns trigger
