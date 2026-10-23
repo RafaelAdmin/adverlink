@@ -108,14 +108,14 @@ describe('landing page copy stays honest', () => {
     expect(page).not.toMatch(/MOCK_CHANNELS/)
   })
 
-  it('loads listed channels from marketplace_channels and sends CTA to login', () => {
-    expect(carousel).toContain('LANDING_CHANNELS_VIEW')
-    expect(readFileSync(resolve(process.cwd(), 'lib/landing-channels.ts'), 'utf8')).toContain(
-      'MARKETPLACE_CHANNELS_VIEW',
-    )
-    expect(carousel).toContain("href=\"/auth/login\"")
+  it('shows illustrative hero cards that open the public marketplace', () => {
+    expect(carousel).toContain('LANDING_DEMO_CHANNELS')
+    expect(carousel).toContain('href="/marketplace"')
+    expect(carousel).toContain('Пример карточек каналов')
+    expect(carousel).not.toContain('LANDING_CHANNELS_VIEW')
+    expect(carousel).not.toContain('createClient')
     expect(carousel).not.toContain('/dashboard/channel/')
     expect(carousel).not.toContain('MOCK_CHANNELS')
-    expect(carousel).toContain('Каталог каналов пока наполняется')
+    expect(page).toContain('href="/marketplace" className="landing-btn landing-btn--accent">Найти каналы')
   })
 })

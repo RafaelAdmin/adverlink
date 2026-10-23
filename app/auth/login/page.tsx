@@ -13,6 +13,7 @@ import {
   isValidEmail,
   MIN_PASSWORD_LENGTH,
   PASSWORD_RESET_NEXT_PATH,
+  sanitizeAuthNextPath,
 } from '@/lib/auth-urls'
 
 const inputStyle: React.CSSProperties = {
@@ -58,6 +59,7 @@ function LoginPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
+  const nextPath = sanitizeAuthNextPath(searchParams.get('next'))
 
   useEffect(() => {
     const flagged = searchParams.get('error')
@@ -76,14 +78,14 @@ function LoginPageInner() {
   const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: getClientAuthCallbackUrl() },
+      options: { redirectTo: getClientAuthCallbackUrl(nextPath) },
     })
   }
 
   const handleAppleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'apple',
-      options: { redirectTo: getClientAuthCallbackUrl() },
+      options: { redirectTo: getClientAuthCallbackUrl(nextPath) },
     })
   }
 
@@ -129,7 +131,7 @@ function LoginPageInner() {
         setLoading(false)
         return
       }
-      router.push('/dashboard')
+      router.push(nextPath)
       setLoading(false)
       return
     }
@@ -149,7 +151,7 @@ function LoginPageInner() {
       email: trimmedEmail,
       password,
       options: {
-        emailRedirectTo: getClientAuthCallbackUrl(),
+        emailRedirectTo: getClientAuthCallbackUrl(nextPath),
         data: { full_name: fullName.trim() || undefined },
       },
     })
@@ -167,7 +169,7 @@ function LoginPageInner() {
     }
 
     if (data.session && data.user && isEmailConfirmed(data.user)) {
-      router.push('/dashboard')
+      router.push(nextPath)
       setLoading(false)
       return
     }

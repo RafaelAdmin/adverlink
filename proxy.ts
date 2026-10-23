@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { isSafeAuthNextPath } from '@/lib/auth-urls'
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
@@ -45,7 +46,10 @@ export async function proxy(request: NextRequest) {
   // Protect /dashboard routes
   if (pathname.startsWith('/dashboard')) {
     if (!user) {
-      return NextResponse.redirect(new URL('/auth/login', request.url))
+      const login = new URL('/auth/login', request.url)
+      const next = `${pathname}${request.nextUrl.search}`
+      if (isSafeAuthNextPath(next)) login.searchParams.set('next', next)
+      return NextResponse.redirect(login)
     }
     if (!user.email_confirmed_at) {
       return redirectUnconfirmed()

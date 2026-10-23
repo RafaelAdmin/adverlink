@@ -194,12 +194,14 @@ const features = [
 export default function Home() {
   return (
     <div className="landing-page">
-      <div className="landing-orb landing-orb--1" aria-hidden />
-      <div className="landing-orb landing-orb--2" aria-hidden />
-      <div className="landing-orb landing-orb--3" aria-hidden />
-      <div className="landing-orb landing-orb--4" aria-hidden />
-
       <LandingNavbar />
+      <div className="landing-night">
+      <div className="landing-sky" aria-hidden>
+        <div className="landing-orb landing-orb--1" />
+        <div className="landing-orb landing-orb--2" />
+        <div className="landing-orb landing-orb--3" />
+        <div className="landing-orb landing-orb--4" />
+      </div>
 
       <section id="hero" className="landing-section landing-hero">
         <div className="landing-container landing-hero-grid">
@@ -211,7 +213,7 @@ export default function Home() {
               верификация, сделки и отзывы.
             </p>
             <div className="landing-hero-buttons">
-              <Link href="/auth/login" className="landing-btn landing-btn--accent">Найти каналы →</Link>
+              <Link href="/marketplace" className="landing-btn landing-btn--accent">Найти каналы →</Link>
               <Link href="/auth/login" className="landing-btn landing-btn--outline">Добавить канал</Link>
             </div>
             <p className="landing-hero-note">🏆 Первые 50 каналов получают Pro навсегда</p>
@@ -404,7 +406,10 @@ export default function Home() {
           </p>
         </div>
       </section>
+      <div className="landing-dawn" aria-hidden />
+      </div>
 
+      <div className="landing-day">
       <LandingFaqSection />
 
       <section className="landing-section">
@@ -414,7 +419,7 @@ export default function Home() {
             <p className="landing-final-subtitle">Присоединяйся к создателям и рекламодателям в Армении</p>
             <div className="landing-hero-buttons landing-hero-buttons--center">
               <Link href="/auth/login" className="landing-btn landing-btn--accent">Добавить канал бесплатно →</Link>
-              <Link href="/auth/login" className="landing-btn landing-btn--outline-light">Найти каналы</Link>
+              <Link href="/marketplace" className="landing-btn landing-btn--outline-light">Найти каналы</Link>
             </div>
             <p className="landing-hero-note">🏆 Первые 50 каналов получают Pro навсегда</p>
           </div>
@@ -472,6 +477,7 @@ export default function Home() {
           </div>
         </div>
       </footer>
+      </div>
     </div>
   )
 }

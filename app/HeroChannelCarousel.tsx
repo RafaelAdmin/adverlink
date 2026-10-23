@@ -1,17 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase'
 import { getPlatformColor, getPlatformIcon, getPlatformLabel } from '@/lib/channel-helpers'
-import {
-  LANDING_CHANNELS_VIEW,
-  LANDING_CHANNEL_SELECT,
-  formatLandingCount,
-  landingPublicChannelsFromRows,
-  type LandingChannelRow,
-  type LandingPublicChannel,
-} from '@/lib/landing-channels'
+import { formatLandingCount, type LandingPublicChannel } from '@/lib/landing-channels'
+import { LANDING_DEMO_CHANNELS } from '@/lib/landing-demo-channels'
 
 function LandingChannelCard({ channel }: { channel: LandingPublicChannel }) {
   const platform = channel.platform || 'telegram'
@@ -19,7 +11,7 @@ function LandingChannelCard({ channel }: { channel: LandingPublicChannel }) {
   const letter = channel.name[0]?.toUpperCase() || '?'
 
   return (
-    <article className="landing-channel-card">
+    <Link href="/marketplace" className="landing-channel-card" aria-label={`${channel.name}: открыть маркетплейс`}>
       <div className="landing-channel-card__header">
         {channel.avatarUrl ? (
           <img
@@ -66,11 +58,11 @@ function LandingChannelCard({ channel }: { channel: LandingPublicChannel }) {
 
       <div className="landing-channel-card__footer">
         <span className="landing-channel-card__price">{channel.priceLabel}</span>
-        <Link href="/auth/login" className="landing-channel-card__cta">
+        <span className="landing-channel-card__cta">
           Запросить рекламу
-        </Link>
+        </span>
       </div>
-    </article>
+    </Link>
   )
 }
 
@@ -100,70 +92,23 @@ function CarouselColumn({
 }
 
 export default function HeroChannelCarousel() {
-  const [channels, setChannels] = useState<LandingPublicChannel[] | null>(null)
-
-  useEffect(() => {
-    const supabase = createClient()
-    let cancelled = false
-
-    const load = async () => {
-      const { data, error } = await supabase
-        .from(LANDING_CHANNELS_VIEW)
-        .select(LANDING_CHANNEL_SELECT)
-
-      if (cancelled) return
-      if (error) {
-        setChannels([])
-        return
-      }
-      setChannels(landingPublicChannelsFromRows((data ?? []) as unknown as LandingChannelRow[]))
-    }
-
-    void load()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  if (channels === null) {
-    return (
-      <div className="landing-hero-carousel-wrap">
-        <p className="landing-hero-carousel-label">Каналы в маркетплейсе</p>
-        <div className="landing-hero-carousel landing-hero-carousel--empty" aria-busy="true">
-          <p className="landing-hero-carousel-empty">Загрузка каналов…</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (channels.length === 0) {
-    return (
-      <div className="landing-hero-carousel-wrap">
-        <p className="landing-hero-carousel-label">Каналы в маркетплейсе</p>
-        <div className="landing-hero-carousel landing-hero-carousel--empty">
-          <p className="landing-hero-carousel-empty">
-            Каталог каналов пока наполняется. Зарегистрируйтесь, чтобы добавить площадку или найти каналы позже.
-          </p>
-          <Link href="/auth/login" className="landing-btn landing-btn--accent landing-btn--sm">
-            Войти
-          </Link>
-        </div>
-      </div>
-    )
-  }
-
+  const channels = LANDING_DEMO_CHANNELS
+  const useTwoColumns = channels.length >= 2
+  const left = useTwoColumns ? channels.filter((_, index) => index % 2 === 0) : channels
+  const right = useTwoColumns ? channels.filter((_, index) => index % 2 === 1) : []
   const mobileCards = channels.slice(0, 4)
 
   return (
     <div className="landing-hero-carousel-wrap">
-      <p className="landing-hero-carousel-label">Каналы в маркетплейсе</p>
+      <p className="landing-hero-carousel-label">Пример карточек каналов</p>
       <div
-        className="landing-hero-carousel landing-hero-carousel--desktop landing-hero-carousel--one"
-        aria-label="Каналы в маркетплейсе AdverLink"
+        className={`landing-hero-carousel landing-hero-carousel--desktop${useTwoColumns ? ' landing-hero-carousel--two' : ' landing-hero-carousel--one'}`}
+        aria-label="Пример карточек каналов AdverLink"
       >
-        <CarouselColumn channels={channels} direction="down" />
+        <CarouselColumn channels={left} direction="down" />
+        {useTwoColumns && right.length > 0 ? <CarouselColumn channels={right} direction="up" /> : null}
       </div>
-      <div className="landing-hero-carousel landing-hero-carousel--mobile" aria-label="Каналы в маркетплейсе AdverLink">
+      <div className="landing-hero-carousel landing-hero-carousel--mobile" aria-label="Пример карточек каналов AdverLink">
         {mobileCards.map((channel) => (
           <LandingChannelCard key={channel.id} channel={channel} />
         ))}
