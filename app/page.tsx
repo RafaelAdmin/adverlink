@@ -4,41 +4,10 @@ import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import HeroChannelCarousel from './HeroChannelCarousel'
 
-function LandingScreenshot({
-  src,
-  alt,
-  minHeight = '320px',
-  objectPosition = 'top center',
-}: {
-  src: string
-  alt: string
-  minHeight?: string
-  objectPosition?: string
-}) {
+function LandingScreenshot({ src, alt }: { src: string; alt: string }) {
   return (
-    <div
-      className="landing-screenshot"
-      style={{
-        minHeight,
-        borderRadius: '16px',
-        overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.12)',
-        boxShadow: '0 24px 64px rgba(0,0,0,0.35)',
-        background: 'rgba(255,255,255,0.04)',
-      }}
-    >
-      <img
-        src={src}
-        alt={alt}
-        style={{
-          width: '100%',
-          height: '100%',
-          minHeight,
-          objectFit: 'cover',
-          objectPosition,
-          display: 'block',
-        }}
-      />
+    <div className="landing-screenshot">
+      <img src={src} alt={alt} />
     </div>
   )
 }
@@ -147,6 +116,74 @@ const painPoints = [
 
 const solutionPoints = ['Каталог верифицированных каналов', 'Safe Deal — скоро', 'Прозрачная аналитика']
 
+const landingFaqs = [
+  {
+    q: 'Что такое AdverLink?',
+    a: 'AdverLink — маркетплейс цифровой рекламы в Армении. Рекламодатели находят верифицированные площадки, создатели получают запросы и ведут сделки в одном кабинете: каталог, верификация, заказы и отзывы.',
+  },
+  {
+    q: 'Кто может добавить канал или аккаунт?',
+    a: 'Любой зарегистрированный пользователь в роли создателя. На Free можно добавить до 3 площадок, на Pro лимит снимается. Сейчас в каталог добавляются Telegram-каналы и YouTube; Instagram и TikTok тоже есть в форме добавления и подтверждаются официальным входом.',
+  },
+  {
+    q: 'Как проходит верификация площадки?',
+    a: 'Для Telegram и YouTube платформа выдаёт код: его нужно разместить в описании канала, после чего AdverLink проверяет совпадение. Instagram и TikTok подтверждаются официальным входом в аккаунт, без пароля внутри AdverLink. Зелёная отметка появляется после успешной проверки.',
+  },
+  {
+    q: 'Можно ли быть одновременно рекламодателем и создателем?',
+    a: 'Да. В кабинете можно переключать роль между рекламодателем и создателем в одном аккаунте: искать каналы, отправлять заказы и параллельно принимать заявки на свои площадки.',
+  },
+  {
+    q: 'Как формируется стоимость рекламы?',
+    a: 'Цену задаёт владелец площадки в прайс-листе или как стартовую цену размещения. В каталоге показывается «от» минимальной позиции. AdverLink не назначает тарифы каналам и не обещает фиксированную стоимость размещения.',
+  },
+  {
+    q: 'Какие социальные сети уже поддерживаются?',
+    a: 'Telegram и YouTube — основной рабочий контур (добавление, верификация по коду, заказы). Instagram и TikTok можно добавить и подтвердить через официальный вход. Отдельные сценарии сделок и аналитики для всех сетей развиваются постепенно.',
+  },
+  {
+    q: 'Как проходит заказ рекламы?',
+    a: 'Рекламодатель выбирает канал в маркетплейсе и отправляет заказ. Создатель принимает или отклоняет его. Дальше стороны видят статус в карточке заказа: оплата (сейчас в Beta — тестовая/симулированная), выполнение, ссылки-пруфы и подтверждение рекламодателя. Банковский escrow и автоматические выплаты на этом этапе не запущены.',
+  },
+  {
+    q: 'Сколько стоит использование платформы?',
+    a: 'Регистрация и тариф Free — €0: до 3 каналов и до 3 кампаний в месяц, сделки без лимита. Pro (€18/мес) и Business пока отмечены как «Скоро», оплату подписки сейчас оформить нельзя. Комиссия 10% с Free-сделок относится к будущему Safe Deal и ещё не списывается как реальный платёж.',
+  },
+]
+
+function LandingFaqSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(0)
+
+  return (
+    <section id="faq" className="landing-section">
+      <div className="landing-container landing-faq">
+        <h2 className="landing-section-title">Частые вопросы</h2>
+        <div className="landing-faq-list">
+          {landingFaqs.map((item, index) => {
+            const open = openIndex === index
+            return (
+              <div key={item.q} className={`landing-faq-item${open ? ' landing-faq-item--open' : ''}`}>
+                <button
+                  type="button"
+                  className="landing-faq-question"
+                  aria-expanded={open}
+                  onClick={() => setOpenIndex(open ? null : index)}
+                >
+                  <span>{item.q}</span>
+                  <span className="landing-faq-icon" aria-hidden>
+                    {open ? '−' : '+'}
+                  </span>
+                </button>
+                {open ? <p className="landing-faq-answer">{item.a}</p> : null}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 const features = [
   { title: 'Управляй каналами в одном месте', desc: 'Добавляй Telegram и YouTube, проходи верификацию, получай запросы и веди все сделки в едином дашборде.', pro: false, reverse: false, image: '/landing/screenshot-2.png', imageAlt: 'Мои каналы в AdverLink' },
   { title: 'Аналитика Pro — отчёты за любой период', desc: 'Скачивай Excel и PDF отчёты с историей сделок, доходами и охватами за любой выбранный период.', pro: true, reverse: true, image: '/landing/screenshot-3.png', imageAlt: 'Аналитика канала' },
@@ -167,7 +204,7 @@ export default function Home() {
       <section id="hero" className="landing-section landing-hero">
         <div className="landing-container landing-hero-grid">
           <div>
-            <div className="landing-badge">🇦🇲 Маркетплейс рекламы для создателей и брендов в Армении</div>
+            <div className="landing-badge">🇦🇲 Маркетплейс цифровой рекламы в Армении</div>
             <h1 className="landing-hero-title">Реклама в социальных сетях — проще и прозрачнее</h1>
             <p className="landing-hero-subtitle">
               AdverLink соединяет рекламодателей и создателей контента в одном месте: поиск, аналитика,
@@ -202,10 +239,7 @@ export default function Home() {
         <div className="landing-container">
           <h2 className="landing-section-title">AdverLink решает всё это</h2>
           <div className="landing-split">
-            <LandingScreenshot
-              src="/landing/screenshot-4.png"
-              alt="Страница канала в AdverLink"
-            />
+            <LandingScreenshot src="/landing/screenshot-4.png" alt="Страница канала в AdverLink" />
             <div className="landing-solution-points">
               {solutionPoints.map((point) => (
                 <div key={point} className="landing-solution-point">
@@ -229,11 +263,7 @@ export default function Home() {
                 <h3 className="landing-feature-title">{f.title}</h3>
                 <p className="landing-card-desc">{f.desc}</p>
               </div>
-              <LandingScreenshot
-                src={f.image}
-                alt={f.imageAlt}
-                minHeight="280px"
-              />
+              <LandingScreenshot src={f.image} alt={f.imageAlt} />
             </div>
           ))}
         </div>
@@ -375,6 +405,8 @@ export default function Home() {
         </div>
       </section>
 
+      <LandingFaqSection />
+
       <section className="landing-section">
         <div className="landing-container">
           <div className="landing-final-cta">
@@ -409,6 +441,7 @@ export default function Home() {
               <ul className="landing-footer-links">
                 <li><Link href="/marketplace">Маркетплейс</Link></li>
                 <li><a href="#how-it-works">Как это работает</a></li>
+                <li><a href="#faq">FAQ</a></li>
                 <li><a href="#pricing">Тарифы</a></li>
                 <li><Link href="/auth/login">Для создателей</Link></li>
                 <li><Link href="/auth/login">Для рекламодателей</Link></li>
